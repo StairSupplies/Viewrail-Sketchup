@@ -1,6 +1,3 @@
-# Copyright 2016 Trimble Inc
-# Licensed under the MIT license
-
 module Plugins
 
   # Finds and returns the filename for each of the root .rb files in the
