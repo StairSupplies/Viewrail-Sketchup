@@ -1,5 +1,5 @@
 module Viewrail
-  module RoomGenerator
+  module StairGenerator
     #Version 5 - Stair Generator
     class << self
       
@@ -14,17 +14,12 @@ module Viewrail
         }
       end
       
-      def create_room
-        # Legacy method - redirect to HTML version
-        create_room_with_HTML
-      end
-      
-      def create_room_with_HTML
+      def add_stair_menu
         # Create the HTML dialog
         dialog = UI::HtmlDialog.new(
           {
             :dialog_title => "Stair Form - Straight",
-            :preferences_key => "com.viewrail.room_generator",
+            :preferences_key => "com.viewrail.stair_generator",
             :scrollable => false,
             :resizable => false,
             :width => 500,
@@ -401,6 +396,7 @@ module Viewrail
             end
           end
           
+          ##TODO - Turn this into glass railing with a side parameter for Left, Right, Both, None?
           # # Create stringers (side supports)
           # stringer_width = 2.0
           # stringer_depth = 10.0
@@ -441,34 +437,12 @@ module Viewrail
           # Zoom to fit the new stairs
           Sketchup.active_model.active_view.zoom_extents
           
-          # Display success message
-          UI.messagebox("Stairs created successfully!\n\n" +
-                       "Stair Parameters:\n" +
-                       "Number of Treads: #{num_treads}\n" +
-                       "Tread Run: #{tread_run.round(2)}\"\n" +
-                       "Total Tread Run: #{total_tread_run.round(2)}\"\n" +
-                       "Stair Rise: #{stair_rise.round(2)}\"\n" +
-                       "Total Rise: #{total_rise.round(2)}\"\n\n" +
-                       "Tread Width: #{tread_width}\"\n" +
-                       "Tread Thickness: #{tread_thickness}\"")
-          
         rescue => e
           # If there's an error, abort the operation
           model.abort_operation
           UI.messagebox("Error creating stairs: #{e.message}")
         end
-      end
-      
-      def create_room_geometry(length, width, height)
-        # Legacy method - redirect to stairs
-        puts "This method is deprecated. Use create_stairs_geometry instead."
-        create_room_with_HTML
-      end
-      
-      def create_room_with_window
-        UI.messagebox("This feature has been replaced with stair generation.")
-        create_room_with_HTML
-      end
+      end      
       
       def show_about
         UI.messagebox(
@@ -495,10 +469,10 @@ module Viewrail
       
       # Create commands
       cmd_stairs = UI::Command.new("Create Stairs") {
-        self.create_room_with_HTML
+        self.add_stair_menu
       }
-      cmd_stairs.small_icon = "room_generator/icons/room_16.png"
-      cmd_stairs.large_icon = "room_generator/icons/room_24.png"
+      cmd_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_add_24.png"
+      cmd_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_add_32.png"
       cmd_stairs.tooltip = "Create Stairs"
       cmd_stairs.status_bar_text = "Create parametric stairs with customizable dimensions"
       cmd_stairs.menu_text = "Create Stairs"
@@ -506,8 +480,8 @@ module Viewrail
       cmd_about = UI::Command.new("About") {
         self.show_about
       }
-      cmd_about.small_icon = "room_generator/icons/about_16.png"
-      cmd_about.large_icon = "room_generator/icons/about_24.png"
+      cmd_about.small_icon = "stair_generator/icons/about_16.png"
+      cmd_about.large_icon = "stair_generator/icons/about_24.png"
       cmd_about.tooltip = "About Stair Generator"
       cmd_about.status_bar_text = "About Stair Generator Extension"
       cmd_about.menu_text = "About"
