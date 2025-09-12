@@ -2,7 +2,7 @@ module Viewrail
   module StairGenerator
     #Version 5 - Stair Generator
     class << self
-      
+
       # Initialize last values at class level
       def last_values
         @last_values ||= {
@@ -13,7 +13,7 @@ module Viewrail
           :total_rise => 105.0
         }
       end
-      
+
       def add_stair_menu
         # Create the HTML dialog
         dialog = UI::HtmlDialog.new(
@@ -33,7 +33,7 @@ module Viewrail
             :style => UI::HtmlDialog::STYLE_DIALOG
           }
         )
-        
+
         # Build the HTML content with fixed encoding
         html_content = <<-HTML
         <!DOCTYPE html>
@@ -157,7 +157,7 @@ module Viewrail
                 Standard tread thickness: 1 inch
               </div>
             </div>
-            
+
             <div class="column">
               <h3>Rise Parameters</h3>
               <div class="form-group">
@@ -177,56 +177,56 @@ module Viewrail
               </div>
             </div>
           </div>
-          
+
           <div class="button-container">
             <button class="btn-primary" onclick="createStairs()">Create Stairs</button>
             <button class="btn-secondary" onclick="cancel()">Cancel</button>
           </div>
-          
+
           <script>
             let isUpdating = false;
-            
+
             // Get input elements
             const numTreadsInput = document.getElementById('num_treads');
             const treadRunInput = document.getElementById('tread_run');
             const totalTreadRunInput = document.getElementById('total_tread_run');
             const stairRiseInput = document.getElementById('stair_rise');
             const totalRiseInput = document.getElementById('total_rise');
-            
+
             // Calculate Total Tread Run from Number of Treads and Tread Run
             function calculateTotalTreadRun() {
               if (isUpdating) return;
               isUpdating = true;
-              
+
               const numTreads = parseInt(numTreadsInput.value) || 0;
               const treadRun = parseFloat(treadRunInput.value) || 0;
-              
+
               if (numTreads > 0 && treadRun > 0) {
                 const totalTreadRun = numTreads * treadRun;
                 totalTreadRunInput.value = totalTreadRun.toFixed(2);
               }
-              
+
               isUpdating = false;
               validateInputs();
             }
-            
+
             // Calculate Stair Rise from Total Rise and Number of Treads
             function calculateStairRise() {
               if (isUpdating) return;
               isUpdating = true;
-              
+
               const numTreads = parseInt(numTreadsInput.value) || 0;
               const totalRise = parseFloat(totalRiseInput.value) || 0;
-              
+
               if (numTreads > 0 && totalRise > 0) {
                 const stairRise = totalRise / (numTreads + 1);
                 stairRiseInput.value = stairRise.toFixed(2);
               }
-              
+
               isUpdating = false;
               validateInputs();
             }
-            
+
             // Add event listeners
             numTreadsInput.addEventListener('input', function() {
               calculateTotalTreadRun();
@@ -234,54 +234,54 @@ module Viewrail
             });
             treadRunInput.addEventListener('input', calculateTotalTreadRun);
             totalRiseInput.addEventListener('input', calculateStairRise);
-            
+
             // Validation function
             function validateInputs() {
               let isValid = true;
-              
+
               // Clear previous errors
               document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
-              
+
               // Validate tread parameters
               const numTreads = parseInt(numTreadsInput.value);
               const treadRun = parseFloat(treadRunInput.value);
-              
+
               if (numTreads < 1 || numTreads > 22) {
                 document.getElementById('treads-error').textContent = 'Must be between 1 and 22';
                 document.getElementById('treads-error').style.display = 'block';
                 isValid = false;
               }
-              
+
               if (treadRun < 11 || treadRun > 13) {
                 document.getElementById('tread-run-error').textContent = 'Must be between 11" and 13"';
                 document.getElementById('tread-run-error').style.display = 'block';
                 isValid = false;
               }
-              
+
               // Validate rise parameters
               const stairRise = parseFloat(stairRiseInput.value);
               const totalRise = parseFloat(totalRiseInput.value);
-              
+
               if (totalRise <= 0 || isNaN(totalRise)) {
                 document.getElementById('total-rise-error').textContent = 'Total rise must be positive';
                 document.getElementById('total-rise-error').style.display = 'block';
                 isValid = false;
               }
-              
+
               if (stairRise < 6 || stairRise > 9) {
                 document.getElementById('rise-error').textContent = 'Must be between 6" and 9"';
                 document.getElementById('rise-error').style.display = 'block';
                 isValid = false;
               }
-              
+
               return isValid;
             }
-            
+
             function createStairs() {
               if (!validateInputs()) {
                 return;
               }
-              
+
               const values = {
                 num_treads: parseInt(document.getElementById('num_treads').value),
                 tread_run: parseFloat(document.getElementById('tread_run').value),
@@ -289,14 +289,14 @@ module Viewrail
                 stair_rise: parseFloat(document.getElementById('stair_rise').value),
                 total_rise: parseFloat(document.getElementById('total_rise').value)
               };
-              
+
               window.location = 'skp:create_stairs@' + JSON.stringify(values);
             }
-            
+
             function cancel() {
               window.location = 'skp:cancel';
             }
-            
+
             // Initial calculations
             calculateTotalTreadRun();
             calculateStairRise();
@@ -304,25 +304,25 @@ module Viewrail
         </body>
         </html>
         HTML
-        
+
         dialog.set_html(html_content)
-        
+
         # Add callbacks
         dialog.add_action_callback("create_stairs") do |action_context, params|
           values = JSON.parse(params)
-          
+
           # Store the values for next time
           last_values[:num_treads] = values["num_treads"]
           last_values[:tread_run] = values["tread_run"]
           last_values[:total_tread_run] = values["total_tread_run"]
           last_values[:stair_rise] = values["stair_rise"]
           last_values[:total_rise] = values["total_rise"]
-          
+
           dialog.close
-          
+
           # Create the stairs with the parameters
           create_stairs_geometry(values)
-          
+
           # Display parameters
           puts "Stair parameters:"
           puts "  Number of Treads: #{values["num_treads"]}"
@@ -331,11 +331,11 @@ module Viewrail
           puts "  Stair Rise: #{values["stair_rise"].round(2)}\""
           puts "  Total Rise: #{values["total_rise"].round(2)}\""
         end
-        
+
         dialog.add_action_callback("cancel") do |action_context|
           dialog.close
         end
-        
+
         dialog.show
       end
 
@@ -343,7 +343,7 @@ module Viewrail
         # Get the active model and entities
         model = Sketchup.active_model
         entities = model.active_entities
-        
+
         # Extract parameters
         num_treads = params["num_treads"]
         tread_run = params["tread_run"]
@@ -351,56 +351,56 @@ module Viewrail
         total_rise = params["total_rise"]
         total_tread_run = params["total_tread_run"]
         reveal = 1
-        
+
         # Fixed dimensions
         tread_width = 36.0  # Standard stair width
         tread_thickness = stair_rise - reveal # Tread thickness
         riser_thickness = 1.0  # Riser thickness
-        
+
         # Start operation for undo functionality
         model.start_operation('Create Stairs', true)
-        
+
         # Create a group for the entire staircase
         stairs_group = entities.add_group
         stairs_entities = stairs_group.entities
-        
+
         begin
           # Create each step
-          (0..num_treads).each do |i|
+          (1..num_treads).each do |i|
             # Calculate position for this step
-            x_position = (i-1) * tread_run
+            x_position = i * tread_run
             z_position = i * stair_rise
-            
-            # # Create riser (vertical part) - skip first riser at ground level
-            # if i > 0
-            #   riser_points = [
-            #     [x_position - riser_thickness, 0, z_position - stair_rise],
-            #     [x_position - riser_thickness, tread_width, z_position - stair_rise],
-            #     [x_position - riser_thickness, tread_width, z_position],
-            #     [x_position - riser_thickness, 0, z_position]
-            #   ]
-            #   riser_face = stairs_entities.add_face(riser_points)
-            #   riser_face.pushpull(riser_thickness) if riser_face
-            # end
-            
+
+            puts "z position: #{z_position}"
+
             # Create tread (horizontal part) - skip last tread
-            if i < num_treads
+            stack_overhang = 5
+            if i <= num_treads
               tread_points = [
-                [x_position, 0, z_position + stair_rise],
-                [x_position - tread_run - 5, 0, z_position + stair_rise],
-                [x_position - tread_run - 5, tread_width, z_position + stair_rise],
-                [x_position, tread_width, z_position + stair_rise]
+                [x_position,                                        0, z_position],
+                [x_position + tread_run + stack_overhang,           0, z_position],
+                [x_position + tread_run + stack_overhang, tread_width, z_position],
+                [x_position,                              tread_width, z_position]
               ]
               tread_face = stairs_entities.add_face(tread_points)
-              tread_face.pushpull(tread_thickness) if tread_face
+              tread_face.pushpull(-tread_thickness) if tread_face
+
+              nosing_value = 0.75
+              riser_points = [
+                [x_position + nosing_value,                             nosing_value, z_position - tread_thickness],
+                [x_position + tread_run + stack_overhang,               nosing_value, z_position - tread_thickness],
+                [x_position + tread_run + stack_overhang, tread_width - nosing_value, z_position - tread_thickness],
+                [x_position + nosing_value,               tread_width - nosing_value, z_position - tread_thickness]
+              ]
+              riser_face = stairs_entities.add_face(riser_points)
+              riser_face.pushpull(riser_thickness) if riser_face
             end
-          end
-          
+
           ##TODO - Turn this into glass railing with a side parameter for Left, Right, Both, None?
           # # Create stringers (side supports)
           # stringer_width = 2.0
           # stringer_depth = 10.0
-          
+
           # # Left stringer
           # left_stringer_points = [
           #   [0, 0, -stringer_depth],
@@ -410,7 +410,7 @@ module Viewrail
           # ]
           # left_stringer_face = stairs_entities.add_face(left_stringer_points)
           # left_stringer_face.pushpull(stringer_width) if left_stringer_face
-          
+
           # # Right stringer
           # right_stringer_points = [
           #   [0, tread_width - stringer_width, -stringer_depth],
@@ -420,30 +420,30 @@ module Viewrail
           # ]
           # right_stringer_face = stairs_entities.add_face(right_stringer_points)
           # right_stringer_face.pushpull(stringer_width) if right_stringer_face
-          
+
           # Name the group
           stairs_group.name = "Stairs - #{num_treads} treads"
-          
+
           # Store stair parameters as attributes on the group
           stairs_group.set_attribute("stair_generator", "num_treads", num_treads)
           stairs_group.set_attribute("stair_generator", "tread_run", tread_run)
           stairs_group.set_attribute("stair_generator", "total_tread_run", total_tread_run)
           stairs_group.set_attribute("stair_generator", "stair_rise", stair_rise)
           stairs_group.set_attribute("stair_generator", "total_rise", total_rise)
-          
+
           # Commit the operation
           model.commit_operation
-          
+
           # Zoom to fit the new stairs
           Sketchup.active_model.active_view.zoom_extents
-          
+
         rescue => e
           # If there's an error, abort the operation
           model.abort_operation
           UI.messagebox("Error creating stairs: #{e.message}")
         end
-      end      
-      
+      end
+
       def show_about
         UI.messagebox(
           "Stair Generator Extension v2.0.0\n\n" +
@@ -458,15 +458,15 @@ module Viewrail
           "About Stair Generator"
         )
       end
-      
+
     end
-    
+
     # Create toolbar
     unless file_loaded?(__FILE__)
-      
+
       # Create the toolbar
       toolbar = UI::Toolbar.new("Stair Generator")
-      
+
       # Create commands
       cmd_stairs = UI::Command.new("Create Stairs") {
         self.add_stair_menu
@@ -476,7 +476,7 @@ module Viewrail
       cmd_stairs.tooltip = "Create Stairs"
       cmd_stairs.status_bar_text = "Create parametric stairs with customizable dimensions"
       cmd_stairs.menu_text = "Create Stairs"
-      
+
       cmd_about = UI::Command.new("About") {
         self.show_about
       }
@@ -485,30 +485,30 @@ module Viewrail
       cmd_about.tooltip = "About Stair Generator"
       cmd_about.status_bar_text = "About Stair Generator Extension"
       cmd_about.menu_text = "About"
-      
+
       # Add commands to toolbar
       toolbar = toolbar.add_item(cmd_stairs)
       toolbar = toolbar.add_separator
       toolbar = toolbar.add_item(cmd_about)
-      
+
       # Show the toolbar
       toolbar.show
-      
+
       # Create menu
       menu = UI.menu("Extensions")
       stairs_menu = menu.add_submenu("Stair Generator")
       stairs_menu.add_item(cmd_stairs)
       stairs_menu.add_separator
       stairs_menu.add_item(cmd_about)
-      
+
       # Create context menu items (right-click menu)
       UI.add_context_menu_handler do |context_menu|
         context_menu.add_separator
         stairs_context = context_menu.add_submenu("Stair Generator")
         stairs_context.add_item(cmd_stairs)
       end
-      
+
       file_loaded(__FILE__)
-    end    
+    end
   end
 end
