@@ -368,7 +368,7 @@ module Viewrail
           # Create each step
           (1..num_treads).each do |i|
             # Calculate position for this step
-            x_position = i * tread_run
+            x_position = (i - 1) * tread_run
             z_position = i * stair_rise
 
             puts "z position: #{z_position}"
@@ -395,6 +395,7 @@ module Viewrail
               riser_face = stairs_entities.add_face(riser_points)
               riser_face.pushpull(riser_thickness) if riser_face
             end
+          end
 
           ##TODO - Turn this into glass railing with a side parameter for Left, Right, Both, None?
           # # Create stringers (side supports)
