@@ -1,6 +1,6 @@
 module Viewrail
   module StairGenerator
-    #Version 5 - Stair Generator
+    #Version 5 - Stair Generator with Glass Railings
     class << self
 
       # Initialize last values at class level
@@ -10,7 +10,8 @@ module Viewrail
           :tread_run => 11.0,
           :total_tread_run => 143.0,
           :stair_rise => 7.5,
-          :total_rise => 105.0
+          :total_rise => 105.0,
+          :glass_railing => "None"
         }
       end
 
@@ -23,13 +24,13 @@ module Viewrail
             :scrollable => false,
             :resizable => false,
             :width => 500,
-            :height => 550,
+            :height => 720,
             :left => 100,
             :top => 100,
             :min_width => 500,
-            :min_height => 450,
+            :min_height => 720,
             :max_width => 500,
-            :max_height => 750,
+            :max_height => 820,
             :style => UI::HtmlDialog::STYLE_DIALOG
           }
         )
@@ -71,7 +72,7 @@ module Viewrail
               font-weight: bold;
               font-size: 12px;
             }
-            input[type="number"] {
+            input[type="number"], select {
               width: 100%;
               padding: 8px;
               border: 1px solid #ccc;
@@ -79,7 +80,7 @@ module Viewrail
               box-sizing: border-box;
               font-size: 14px;
             }
-            input[type="number"]:focus {
+            input[type="number"]:focus, select:focus {
               outline: none;
               border-color: #0078D7;
               box-shadow: 0 0 5px rgba(0, 120, 215, 0.3);
@@ -130,6 +131,12 @@ module Viewrail
               font-size: 12px;
               color: #555;
             }
+            .full-width-section {
+              clear: both;
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #ddd;
+            }
           </style>
         </head>
         <body>
@@ -177,7 +184,24 @@ module Viewrail
               </div>
             </div>
           </div>
-
+          
+          <div class="full-width-section">
+            <h3>Railing Options</h3>
+            <div class="form-group">
+              <label for="glass_railing">Glass Railing:</label>
+              <select id="glass_railing">
+                <option value="None" #{last_values[:glass_railing] == "None" ? "selected" : ""}>None</option>
+                <option value="Left" #{last_values[:glass_railing] == "Left" ? "selected" : ""}>Left</option>
+                <option value="Right" #{last_values[:glass_railing] == "Right" ? "selected" : ""}>Right</option>
+                <option value="Both" #{last_values[:glass_railing] == "Both" ? "selected" : ""}>Both</option>
+              </select>
+            </div>
+            <div class="info">
+              Glass railings: 36" height, 0.5" thick tempered glass<br>
+              Inset 1" from tread edges
+            </div>
+          </div>
+          
           <div class="button-container">
             <button class="btn-primary" onclick="createStairs()">Create Stairs</button>
             <button class="btn-secondary" onclick="cancel()">Cancel</button>
@@ -192,7 +216,8 @@ module Viewrail
             const totalTreadRunInput = document.getElementById('total_tread_run');
             const stairRiseInput = document.getElementById('stair_rise');
             const totalRiseInput = document.getElementById('total_rise');
-
+            const glassRailingSelect = document.getElementById('glass_railing');
+            
             // Calculate Total Tread Run from Number of Treads and Tread Run
             function calculateTotalTreadRun() {
               if (isUpdating) return;
@@ -287,7 +312,8 @@ module Viewrail
                 tread_run: parseFloat(document.getElementById('tread_run').value),
                 total_tread_run: parseFloat(document.getElementById('total_tread_run').value),
                 stair_rise: parseFloat(document.getElementById('stair_rise').value),
-                total_rise: parseFloat(document.getElementById('total_rise').value)
+                total_rise: parseFloat(document.getElementById('total_rise').value),
+                glass_railing: document.getElementById('glass_railing').value
               };
 
               window.location = 'skp:create_stairs@' + JSON.stringify(values);
@@ -317,7 +343,8 @@ module Viewrail
           last_values[:total_tread_run] = values["total_tread_run"]
           last_values[:stair_rise] = values["stair_rise"]
           last_values[:total_rise] = values["total_rise"]
-
+          last_values[:glass_railing] = values["glass_railing"]
+          
           dialog.close
 
           # Create the stairs with the parameters
@@ -330,6 +357,7 @@ module Viewrail
           puts "  Total Tread Run: #{values["total_tread_run"].round(2)}\""
           puts "  Stair Rise: #{values["stair_rise"].round(2)}\""
           puts "  Total Rise: #{values["total_rise"].round(2)}\""
+          puts "  Glass Railing: #{values["glass_railing"]}"
         end
 
         dialog.add_action_callback("cancel") do |action_context|
@@ -350,13 +378,19 @@ module Viewrail
         stair_rise = params["stair_rise"]
         total_rise = params["total_rise"]
         total_tread_run = params["total_tread_run"]
+        glass_railing = params["glass_railing"]
         reveal = 1
 
         # Fixed dimensions
         tread_width = 36.0  # Standard stair width
         tread_thickness = stair_rise - reveal # Tread thickness
         riser_thickness = 1.0  # Riser thickness
-
+        
+        # Glass panel dimensions
+        glass_thickness = 0.5  # Glass panel thickness (variable for future use)
+        glass_inset = 1.0      # Inset from tread edges
+        glass_height = 36.0    # Height above tread nose
+        
         # Start operation for undo functionality
         model.start_operation('Create Stairs', true)
 
@@ -395,33 +429,85 @@ module Viewrail
               riser_face = stairs_entities.add_face(riser_points)
               riser_face.pushpull(riser_thickness) if riser_face
             end
+          end #treads loop
+          
+          # Create glass railings based on selection
+          if glass_railing != "None"
+            # Create or find glass material
+            materials = model.materials
+            glass_material = materials["Glass_Transparent"]
+            if !glass_material
+              glass_material = materials.add("Glass_Transparent")
+              glass_material.color = [200, 220, 240, 128]  # Light blue with transparency
+              glass_material.alpha = 0.3  # 30% opacity
+            end
+
+            # Glass panel extends 1" beyond last tread
+            panel_extension = 1.0
+            # Bottom edge starts 1" above floor, aligned with back of first tread
+            bottom_x_back = tread_run + 5  # Back of first tread
+            bottom_z = 1.0  # 1" above floor
+            # Top edge extends 1" beyond last tread
+            top_x_end = num_treads * tread_run + 5 + panel_extension
+            top_z = total_rise + glass_height
+            left_y = tread_width - glass_inset - glass_thickness
+            right_y = glass_inset
+
+            # Define panel sides and their properties
+            panel_sides = [
+              {
+                name: "Left",
+                enabled: glass_railing == "Left" || glass_railing == "Both",
+                y: glass_inset,
+                y_min: left_y - 0.01,
+                y_max: left_y + glass_thickness + 0.01,
+                build_points: lambda {
+                  points = []
+                  points << [0, left_y, bottom_z]
+                  points << [bottom_x_back, left_y, bottom_z]
+                  points << [top_x_end, left_y, top_z - glass_height - (2*stair_rise)]
+                  points << [top_x_end, left_y, top_z ]
+                  points << [0, left_y, bottom_z + glass_height]
+                  points
+                }
+              },
+              {
+                name: "Right",
+                enabled: glass_railing == "Right" || glass_railing == "Both",
+                y: tread_width - glass_inset - glass_thickness,
+                y_max: right_y + glass_thickness + 0.01,
+                y_min: right_y - 0.01,
+                build_points: lambda {
+                  points = []
+                  points << [0, right_y, bottom_z]
+                  points << [bottom_x_back, right_y, bottom_z]
+                  points << [top_x_end, right_y, top_z - glass_height - (2*stair_rise)]
+                  points << [top_x_end, right_y, top_z]
+                  points << [0, right_y, bottom_z + glass_height]
+                  points
+                }
+              }
+            ]
+
+            panel_sides.each do |side|
+              next unless side[:enabled]
+              glass_points = side[:build_points].call
+              face = stairs_entities.add_face(glass_points)
+              if face
+                face.pushpull(-glass_thickness)
+                face.material = glass_material
+                face.back_material = glass_material
+                # Apply material to all faces of the extruded glass
+                stairs_entities.grep(Sketchup::Face).each do |f|
+                  if f.bounds.min.y >= side[:y_min] && f.bounds.max.y <= side[:y_max]
+                    f.material = glass_material
+                    f.back_material = glass_material
+                  end
+                end
+              end
+            end
           end
-
-          ##TODO - Turn this into glass railing with a side parameter for Left, Right, Both, None?
-          # # Create stringers (side supports)
-          # stringer_width = 2.0
-          # stringer_depth = 10.0
-
-          # # Left stringer
-          # left_stringer_points = [
-          #   [0, 0, -stringer_depth],
-          #   [total_tread_run, 0, -stringer_depth],
-          #   [total_tread_run, 0, total_rise],
-          #   [0, 0, 0]
-          # ]
-          # left_stringer_face = stairs_entities.add_face(left_stringer_points)
-          # left_stringer_face.pushpull(stringer_width) if left_stringer_face
-
-          # # Right stringer
-          # right_stringer_points = [
-          #   [0, tread_width - stringer_width, -stringer_depth],
-          #   [total_tread_run, tread_width - stringer_width, -stringer_depth],
-          #   [total_tread_run, tread_width - stringer_width, total_rise],
-          #   [0, tread_width - stringer_width, 0]
-          # ]
-          # right_stringer_face = stairs_entities.add_face(right_stringer_points)
-          # right_stringer_face.pushpull(stringer_width) if right_stringer_face
-
+          
           # Name the group
           stairs_group.name = "Stairs - #{num_treads} treads"
 
@@ -431,7 +517,8 @@ module Viewrail
           stairs_group.set_attribute("stair_generator", "total_tread_run", total_tread_run)
           stairs_group.set_attribute("stair_generator", "stair_rise", stair_rise)
           stairs_group.set_attribute("stair_generator", "total_rise", total_rise)
-
+          stairs_group.set_attribute("stair_generator", "glass_railing", glass_railing)
+          
           # Commit the operation
           model.commit_operation
 
@@ -453,7 +540,8 @@ module Viewrail
           "• Customizable tread and rise dimensions\n" +
           "• Automatic calculation of stair rise\n" +
           "• Building code compliance checking\n" +
-          "• 3D stair geometry with stringers\n\n" +
+          "• 3D stair geometry with glass railings\n" +
+          "• Transparent glass side panels\n\n" +
           "© 2025 Viewrail",
           MB_OK,
           "About Stair Generator"
@@ -481,8 +569,8 @@ module Viewrail
       cmd_about = UI::Command.new("About") {
         self.show_about
       }
-      cmd_about.small_icon = "stair_generator/icons/about_16.png"
-      cmd_about.large_icon = "stair_generator/icons/about_24.png"
+      cmd_about.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/logo-black.svg"
+      cmd_about.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/logo-black.svg"
       cmd_about.tooltip = "About Stair Generator"
       cmd_about.status_bar_text = "About Stair Generator Extension"
       cmd_about.menu_text = "About"
