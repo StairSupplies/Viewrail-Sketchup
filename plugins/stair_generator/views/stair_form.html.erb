@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Stair Generator - V2</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      display: flex;
+      gap: 30px;
+    }
+    .column {
+      flex: 1;
+    }
+    h3 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #0078D7;
+      padding-bottom: 5px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    input[type="number"], select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: #0078D7;
+      box-shadow: 0 0 5px rgba(0, 120, 215, 0.3);
+    }
+    input[readonly] {
+      background-color: #e9e9e9;
+    }
+    .button-container {
+      margin-top: 30px;
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+    }
+    button {
+      padding: 10px 25px;
+      margin: 0 10px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .btn-primary {
+      background-color: #0078D7;
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #005ca0;
+    }
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background-color: #545b62;
+    }
+    .error {
+      color: red;
+      font-size: 12px;
+      margin-top: 5px;
+      display: none;
+    }
+    .info {
+      background-color: #e3f2fd;
+      border-left: 4px solid #0078D7;
+      padding: 10px;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #555;
+    }
+    .full-width-section {
+      clear: both;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="column">
+      <h3>Tread Parameters</h3>
+      <div class="form-group">
+        <label for="num_treads">Number of Treads:</label>
+        <input type="number" id="num_treads" value="<%= @last_values[:num_treads] %>" min="1" max="22" step="1">
+        <div class="error" id="treads-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="tread_run">Tread Run (inches):</label>
+        <input type="number" id="tread_run" value="<%= @last_values[:tread_run] %>" min="11" max="13" step="0.25">
+        <div class="error" id="tread-run-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="total_tread_run">Total Tread Run (inches):</label>
+        <input type="number" id="total_tread_run" value="<%= @last_values[:total_tread_run].round(2) %>" readonly>
+        <div class="error" id="total-tread-run-error"></div>
+      </div>
+      <div class="info">
+        Total Tread Run = Number of Treads × Tread Run<br>
+        Standard tread width: 36 inches<br>
+        Standard tread thickness: 1 inch
+      </div>
+    </div>
+
+    <div class="column">
+      <h3>Rise Parameters</h3>
+      <div class="form-group">
+        <label for="total_rise">Total Rise (inches):</label>
+        <input type="number" id="total_rise" value="<%= @last_values[:total_rise].round(3) %>" min="0" step="0.0625">
+        <div class="error" id="total-rise-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="stair_rise">Stair Rise (inches):</label>
+        <input type="number" id="stair_rise" value="<%= @last_values[:stair_rise].round(2) %>" min="6" max="9" step="0.01" readonly>
+        <div class="error" id="rise-error"></div>
+      </div>
+      <div class="info">
+        Stair Rise = Total Rise ÷ (Number of Treads + 1)<br>
+        Stair Rise is calculated automatically<br>
+        Building code: Rise must be 6" to 9"
+      </div>
+    </div>
+  </div>
+
+  <div class="full-width-section">
+    <h3>Railing Options</h3>
+    <div class="form-group">
+      <label for="glass_railing">Glass Railing:</label>
+      <select id="glass_railing">
+        <% ["None", "Left", "Right", "Both"].each do |option| %>
+          <option value="<%= option %>" <%= @last_values[:glass_railing] == option ? "selected" : "" %>><%= option %></option>
+        <% end %>
+      </select>
+    </div>
+    <div class="info">
+      Glass railings: 36" height, 0.5" thick tempered glass<br>
+      Inset 1" from tread edges
+    </div>
+  </div>
+
+  <div class="button-container">
+    <button class="btn-primary" onclick="createStairs()">Create Stairs</button>
+    <button class="btn-secondary" onclick="cancel()">Cancel</button>
+  </div>
+
+  <script>
+    let isUpdating = false;
+
+    // Get input elements
+    const numTreadsInput = document.getElementById('num_treads');
+    const treadRunInput = document.getElementById('tread_run');
+    const totalTreadRunInput = document.getElementById('total_tread_run');
+    const stairRiseInput = document.getElementById('stair_rise');
+    const totalRiseInput = document.getElementById('total_rise');
+    const glassRailingSelect = document.getElementById('glass_railing');
+
+    // Calculate Total Tread Run from Number of Treads and Tread Run
+    function calculateTotalTreadRun() {
+      if (isUpdating) return;
+      isUpdating = true;
+
+      const numTreads = parseInt(numTreadsInput.value) || 0;
+      const treadRun = parseFloat(treadRunInput.value) || 0;
+
+      if (numTreads > 0 && treadRun > 0) {
+        const totalTreadRun = numTreads * treadRun;
+        totalTreadRunInput.value = totalTreadRun.toFixed(2);
+      }
+
+      isUpdating = false;
+      validateInputs();
+    }
+
+    // Calculate Stair Rise from Total Rise and Number of Treads
+    function calculateStairRise() {
+      if (isUpdating) return;
+      isUpdating = true;
+
+      const numTreads = parseInt(numTreadsInput.value) || 0;
+      const totalRise = parseFloat(totalRiseInput.value) || 0;
+
+      if (numTreads > 0 && totalRise > 0) {
+        const stairRise = totalRise / (numTreads + 1);
+        stairRiseInput.value = stairRise.toFixed(2);
+      }
+
+      isUpdating = false;
+      validateInputs();
+    }
+
+    // Add event listeners
+    numTreadsInput.addEventListener('input', function() {
+      calculateTotalTreadRun();
+      calculateStairRise();
+    });
+    treadRunInput.addEventListener('input', calculateTotalTreadRun);
+    totalRiseInput.addEventListener('input', calculateStairRise);
+
+    // Validation function
+    function validateInputs() {
+      let isValid = true;
+
+      // Clear previous errors
+      document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
+
+      // Validate tread parameters
+      const numTreads = parseInt(numTreadsInput.value);
+      const treadRun = parseFloat(treadRunInput.value);
+
+      if (numTreads < 1 || numTreads > 22) {
+        document.getElementById('treads-error').textContent = 'Must be between 1 and 22';
+        document.getElementById('treads-error').style.display = 'block';
+        isValid = false;
+      }
+
+      if (treadRun < 11 || treadRun > 13) {
+        document.getElementById('tread-run-error').textContent = 'Must be between 11" and 13"';
+        document.getElementById('tread-run-error').style.display = 'block';
+        isValid = false;
+      }
+
+      // Validate rise parameters
+      const stairRise = parseFloat(stairRiseInput.value);
+      const totalRise = parseFloat(totalRiseInput.value);
+
+      if (totalRise <= 0 || isNaN(totalRise)) {
+        document.getElementById('total-rise-error').textContent = 'Total rise must be positive';
+        document.getElementById('total-rise-error').style.display = 'block';
+        isValid = false;
+      }
+
+      if (stairRise < 6 || stairRise > 9) {
+        document.getElementById('rise-error').textContent = 'Must be between 6" and 9"';
+        document.getElementById('rise-error').style.display = 'block';
+        isValid = false;
+      }
+
+      return isValid;
+    }
+
+    function createStairs() {
+      if (!validateInputs()) {
+        return;
+      }
+
+      const values = {
+        num_treads: parseInt(document.getElementById('num_treads').value),
+        tread_run: parseFloat(document.getElementById('tread_run').value),
+        total_tread_run: parseFloat(document.getElementById('total_tread_run').value),
+        stair_rise: parseFloat(document.getElementById('stair_rise').value),
+        total_rise: parseFloat(document.getElementById('total_rise').value),
+        glass_railing: document.getElementById('glass_railing').value
+      };
+
+      window.location = 'skp:create_stairs@' + JSON.stringify(values);
+    }
+
+    function cancel() {
+      window.location = 'skp:cancel';
+    }
+
+    // Initial calculations
+    calculateTotalTreadRun();
+    calculateStairRise();
+  </script>
+</body>
+</html>
