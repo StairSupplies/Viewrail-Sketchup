@@ -132,7 +132,7 @@
       <h3 style="margin-top: 30px;">Upper Stairs</h3>
       <div class="form-group">
         <label for="num_treads_upper">Number of Treads (Upper):</label>
-        <input type="number" id="num_treads_upper" value="<%= @last_values[:num_treads_upper] %>" min="1" max="22" step="1">
+        <input type="number" id="num_treads_upper" value="<%= @last_values[:num_treads_upper] %>" min="1" max="22" step="1" readonly>
         <div class="error" id="treads-upper-error"></div>
       </div>
       <div class="form-group">
@@ -189,6 +189,7 @@
         Total Treads = Lower Treads + Upper Treads<br>
         Stair Rise = Total Rise ÷ (Total Treads + 1)<br>
         Landing Height = (Lower Treads + 1) × Stair Rise<br>
+        Upper Treads = ⌊(Header to Wall - Landing Width) ÷ Tread Run⌋<br>
         Building code: Rise must be 6" to 9"
       </div>
 
@@ -211,26 +212,6 @@
     </div>
   </div>
 
-  <div class="full-width-section">
-    <h3>Calculated Values</h3>
-    <div class="subsection">
-      <div style="display: flex; gap: 30px;">
-        <div style="flex: 1;">
-          <strong>Landing Height:</strong> <span id="landing_height_display">0</span>"
-        </div>
-        <div style="flex: 1;">
-          <strong>Total Treads:</strong> <span id="total_treads_display">0</span>
-        </div>
-        <div style="flex: 1;">
-          <strong>Lower Run:</strong> <span id="lower_run_display">0</span>"
-        </div>
-        <div style="flex: 1;">
-          <strong>Upper Run:</strong> <span id="upper_run_display">0</span>"
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="button-container">
     <button class="btn-primary" onclick="createStairs()">Create Landing Stairs</button>
     <button class="btn-secondary" onclick="cancel()">Cancel</button>
@@ -242,6 +223,7 @@
     // Get input elements
     const numTreadsLowerInput = document.getElementById('num_treads_lower');
     const numTreadsUpperInput = document.getElementById('num_treads_upper');
+    const headerToWallInput = document.getElementById('header_to_wall');
     const treadWidthLowerInput = document.getElementById('tread_width_lower');
     const treadWidthUpperInput = document.getElementById('tread_width_upper');
     const landingWidthInput = document.getElementById('landing_width');
@@ -252,11 +234,24 @@
     const turnDirectionSelect = document.getElementById('turn_direction');
     const glassRailingSelect = document.getElementById('glass_railing');
 
-    // Display elements
-    const landingHeightDisplay = document.getElementById('landing_height_display');
-    const totalTreadsDisplay = document.getElementById('total_treads_display');
-    const lowerRunDisplay = document.getElementById('lower_run_display');
-    const upperRunDisplay = document.getElementById('upper_run_display');
+    // Calculate Number of Treads Upper from Header to Wall
+    function calculateUpperTreads() {
+      const headerToWall = parseFloat(headerToWallInput.value) || 0;
+      const landingWidth = parseFloat(landingWidthInput.value) || 36;
+      const treadRun = parseFloat(treadRunInput.value) || 11;
+      
+      if (headerToWall > 0 && landingWidth > 0 && treadRun > 0) {
+        const availableRun = headerToWall - landingWidth;
+        const upperTreads = Math.floor(availableRun / treadRun);
+        
+        // Ensure it's within valid range
+        const validUpperTreads = Math.max(1, Math.min(22, upperTreads));
+        numTreadsUpperInput.value = validUpperTreads;
+        
+        // Trigger rise calculation
+        calculateStairRise();
+      }
+    }
 
     // Auto-update landing dimensions when tread widths change
     function updateLandingDefaults() {
@@ -294,15 +289,6 @@
       if (totalTreads > 0 && totalRise > 0) {
         const stairRise = totalRise / (totalTreads + 1);
         stairRiseInput.value = stairRise.toFixed(2);
-        
-        // Update calculated displays
-        const landingHeight = (numTreadsLower + 1) * stairRise;
-        landingHeightDisplay.textContent = landingHeight.toFixed(2);
-        totalTreadsDisplay.textContent = totalTreads;
-        
-        const treadRun = parseFloat(treadRunInput.value) || 11;
-        lowerRunDisplay.textContent = (numTreadsLower * treadRun).toFixed(2);
-        upperRunDisplay.textContent = (numTreadsUpper * treadRun).toFixed(2);
       }
 
       isUpdating = false;
@@ -311,10 +297,20 @@
 
     // Add event listeners
     numTreadsLowerInput.addEventListener('input', calculateStairRise);
-    numTreadsUpperInput.addEventListener('input', calculateStairRise);
+    headerToWallInput.addEventListener('input', calculateUpperTreads);
+    landingWidthInput.addEventListener('input', function() {
+      this.dataset.userModified = 'true';
+      calculateUpperTreads(); // Recalculate upper treads when landing width changes
+    });
+    landingDepthInput.addEventListener('input', function() {
+      this.dataset.userModified = 'true';
+    });
     treadWidthLowerInput.addEventListener('input', updateLandingDefaults);
     treadWidthUpperInput.addEventListener('input', updateLandingDefaults);
-    treadRunInput.addEventListener('input', calculateStairRise);
+    treadRunInput.addEventListener('input', function() {
+      calculateUpperTreads(); // Recalculate upper treads when tread run changes
+      calculateStairRise();
+    });
     totalRiseInput.addEventListener('input', calculateStairRise);
 
     // Validation function
@@ -332,6 +328,14 @@
       if (numTreadsLower < 1 || numTreadsLower > 22) {
         document.getElementById('treads-lower-error').textContent = 'Must be between 1 and 22';
         document.getElementById('treads-lower-error').style.display = 'block';
+        isValid = false;
+      }
+
+      // Validate Header to Wall
+      const headerToWall = parseFloat(headerToWallInput.value);
+      if (headerToWall < 24 || headerToWall > 240) {
+        document.getElementById('header-to-wall-error').textContent = 'Must be between 24" and 240"';
+        document.getElementById('header-to-wall-error').style.display = 'block';
         isValid = false;
       }
 
@@ -414,6 +418,7 @@
       const values = {
         num_treads_lower: parseInt(numTreadsLowerInput.value),
         num_treads_upper: parseInt(numTreadsUpperInput.value),
+        header_to_wall: parseFloat(headerToWallInput.value),
         tread_width_lower: parseFloat(treadWidthLowerInput.value),
         tread_width_upper: parseFloat(treadWidthUpperInput.value),
         landing_width: parseFloat(landingWidthInput.value),
