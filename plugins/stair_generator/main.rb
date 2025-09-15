@@ -184,7 +184,7 @@ module Viewrail
               </div>
             </div>
           </div>
-          
+
           <div class="full-width-section">
             <h3>Railing Options</h3>
             <div class="form-group">
@@ -201,7 +201,7 @@ module Viewrail
               Inset 1" from tread edges
             </div>
           </div>
-          
+
           <div class="button-container">
             <button class="btn-primary" onclick="createStairs()">Create Stairs</button>
             <button class="btn-secondary" onclick="cancel()">Cancel</button>
@@ -217,7 +217,7 @@ module Viewrail
             const stairRiseInput = document.getElementById('stair_rise');
             const totalRiseInput = document.getElementById('total_rise');
             const glassRailingSelect = document.getElementById('glass_railing');
-            
+
             // Calculate Total Tread Run from Number of Treads and Tread Run
             function calculateTotalTreadRun() {
               if (isUpdating) return;
@@ -344,7 +344,7 @@ module Viewrail
           last_values[:stair_rise] = values["stair_rise"]
           last_values[:total_rise] = values["total_rise"]
           last_values[:glass_railing] = values["glass_railing"]
-          
+
           dialog.close
 
           # Create the stairs with the parameters
@@ -385,12 +385,12 @@ module Viewrail
         tread_width = 36.0  # Standard stair width
         tread_thickness = stair_rise - reveal # Tread thickness
         riser_thickness = 1.0  # Riser thickness
-        
+
         # Glass panel dimensions
         glass_thickness = 0.5  # Glass panel thickness (variable for future use)
         glass_inset = 1.0      # Inset from tread edges
         glass_height = 36.0    # Height above tread nose
-        
+
         # Start operation for undo functionality
         model.start_operation('Create Stairs', true)
 
@@ -430,7 +430,7 @@ module Viewrail
               riser_face.pushpull(riser_thickness) if riser_face
             end
           end #treads loop
-          
+
           # Create glass railings based on selection
           if glass_railing != "None"
             # Create or find glass material
@@ -507,7 +507,7 @@ module Viewrail
               end
             end
           end
-          
+
           # Name the group
           stairs_group.name = "Stairs - #{num_treads} treads"
 
@@ -518,7 +518,7 @@ module Viewrail
           stairs_group.set_attribute("stair_generator", "stair_rise", stair_rise)
           stairs_group.set_attribute("stair_generator", "total_rise", total_rise)
           stairs_group.set_attribute("stair_generator", "glass_railing", glass_railing)
-          
+
           # Commit the operation
           model.commit_operation
 
@@ -560,8 +560,8 @@ module Viewrail
       cmd_stairs = UI::Command.new("Create Stairs") {
         self.add_stair_menu
       }
-      cmd_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_add_24.png"
-      cmd_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_add_32.png"
+      cmd_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_add.svg"
+      cmd_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_add.svg"
       cmd_stairs.tooltip = "Create Stairs"
       cmd_stairs.status_bar_text = "Create parametric stairs with customizable dimensions"
       cmd_stairs.menu_text = "Create Stairs"
