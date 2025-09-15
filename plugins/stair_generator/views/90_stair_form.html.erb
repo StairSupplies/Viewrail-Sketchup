@@ -8,6 +8,7 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
+      padding-bottom: 40px; /* Extra padding at the bottom */
       background-color: #f5f5f5;
     }
     .container {
@@ -120,7 +121,7 @@
       <h3>Lower Stairs</h3>
       <div class="form-group">
         <label for="num_treads_lower">Number of Treads (Lower):</label>
-        <input type="number" id="num_treads_lower" value="<%= @last_values[:num_treads_lower] %>" min="1" max="22" step="1">
+        <input type="number" id="num_treads_lower" value="<%= @last_values[:num_treads_lower] %>" min="1" max="22" step="1" readonly>
         <div class="error" id="treads-lower-error"></div>
       </div>
       <div class="form-group">
@@ -156,7 +157,7 @@
         <label for="turn_direction">Turn Direction:</label>
         <select id="turn_direction">
           <% ["Left", "Right"].each do |option| %>
-            <option value="<%= option %>" <%= @last_values[:turn_direction] == option ? "selected" : "" %>><%= option %> Turn (L-Shape)</option>
+            <option value="<%= option %>" <%= @last_values[:turn_direction] == option ? "selected" : "" %>><%= option %> Turn </option>
           <% end %>
         </select>
       </div>
@@ -186,10 +187,7 @@
       </div>
 
       <div class="info">
-        Total Treads = Lower Treads + Upper Treads<br>
-        Stair Rise = Total Rise ÷ (Total Treads + 1)<br>
-        Landing Height = (Lower Treads + 1) × Stair Rise<br>
-        Upper Treads = ⌊(Header to Wall - Landing Width) ÷ Tread Run⌋<br>
+        Calculator Target Rise is: 7"<br>
         Building code: Rise must be 6" to 9"
       </div>
 
@@ -203,17 +201,13 @@
         </select>
       </div>
       <div class="info">
-        Glass railings: 36" height, 0.5" thick<br>
-        Inset 1" from edges<br>
-        1" gap at landing corners<br>
-        Inner = Inside of L-shape<br>
-        Outer = Outside of L-shape
+        Default Glass railings: 36" height, 1/2" thickness
       </div>
     </div>
   </div>
 
   <div class="button-container">
-    <button class="btn-primary" onclick="createStairs()">Create Landing Stairs</button>
+    <button class="btn-primary" onclick="createStairs()">Create 90</button>
     <button class="btn-secondary" onclick="cancel()">Cancel</button>
   </div>
 
@@ -247,6 +241,59 @@
         // Ensure it's within valid range
         const validUpperTreads = Math.max(1, Math.min(22, upperTreads));
         numTreadsUpperInput.value = validUpperTreads;
+        
+        // After calculating upper treads, calculate lower treads
+        calculateLowerTreads();
+      }
+    }
+
+    // Calculate Number of Treads Lower based on Total Rise and Upper Treads
+    function calculateLowerTreads() {
+      const totalRise = parseFloat(totalRiseInput.value) || 0;
+      const numTreadsUpper = parseInt(numTreadsUpperInput.value) || 0;
+      
+      if (totalRise > 0 && numTreadsUpper >= 0) {
+        // Target rise is 7 inches
+        const targetRise = 7.0;
+        
+        // Calculate total risers needed (treads + 1)
+        const totalRisersNeeded = Math.round(totalRise / targetRise);
+        
+        // Calculate lower treads: total risers - upper treads - 1 (for landing) - 1 (risers = treads + 1)
+        let lowerTreads = totalRisersNeeded - numTreadsUpper - 1 - 1;
+        
+        // Round to nearest integer
+        lowerTreads = Math.round(lowerTreads);
+        
+        // Check if within valid range and adjust if needed to keep rise within code
+        if (lowerTreads < 1) {
+          lowerTreads = 1;
+        }
+        
+        // Calculate what the actual rise would be
+        const totalTreads = lowerTreads + numTreadsUpper;
+        const calculatedRise = totalRise / (totalTreads + 1);
+        
+        // If rise is outside 6-9" range, adjust lower treads
+        if (calculatedRise > 9) {
+          // Rise too high, need more treads
+          while (lowerTreads < 22) {
+            lowerTreads++;
+            const newTotalTreads = lowerTreads + numTreadsUpper;
+            const newRise = totalRise / (newTotalTreads + 1);
+            if (newRise <= 9) break;
+          }
+        } else if (calculatedRise < 6) {
+          // Rise too low, need fewer treads
+          while (lowerTreads > 1) {
+            lowerTreads--;
+            const newTotalTreads = lowerTreads + numTreadsUpper;
+            const newRise = totalRise / (newTotalTreads + 1);
+            if (newRise >= 6) break;
+          }
+        }
+        
+        numTreadsLowerInput.value = lowerTreads;
         
         // Trigger rise calculation
         calculateStairRise();
@@ -296,7 +343,6 @@
     }
 
     // Add event listeners
-    numTreadsLowerInput.addEventListener('input', calculateStairRise);
     headerToWallInput.addEventListener('input', calculateUpperTreads);
     landingWidthInput.addEventListener('input', function() {
       this.dataset.userModified = 'true';
@@ -309,9 +355,11 @@
     treadWidthUpperInput.addEventListener('input', updateLandingDefaults);
     treadRunInput.addEventListener('input', function() {
       calculateUpperTreads(); // Recalculate upper treads when tread run changes
+    });
+    totalRiseInput.addEventListener('input', function() {
+      calculateLowerTreads(); // Calculate lower treads when total rise changes
       calculateStairRise();
     });
-    totalRiseInput.addEventListener('input', calculateStairRise);
 
     // Validation function
     function validateInputs() {
@@ -326,7 +374,7 @@
       const totalTreads = numTreadsLower + numTreadsUpper;
 
       if (numTreadsLower < 1 || numTreadsLower > 22) {
-        document.getElementById('treads-lower-error').textContent = 'Must be between 1 and 22';
+        document.getElementById('treads-lower-error').textContent = 'Calculated value out of range (1-22). Adjust Total Rise or Header to Wall.';
         document.getElementById('treads-lower-error').style.display = 'block';
         isValid = false;
       }
@@ -340,7 +388,7 @@
       }
 
       if (numTreadsUpper < 1 || numTreadsUpper > 22) {
-        document.getElementById('treads-upper-error').textContent = 'Must be between 1 and 22';
+        document.getElementById('treads-upper-error').textContent = 'Calculated value out of range (1-22). Adjust Header to Wall.';
         document.getElementById('treads-upper-error').style.display = 'block';
         isValid = false;
       }
@@ -439,8 +487,22 @@
 
     // Initial calculations
     updateLandingDefaults();
-    calculateUpperTreads();
-    calculateStairRise();
+    calculateUpperTreads(); // This will also trigger calculateLowerTreads()
+    
+    // Auto-resize dialog to fit content
+    window.addEventListener('load', function() {
+      // Small delay to ensure content is fully rendered
+      setTimeout(function() {
+        const bodyHeight = document.body.scrollHeight;
+        const bodyWidth = document.body.scrollWidth;
+        
+        // Send resize request to SketchUp
+        window.location = 'skp:resize_dialog@' + JSON.stringify({
+          width: Math.max(600, bodyWidth),
+          height: Math.max(600, bodyHeight)
+        });
+      }, 100);
+    });
   </script>
 </body>
 </html>

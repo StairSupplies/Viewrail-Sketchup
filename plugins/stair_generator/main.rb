@@ -22,6 +22,7 @@ module Viewrail
         @last_landing_values ||= {
           :num_treads_lower => 6,
           :num_treads_upper => 6,
+          :header_to_wall => 144.0,  # Default 12 feet
           :tread_width_lower => 36.0,
           :tread_width_upper => 36.0,
           :landing_width => 36.0,
@@ -125,16 +126,16 @@ module Viewrail
           {
             :dialog_title => "Stair Form - Landing",
             :preferences_key => "com.viewrail.landing_stair_generator",
-            :scrollable => false,
-            :resizable => false,
+            :scrollable => true,
+            :resizable => true,
             :width => 600,
-            :height => 950,
+            :height => 700,
             :left => 100,
             :top => 50,
             :min_width => 600,
-            :min_height => 950,
-            :max_width => 600,
-            :max_height => 950,
+            :min_height => 600,
+            :max_width => 800,
+            :max_height => 1000,
             :style => UI::HtmlDialog::STYLE_DIALOG
           }
         )
@@ -150,12 +151,18 @@ module Viewrail
         end
 
         # Add callbacks
+        dialog.add_action_callback("resize_dialog") do |action_context, params|
+          dimensions = JSON.parse(params)
+          dialog.set_size(dimensions["width"], dimensions["height"])
+        end
+        
         dialog.add_action_callback("create_landing_stairs") do |action_context, params|
           values = JSON.parse(params)
 
           # Store the values for next time
           last_landing_values[:num_treads_lower] = values["num_treads_lower"]
           last_landing_values[:num_treads_upper] = values["num_treads_upper"]
+          last_landing_values[:header_to_wall] = values["header_to_wall"]
           last_landing_values[:tread_width_lower] = values["tread_width_lower"]
           last_landing_values[:tread_width_upper] = values["tread_width_upper"]
           last_landing_values[:landing_width] = values["landing_width"]
@@ -197,7 +204,7 @@ module Viewrail
         model = Sketchup.active_model
         
         # Start operation for undo functionality
-        model.start_operation('Create Landing Stairs', true)
+        model.start_operation('Create 90', true)
         
         begin
           # Calculate landing height
@@ -672,14 +679,14 @@ module Viewrail
       cmd_stairs.menu_text = "Create Straight Stairs"
 
       # Create command for landing stairs
-      cmd_landing_stairs = UI::Command.new("Create Landing Stairs") {
+      cmd_landing_stairs = UI::Command.new("Create 90") {
         self.add_landing_stair_menu
       }
       cmd_landing_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_landing.svg"
       cmd_landing_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_landing.svg"
       cmd_landing_stairs.tooltip = "Create L-Shaped Stairs with Landing"
       cmd_landing_stairs.status_bar_text = "Create L-shaped stairs with landing platform"
-      cmd_landing_stairs.menu_text = "Create Landing Stairs"
+      cmd_landing_stairs.menu_text = "Create 90 System Stairs"
 
       cmd_about = UI::Command.new("About") {
         self.show_about
