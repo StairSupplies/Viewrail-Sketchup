@@ -124,7 +124,7 @@ module Viewrail
         # Create the HTML dialog for landing stairs
         dialog = UI::HtmlDialog.new(
           {
-            :dialog_title => "Stair Form - Landing",
+            :dialog_title => "Stair Form - 90",
             :preferences_key => "com.viewrail.landing_stair_generator",
             :scrollable => true,
             :resizable => true,
