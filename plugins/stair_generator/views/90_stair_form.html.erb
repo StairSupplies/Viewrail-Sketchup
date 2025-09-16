@@ -121,7 +121,7 @@
       <h3>Lower Stairs</h3>
       <div class="form-group">
         <label for="num_treads_lower">Number of Treads (Lower):</label>
-        <input type="number" id="num_treads_lower" value="<%= @last_values[:num_treads_lower] %>" min="1" max="22" step="1" readonly>
+        <input type="number" id="num_treads_lower" value="<%= @last_values[:num_treads_lower] %>" min="1" max="22" step="1">
         <div class="error" id="treads-lower-error"></div>
       </div>
       <div class="form-group">
@@ -133,7 +133,7 @@
       <h3 style="margin-top: 30px;">Upper Stairs</h3>
       <div class="form-group">
         <label for="num_treads_upper">Number of Treads (Upper):</label>
-        <input type="number" id="num_treads_upper" value="<%= @last_values[:num_treads_upper] %>" min="1" max="22" step="1" readonly>
+        <input type="number" id="num_treads_upper" value="<%= @last_values[:num_treads_upper] %>" min="1" max="22" step="1">
         <div class="error" id="treads-upper-error"></div>
       </div>
       <div class="form-group">
@@ -301,17 +301,20 @@
     }
 
     // Auto-update landing dimensions when tread widths change
-    function updateLandingDefaults() {
+    function checkLandingSize() {
       const lowerWidth = parseFloat(treadWidthLowerInput.value) || 36;
       const upperWidth = parseFloat(treadWidthUpperInput.value) || 36;
+      const landingWidth = parseFloat(landingWidthInput.value) || 36;
+      const landingDepth = parseFloat(landingDepthInput.value) || 36;
       
-      // Only update if the landing values are still at default
-      // (This logic can be refined based on your needs)
-      if (!landingWidthInput.dataset.userModified) {
-        landingWidthInput.value = Math.max(lowerWidth, upperWidth);
+      // Make Sure landing width is equal to or greater than lowerWidth and that landing depth is equal to or greater than upperWidth
+      if (landingWidth < lowerWidth) {
+        landingWidthInput.value = lowerWidth;
+        calculateUpperTreads(); // Recalculate upper treads when landing width changes
+        calculateLowerTreads(); // Recalculate lower treads when landing width changes
       }
-      if (!landingDepthInput.dataset.userModified) {
-        landingDepthInput.value = Math.max(lowerWidth, upperWidth);
+      if (landingDepth < upperWidth) {
+        landingDepthInput.value = upperWidth;
       }
     }
 
@@ -342,6 +345,24 @@
       validateInputs();
     }
 
+    // Update Header to Wall when Upper Treads change
+    function updateHeaderToWall() {
+      if (isUpdating) return;
+      isUpdating = true;
+
+      const numTreadsUpper = parseInt(numTreadsUpperInput.value) || 0;
+      const landingWidth = parseFloat(landingWidthInput.value) || 36;
+      const treadRun = parseFloat(treadRunInput.value) || 11;
+
+      if (numTreadsUpper > 0 && landingWidth > 0 && treadRun > 0) {
+        const headerToWall = landingWidth + (numTreadsUpper * treadRun);
+        headerToWallInput.value = headerToWall.toFixed(2);
+      }
+
+      isUpdating = false;
+      validateInputs();
+    }
+
     // Add event listeners
     headerToWallInput.addEventListener('input', calculateUpperTreads);
     landingWidthInput.addEventListener('input', function() {
@@ -351,14 +372,25 @@
     landingDepthInput.addEventListener('input', function() {
       this.dataset.userModified = 'true';
     });
-    treadWidthLowerInput.addEventListener('input', updateLandingDefaults);
-    treadWidthUpperInput.addEventListener('input', updateLandingDefaults);
+    treadWidthLowerInput.addEventListener('input', checkLandingSize);
+    treadWidthUpperInput.addEventListener('input', checkLandingSize);
     treadRunInput.addEventListener('input', function() {
       calculateUpperTreads(); // Recalculate upper treads when tread run changes
     });
     totalRiseInput.addEventListener('input', function() {
       calculateLowerTreads(); // Calculate lower treads when total rise changes
       calculateStairRise();
+    });
+
+    numTreadsLowerInput.addEventListener('input', function() {
+      calculateStairRise();
+      validateInputs();
+    });
+
+    numTreadsUpperInput.addEventListener('input', function() {
+      calculateStairRise();
+      updateHeaderToWall();
+      validateInputs();
     });
 
     // Validation function
@@ -486,7 +518,7 @@
     }
 
     // Initial calculations
-    updateLandingDefaults();
+    checkLandingSize();
     calculateUpperTreads(); // This will also trigger calculateLowerTreads()
     
     // Auto-resize dialog to fit content
