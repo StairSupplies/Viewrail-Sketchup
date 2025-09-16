@@ -128,13 +128,13 @@ module Viewrail
             :preferences_key => "com.viewrail.landing_stair_generator",
             :scrollable => true,
             :resizable => true,
-            :width => 600,
+            :width => 650,
             :height => 700,
             :left => 100,
             :top => 50,
-            :min_width => 600,
-            :min_height => 600,
-            :max_width => 800,
+            :min_width => 625,
+            :min_height => 650,
+            :max_width => 750,
             :max_height => 1000,
             :style => UI::HtmlDialog::STYLE_DIALOG
           }

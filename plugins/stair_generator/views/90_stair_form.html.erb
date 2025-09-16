@@ -8,7 +8,7 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
-      padding-bottom: 40px; /* Extra padding at the bottom */
+      padding-bottom: 20px; /* Extra padding at the bottom */
       background-color: #f5f5f5;
     }
     .container {
@@ -17,6 +17,7 @@
     }
     .column {
       flex: 1;
+      width: 200px;
     }
     h3 {
       margin-top: 0;
@@ -26,16 +27,21 @@
     }
     .form-group {
       margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     label {
-      display: block;
-      margin-bottom: 5px;
+      flex: 0 0 auto;
+      min-width: 180px;
       color: #555;
       font-weight: bold;
       font-size: 12px;
+      text-align: left;
+      padding-right: 10px;
     }
     input[type="number"], select {
-      width: 100%;
+      width: 90px;
       padding: 8px;
       border: 1px solid #ccc;
       border-radius: 4px;
@@ -118,6 +124,47 @@
 <body>
   <div class="container">
     <div class="column">
+      <h3>Overall System</h3>      
+      <div class="form-group">
+        <label for="total_rise">Total Rise (inches):</label>
+        <input type="number" id="total_rise" value="<%= @last_values[:total_rise] %>" min="0" step="0.0625">
+        <div class="error" id="total-rise-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="header_to_wall">Header to Wall (inches):</label>
+        <input type="number" id="header_to_wall" value="<%= @last_values[:header_to_wall] %>" min="24" max="240" step="0.25">
+        <div class="error" id="header-to-wall-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="tread_run">Tread Run (inches):</label>
+        <input type="number" id="tread_run" value="<%= @last_values[:tread_run] %>" min="11" max="13" step="0.25">
+        <div class="error" id="tread-run-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="stair_rise">Stair Rise (inches):</label>
+        <input type="number" id="stair_rise" value="<%= @last_values[:stair_rise] %>" min="6" max="9" step="0.01" readonly>
+        <div class="error" id="rise-error"></div>
+      </div>
+
+      <div class="info">
+        Calculator Target Rise is: 7"<br>
+        Building code: Rise must be 6" to 9"
+      </div>
+
+      <h3 style="margin-top: 30px;">Railing Options</h3>
+      <div class="form-group">
+        <label for="glass_railing">Glass Railing:</label>
+        <select id="glass_railing">
+          <% ["None", "Inner", "Outer", "Both"].each do |option| %>
+            <option value="<%= option %>" <%= @last_values[:glass_railing] == option ? "selected" : "" %>><%= option %></option>
+          <% end %>
+        </select>
+      </div>
+      <div class="info">
+        Default Glass railings: 36" height, 1/2" thickness
+      </div>
+    </div>
+    <div class="column">
       <h3>Lower Stairs</h3>
       <div class="form-group">
         <label for="num_treads_lower">Number of Treads (Lower):</label>
@@ -157,53 +204,11 @@
         <label for="turn_direction">Turn Direction:</label>
         <select id="turn_direction">
           <% ["Left", "Right"].each do |option| %>
-            <option value="<%= option %>" <%= @last_values[:turn_direction] == option ? "selected" : "" %>><%= option %> Turn </option>
+            <option value="<%= option %>" <%= @last_values[:turn_direction] == option ? "selected" : "" %>><%= option %></option>
           <% end %>
         </select>
       </div>
-    </div>
-
-    <div class="column">
-      <h3>Shared Parameters</h3>
-      <div class="form-group">
-        <label for="tread_run">Tread Run (inches):</label>
-        <input type="number" id="tread_run" value="<%= @last_values[:tread_run] %>" min="11" max="13" step="0.25">
-        <div class="error" id="tread-run-error"></div>
-      </div>
-      <div class="form-group">
-        <label for="total_rise">Total Rise (inches):</label>
-        <input type="number" id="total_rise" value="<%= @last_values[:total_rise] %>" min="0" step="0.0625">
-        <div class="error" id="total-rise-error"></div>
-      </div>
-      <div class="form-group">
-        <label for="header_to_wall">Header to Wall (inches):</label>
-        <input type="number" id="header_to_wall" value="<%= @last_values[:header_to_wall] %>" min="24" max="240" step="0.25">
-        <div class="error" id="header-to-wall-error"></div>
-      </div>
-      <div class="form-group">
-        <label for="stair_rise">Stair Rise (inches):</label>
-        <input type="number" id="stair_rise" value="<%= @last_values[:stair_rise] %>" min="6" max="9" step="0.01" readonly>
-        <div class="error" id="rise-error"></div>
-      </div>
-
-      <div class="info">
-        Calculator Target Rise is: 7"<br>
-        Building code: Rise must be 6" to 9"
-      </div>
-
-      <h3 style="margin-top: 30px;">Railing Options</h3>
-      <div class="form-group">
-        <label for="glass_railing">Glass Railing:</label>
-        <select id="glass_railing">
-          <% ["None", "Inner", "Outer", "Both"].each do |option| %>
-            <option value="<%= option %>" <%= @last_values[:glass_railing] == option ? "selected" : "" %>><%= option %></option>
-          <% end %>
-        </select>
-      </div>
-      <div class="info">
-        Default Glass railings: 36" height, 1/2" thickness
-      </div>
-    </div>
+    </div>    
   </div>
 
   <div class="button-container">
