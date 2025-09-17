@@ -226,18 +226,18 @@ module Viewrail
               # For left turn, adjust railings
               case params["glass_railing"]
               when "Inner"
-                lower_params["glass_railing"] = "Right"
-              when "Outer"
                 lower_params["glass_railing"] = "Left"
+              when "Outer"
+                lower_params["glass_railing"] = "Right"
               when "Both"
                 lower_params["glass_railing"] = "Both"
               end
             else # Right turn
               case params["glass_railing"]
               when "Inner"
-                lower_params["glass_railing"] = "Left"
-              when "Outer"
                 lower_params["glass_railing"] = "Right"
+              when "Outer"
+                lower_params["glass_railing"] = "Left"
               when "Both"
                 lower_params["glass_railing"] = "Both"
               end
@@ -570,20 +570,16 @@ module Viewrail
         if turn_direction == "Left"
           case glass_railing
           when "Inner"
-            edges_to_rail = ["front", "right"]  # Inner corner
-          when "Outer"
-            edges_to_rail = ["back", "left"]    # Outer edges
-          when "Both"
-            edges_to_rail = ["front", "right", "back", "left"]
+            #do nothing, for now
+          when "Outer", "Both"
+            edges_to_rail = ["front", "right"]    # Outer edges
           end
         else # Right turn
           case glass_railing
           when "Inner"
-            edges_to_rail = ["front", "left"]   # Inner corner
-          when "Outer"
+            #do nothing, for now
+          when "Outer", "Both"
             edges_to_rail = ["back", "right"]   # Outer edges
-          when "Both"
-            edges_to_rail = ["front", "right", "back", "left"]
           end
         end
 
