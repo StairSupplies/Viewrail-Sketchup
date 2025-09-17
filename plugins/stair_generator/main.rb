@@ -424,7 +424,7 @@ module Viewrail
         model = Sketchup.active_model
         entities = model.active_entities
 
-        width = params["width"]
+        width = params["width"] + 5  # Add overhang
         depth = params["depth"]
         thickness = params["thickness"]
         glass_railing = params["glass_railing"] || "None"
@@ -442,8 +442,23 @@ module Viewrail
           [0, width, 0]
         ]
 
+        # Create riser
+          nosing_value = 0.75
+          reveal = 1
+          riser_thickness = 1.0
+          riser_points = [
+            [nosing_value, nosing_value, -(thickness+reveal)],
+            [5, nosing_value, -(thickness+reveal)],
+            [5, width - nosing_value, -(thickness+reveal)],
+            [nosing_value, width - nosing_value, -(thickness+reveal)]
+          ]
+          
+
         landing_face = landing_entities.add_face(landing_points)
         landing_face.pushpull(thickness) if landing_face
+
+        riser_face = landing_entities.add_face(riser_points)
+        riser_face.pushpull(riser_thickness) if riser_face
 
         # Add glass railings to landing if specified
         if glass_railing != "None"
@@ -453,6 +468,8 @@ module Viewrail
 
         # Apply position transformation
         transform = Geom::Transformation.new(position)
+        # If right turn, shift the landing 5" to align properly
+        transform = Geom::Transformation.new([position[0], position[1] - 5, position[2]]) unless turn_direction == "Left"
         landing_group.transform!(transform)
 
         # Name the group
