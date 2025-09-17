@@ -327,7 +327,7 @@ module Viewrail
 
           # Add all groups to master group
           stair_group = model.active_entities.add_group([lower_stairs, landing, upper_stairs])
-          stair_component = stair_group.to_component
+          # stair_component = stair_group.to_component
 
           # Commit the operation
           model.commit_operation
