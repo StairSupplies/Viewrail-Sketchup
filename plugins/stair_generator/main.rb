@@ -248,6 +248,7 @@ module Viewrail
           
           # Calculate landing position (at the end of lower stairs)
           landing_x = params["num_treads_lower"] * params["tread_run"]
+          landing_y = 0
           landing_z = landing_height
           
           # Create landing
@@ -259,26 +260,26 @@ module Viewrail
               "glass_railing" => params["glass_railing"],
               "turn_direction" => params["turn_direction"]
             },
-            [landing_x, 0, landing_z]
+            [landing_x, landing_y, landing_z]
           )
           
           # Calculate upper stairs position based on turn direction
           if params["turn_direction"] == "Left"
-            # Left turn: upper stairs go in negative Y direction
-            upper_start = [
-              landing_x,
-              -params["landing_depth"],
-              landing_z
-            ]
-            upper_rotation = -90.degrees
-          else
-            # Right turn: upper stairs go in positive Y direction
+            # Left turn: upper stairs go in positive Y direction
             upper_start = [
               landing_x + params["landing_depth"],
-              params["tread_width_lower"],
+              landing_y + params["landing_depth"],
               landing_z
             ]
             upper_rotation = 90.degrees
+          else
+            # Right turn: upper stairs go in positive (switch to negative) Y direction
+            upper_start = [
+              landing_x,
+              landing_y,
+              landing_z
+            ]
+            upper_rotation = -90.degrees
           end
           
           # Create upper stairs segment
@@ -438,7 +439,7 @@ module Viewrail
         ]
         
         landing_face = landing_entities.add_face(landing_points)
-        landing_face.pushpull(-thickness) if landing_face
+        landing_face.pushpull(thickness) if landing_face
         
         # Add glass railings to landing if specified
         if glass_railing != "None"
