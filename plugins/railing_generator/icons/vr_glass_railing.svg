@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img" aria-labelledby="title desc" fill="none">
+  <title id="title">Add glass balcony railing</title>
+  <desc id="desc">Icon with tinted glass panels, balcony rail, and add badge</desc>
+
+  <!-- Styles (locked to your scheme) -->
+  <style>
+    .line { stroke:#363545; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+    .accent { stroke:#109ad7; }
+    .glass { fill:#109ad7; fill-opacity:0.25; }
+  </style>
+
+  <!-- Balcony slab (double line) -->
+  <path class="line" d="M3 18.5h12.5"/>
+  <path class="line" d="M3 20.5h12.5"/>
+
+  <!-- Posts & top rail -->
+  <path class="line" d="M5.25 10.5v8"/>
+  <path class="line" d="M12.75 10.5v8"/>
+  <path class="line" d="M4.25 9.5h10.5"/>
+
+  <!-- Glass panels -->
+  <rect class="glass" x="5.75" y="11" width="2.75" height="5.5" rx="0.5"/>
+  <rect class="glass" x="9.5" y="11" width="2.75" height="5.5" rx="0.5"/>
+
+  <!-- Add badge: dark ring + accent plus -->
+  <path class="line accent" d="M19 5.9v2.2"/>
+  <path class="line accent" d="M17.9 7h2.2"/>
+</svg>

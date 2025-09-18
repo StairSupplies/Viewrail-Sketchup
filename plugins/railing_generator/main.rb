@@ -1,0 +1,64 @@
+# railing_generator/main.rb
+require_relative '../viewrail_shared/utilities'
+require_relative 'tools/glass_railing_tool'
+
+module Viewrail
+  module RailingGenerator
+    class << self
+      def show_about
+        UI.messagebox(
+          "Railing Generator Extension v1.0.0\n\n" +
+          "Creates various types of railings for architectural visualization.\n\n" +
+          "Features:\n" +
+          "• Glass railing systems\n" +
+          "• Cable railing systems (coming soon)\n" +
+          "• Customizable dimensions and spacing\n" +
+          "• Live preview while drawing\n\n" +
+          "© 2025 Viewrail",
+          MB_OK,
+          "About Railing Generator"
+        )
+      end
+    end
+    
+    # Create toolbar and menu
+    unless file_loaded?(__FILE__)
+      toolbar = UI::Toolbar.new("Railing Generator")
+      
+      # Glass railing command
+      cmd_glass_railing = UI::Command.new("Glass Railing") {
+        Sketchup.active_model.select_tool(Tools::GlassRailingTool.new)
+      }
+      cmd_glass_railing.small_icon = "C:/Viewrail-Sketchup/plugins/railing_generator/icons/vr_glass_railing.svg"
+      cmd_glass_railing.large_icon = "C:/Viewrail-Sketchup/plugins/railing_generator/icons/vr_glass_railing.svg"
+      cmd_glass_railing.tooltip = "Create Glass Railing"
+      cmd_glass_railing.status_bar_text = "Draw a path to create glass railings"
+      cmd_glass_railing.menu_text = "Glass Railing"
+      
+      # About command
+      cmd_about = UI::Command.new("About") {
+        show_about
+      }
+      cmd_about.small_icon = File.join(File.dirname(__FILE__), "icons", "vr_railing_about.svg")
+      cmd_about.large_icon = File.join(File.dirname(__FILE__), "icons", "vr_railing_about.svg")
+      cmd_about.tooltip = "About Railing Generator"
+      cmd_about.status_bar_text = "About Railing Generator Extension"
+      cmd_about.menu_text = "About"
+      
+      # Build toolbar
+      toolbar = toolbar.add_item(cmd_glass_railing)
+      toolbar = toolbar.add_separator
+      toolbar = toolbar.add_item(cmd_about)
+      toolbar.show
+      
+      # Create menu
+      menu = UI.menu("Extensions")
+      railing_menu = menu.add_submenu("Railing Generator")
+      railing_menu.add_item(cmd_glass_railing)
+      railing_menu.add_separator
+      railing_menu.add_item(cmd_about)
+      
+      file_loaded(__FILE__)
+    end
+  end
+end
