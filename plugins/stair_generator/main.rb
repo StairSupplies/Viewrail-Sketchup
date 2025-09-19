@@ -448,8 +448,8 @@ module Viewrail
       cmd_stairs = UI::Command.new("Create Straight Stairs") {
         self.add_stair_menu
       }
-      cmd_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_add.svg"
-      cmd_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_add.svg"
+      cmd_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_straight.svg"
+      cmd_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_straight.svg"
       cmd_stairs.tooltip = "Create Straight Stairs"
       cmd_stairs.status_bar_text = "Create parametric straight stairs with customizable dimensions"
       cmd_stairs.menu_text = "Create Straight Stairs"
@@ -458,9 +458,9 @@ module Viewrail
       cmd_landing_stairs = UI::Command.new("Create 90") {
         self.add_landing_stair_menu
       }
-      cmd_landing_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_landing.svg"
-      cmd_landing_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/vr_stair_landing.svg"
-      cmd_landing_stairs.tooltip = "Create L-Shaped Stairs with Landing"
+      cmd_landing_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_90.svg"
+      cmd_landing_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_90.svg"
+      cmd_landing_stairs.tooltip = "Create 90 Stairs"
       cmd_landing_stairs.status_bar_text = "Create L-shaped stairs with landing platform"
       cmd_landing_stairs.menu_text = "Create 90 System Stairs"
       
