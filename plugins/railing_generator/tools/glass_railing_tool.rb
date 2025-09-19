@@ -22,6 +22,13 @@ module Viewrail
           @glass_recess = 0.851      # How deep glass goes into handrail
           @corner_radius = 0.160
           
+          # Base channel dimensions
+          @include_base_channel = true  # Make this configurable via dialog
+          @base_channel_width = 2.5
+          @base_channel_height = 4.188
+          @glass_bottom_offset = 1.188  # Height of glass bottom above floor
+          @base_corner_radius = 0.0625
+
           # Calculate glass height based on handrail
           @glass_height = @include_handrail ? 
             @total_height - @handrail_height + @glass_recess : 
@@ -49,6 +56,11 @@ module Viewrail
             # Create continuous handrail if enabled
             if @include_handrail
               create_continuous_handrail(main_group, aluminum_material)
+            end
+
+            # Create base channel first (bottom layer)
+            if @include_base_channel
+              create_continuous_base_channel(main_group, aluminum_material)
             end
             
             model.commit_operation
@@ -113,6 +125,101 @@ module Viewrail
                       f.back_material = glass_material
                     end
                   end
+                end
+              end
+            end
+          end
+        end
+        
+        def create_continuous_base_channel(main_group, aluminum_material)
+          base_group = main_group.entities.add_group
+          base_group.name = "Base Channel"
+          
+          # Calculate base channel path with offsets
+          base_path = []
+          @points.each_with_index do |pt, i|
+            if i == 0
+              # First point
+              next_pt = @points[i + 1]
+              vec = next_pt - pt
+              vec.normalize!
+              perp = Geom::Vector3d.new(-vec.y, vec.x, 0)
+              offset_pt = pt.offset(perp, @offset_distance - @glass_thickness/2.0)
+              base_path << [offset_pt.x, offset_pt.y, offset_pt.z]
+            elsif i == @points.length - 1
+              # Last point
+              prev_pt = @points[i - 1]
+              vec = pt - prev_pt
+              vec.normalize!
+              perp = Geom::Vector3d.new(-vec.y, vec.x, 0)
+              offset_pt = pt.offset(perp, @offset_distance - @glass_thickness/2.0)
+              base_path << [offset_pt.x, offset_pt.y, offset_pt.z]
+            else
+              # Middle points - calculate miter
+              prev_pt = @points[i - 1]
+              next_pt = @points[i + 1]
+              
+              vec1 = pt - prev_pt
+              vec1.normalize!
+              vec2 = next_pt - pt
+              vec2.normalize!
+              
+              # Calculate bisector for miter
+              bisector = vec1 + vec2
+              bisector.normalize!
+              
+              # Calculate perpendicular
+              perp = Geom::Vector3d.new(-bisector.y, bisector.x, 0)
+              
+              # Calculate miter offset distance
+              angle = vec1.angle_between(vec2)
+              miter_factor = 1.0 / Math.cos(angle / 2.0)
+              offset_distance = (@offset_distance + @glass_thickness/2.0) * miter_factor
+              
+              offset_pt = pt.offset(perp, offset_distance)
+              base_path << [offset_pt.x, offset_pt.y, offset_pt.z]
+            end
+          end
+          
+          # Extrude base channel along path
+          (0...base_path.length - 1).each do |i|
+            start_pt = Geom::Point3d.new(base_path[i])
+            end_pt = Geom::Point3d.new(base_path[i + 1])
+            
+            vec = end_pt - start_pt
+            segment_length = vec.length
+            vec.normalize!
+            
+            # Create perpendicular vector
+            perp_vec = Geom::Vector3d.new(-vec.y, vec.x, 0)
+            
+            # Create base channel cross-section
+            half_width = @base_channel_width / 2.0
+            
+            # Simple rectangular profile (softened edges will handle rounding visually)
+            profile_points = []
+            profile_points << start_pt.offset(perp_vec, -half_width)
+            profile_points << start_pt.offset(perp_vec, -half_width).offset([0,0,1], @base_channel_height)
+            profile_points << start_pt.offset(perp_vec, half_width).offset([0,0,1], @base_channel_height)
+            profile_points << start_pt.offset(perp_vec, half_width)
+            
+            face = base_group.entities.add_face(profile_points)
+            if face
+              face.pushpull(-segment_length, vec)
+              
+              # Apply aluminum material
+              base_group.entities.grep(Sketchup::Face).each do |f|
+                f.material = aluminum_material
+                f.back_material = aluminum_material
+              end
+              
+              # Soften vertical edges for rounded appearance
+              base_group.entities.grep(Sketchup::Edge).each do |edge|
+                # Soften vertical edges (those parallel to Z-axis)
+                edge_vec = edge.line[1]
+                if edge_vec.parallel?([0,0,1])
+                  edge.soft = true
+                  edge.smooth = true
                 end
               end
             end
