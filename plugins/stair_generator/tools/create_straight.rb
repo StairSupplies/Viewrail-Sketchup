@@ -4,11 +4,11 @@ require_relative '../../viewrail_shared/utilities'
 module Viewrail
   module StairGenerator
     module Tools
-      class AddStraightStairMenu
+      class StraightStairMenu
         def self.show
           # Get persistent values from the main module
           last_values = Viewrail::StairGenerator.last_form_values(:straight)
-          
+
           # Create the HTML dialog
           dialog = UI::HtmlDialog.new(
             {
@@ -73,7 +73,7 @@ module Viewrail
 
           dialog.show
         end
-      end # class AddStraightStairMenu
+      end # class StraightStairMenu
     end # module Tools
   end # module StairGenerator
 end # module Viewrail

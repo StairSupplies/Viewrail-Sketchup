@@ -1,7 +1,7 @@
 require 'erb'
 require_relative '../viewrail_shared/utilities'
 require_relative 'tools/create_90'
-require_relative 'tools/create_straight' 
+require_relative 'tools/create_straight'
 module Viewrail
   module StairGenerator
     #Version 8 - Stair Generator
@@ -46,11 +46,11 @@ module Viewrail
       end
 
       def add_stair_menu
-        Viewrail::StairGenerator::Tools::AddStraightStairMenu.show
+        Viewrail::StairGenerator::Tools::StraightStairMenu.show
       end
 
       def add_landing_stair_menu
-        Viewrail::StairGenerator::Tools::Add90StairMenu.show
+        Viewrail::StairGenerator::Tools::NinetyStairMenu.show
       end
 
       # Create a single stair segment (modular method)
@@ -164,7 +164,7 @@ module Viewrail
             [5, width - nosing_value, -(thickness+reveal)],
             [nosing_value, width - nosing_value, -(thickness+reveal)]
           ]
-          
+
 
         landing_face = landing_entities.add_face(landing_points)
         landing_face.pushpull(thickness) if landing_face
@@ -265,7 +265,7 @@ module Viewrail
           end
         end
       end
-      
+
       def add_glass_railings_to_landing(entities, width, depth, thickness, glass_railing, turn_direction)
         model = Sketchup.active_model
         glass_material = Viewrail::SharedUtilities.get_or_create_glass_material(model)
@@ -354,7 +354,7 @@ module Viewrail
           end
         end
       end
-      
+
       def show_about
         UI.messagebox(
           "Stair Generator Extension v3.0.0\n\n" +
@@ -399,8 +399,8 @@ module Viewrail
       cmd_landing_stairs.tooltip = "Create 90 Stairs"
       cmd_landing_stairs.status_bar_text = "Create L-shaped stairs with landing platform"
       cmd_landing_stairs.menu_text = "Create 90 System Stairs"
-      
-      # Create command for About  
+
+      # Create command for About
       cmd_about = UI::Command.new("About") {
         self.show_about
       }

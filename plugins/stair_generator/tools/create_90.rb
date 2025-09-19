@@ -4,11 +4,11 @@ require_relative '../../viewrail_shared/utilities'
 module Viewrail
   module StairGenerator
     module Tools
-      class Add90StairMenu
+      class NinetyStairMenu
         def self.show
           # Get persistent values from the main module
           last_values = Viewrail::StairGenerator.last_form_values(:landing_90)
-          
+
           # Create the HTML dialog for landing stairs
           dialog = UI::HtmlDialog.new(
             {
@@ -37,7 +37,7 @@ module Viewrail
           UI.messagebox("Error loading landing form template: #{e.message}\n\nPlease check that the template file exists.")
           return
         end
-        
+
         # Add callbacks
         dialog.add_action_callback("resize_dialog") do |action_context, params|
           dimensions = JSON.parse(params)
@@ -227,9 +227,9 @@ module Viewrail
           rescue => e
             model.abort_operation
             UI.messagebox("Error creating landing stairs: #{e.message}")
-          end          
+          end
         end # create_90_geometry
-      end # class Add90StairMenu
+      end # class NinetyStairMenu
     end # module Tools
   end # module StairGenerator
 end # module Viewrail
