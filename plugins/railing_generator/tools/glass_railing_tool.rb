@@ -21,7 +21,7 @@ module Viewrail
             }
           )
 
-           # Render the HTML content from ERB template
+          # Render the HTML content from ERB template
           begin
             renderer = Viewrail::SharedUtilities::FormRenderer.new(last_values)
             html_content = renderer.render("C:/Viewrail-Sketchup/plugins/railing_generator/forms/glass_railing_form.html.erb")
@@ -35,9 +35,6 @@ module Viewrail
           dialog.add_action_callback("create_glass_railing") do |action_context, params|
             begin
               values = JSON.parse(params, symbolize_names: true)
-              
-              # Store the values for next time (if you want persistence)
-              # Viewrail::RailingGenerator.save_form_values(values)
               
               # Create a new instance of the tool
               tool = Viewrail::RailingGenerator::Tools::GlassRailingTool.new
@@ -100,6 +97,13 @@ module Viewrail
           @current_point = nil
           @ip = Sketchup::InputPoint.new
           
+          # Mode control - default to face selection
+          @selection_mode = :face  # :face or :path
+          @selected_faces = []
+          @face_edges = []  # Store extracted edges from faces
+          @hover_face = nil
+          @hover_edge = nil
+          
           # Default configurable variables
           @total_height = 42.0       # Total height including handrail
           @glass_thickness = 0.5     # Thickness of glass panels
@@ -127,19 +131,156 @@ module Viewrail
             @total_height
         end
 
-        def onLButtonDown(flags, x, y, view)
-          @ip.pick(view, x, y)
-          if @ip.valid?
-            pt = @ip.position
-            # Remove this line that forces Z to base_height:
-            # pt.z = @base_height
-            @points << pt
+        def onKeyDown(key, repeat, flags, view)
+          if key == CONSTRAIN_MODIFIER_KEY  # Shift key
+            # Toggle selection mode
+            @selection_mode = @selection_mode == :face ? :path : :face
+            
+            # Clear current selections when switching modes
+            if @selection_mode == :face
+              @points.clear
+              @current_point = nil
+            else
+              @selected_faces.clear
+              @face_edges.clear
+              @hover_face = nil
+              @hover_edge = nil
+            end
+            
             update_status_text
             view.invalidate
           end
         end
+
+        def onKeyUp(key, repeat, flags, view)
+          # Handle key up if needed
+        end
+
+        def onLButtonDown(flags, x, y, view)
+          if @selection_mode == :face
+            # Face selection mode
+            ph = view.pick_helper
+            ph.do_pick(x, y)
+            face = ph.best_picked
+            
+            if face.is_a?(Sketchup::Face)
+              begin
+                # Extract top horizontal edge
+                top_edge_points = extract_top_edge_from_face(face)
+                
+                # Check if this face was already selected (toggle selection)
+                existing_index = @selected_faces.index(face)
+                if existing_index
+                  @selected_faces.delete_at(existing_index)
+                  @face_edges.delete_at(existing_index)
+                else
+                  @selected_faces << face
+                  @face_edges << top_edge_points
+                end
+                
+                update_status_text
+                view.invalidate
+              rescue => e
+                UI.messagebox("Error: #{e.message}")
+              end
+            end
+          else
+            # Path drawing mode (original behavior)
+            @ip.pick(view, x, y)
+            if @ip.valid?
+              pt = @ip.position
+              @points << pt
+              update_status_text
+              view.invalidate
+            end
+          end
+        end
         
         def draw(view)
+          if @selection_mode == :face
+            draw_face_selection_mode(view)
+          else
+            draw_path_mode(view)
+          end
+        end
+
+        def draw_face_selection_mode(view)
+          # Highlight selected faces
+          @selected_faces.each_with_index do |face, index|
+            # Draw the face in selection color using triangulated mesh
+            view.drawing_color = [100, 200, 100, 128]  # Green semi-transparent
+            
+            # Get the face mesh for proper triangulation
+            mesh = face.mesh
+            mesh.polygons.each do |polygon|
+              points = []
+              polygon.each do |vertex_index|
+                points << mesh.point_at(vertex_index.abs)
+              end
+              
+              # Draw filled polygon
+              view.draw(GL_POLYGON, points)
+            end
+            
+            # Also draw the face edges for better visibility
+            view.drawing_color = [50, 150, 50, 200]  # Darker green for edges
+            view.line_width = 2
+            face.edges.each do |edge|
+              view.draw_line(edge.vertices[0].position, edge.vertices[1].position)
+            end
+            
+            # Draw the top edge in blue
+            if @face_edges[index]
+              view.drawing_color = "blue"
+              view.line_width = 4
+              edge_points = @face_edges[index]
+              view.draw_line(edge_points[0], edge_points[1])
+              
+              # Draw edge endpoints
+              view.drawing_color = "red"
+              view.draw_points(edge_points[0], 8)
+              view.draw_points(edge_points[1], 8)
+            end
+          end
+          
+          # Highlight hover face
+          if @hover_face && !@selected_faces.include?(@hover_face)
+            view.drawing_color = [150, 150, 200, 64]  # Light blue semi-transparent
+            
+            # Get the face mesh for proper triangulation
+            mesh = @hover_face.mesh
+            mesh.polygons.each do |polygon|
+              points = []
+              polygon.each do |vertex_index|
+                points << mesh.point_at(vertex_index.abs)
+              end
+              
+              # Draw filled polygon
+              view.draw(GL_POLYGON, points)
+            end
+            
+            # Draw hover face edges for visibility
+            view.drawing_color = [100, 100, 200, 128]  # Light blue edges
+            view.line_width = 1
+            @hover_face.edges.each do |edge|
+              view.draw_line(edge.vertices[0].position, edge.vertices[1].position)
+            end
+            
+            # Show the potential top edge
+            if @hover_edge
+              view.drawing_color = [100, 100, 255, 200]
+              view.line_width = 3
+              view.line_stipple = "-"
+              view.draw_line(@hover_edge[0], @hover_edge[1])
+              view.line_stipple = ""
+            end
+          end
+          
+          # Draw preview panels for selected faces
+          draw_face_preview_panels(view)
+        end
+
+        def draw_path_mode(view)
           if @points.length > 0
             view.drawing_color = "blue"
             view.line_width = 4
@@ -163,6 +304,69 @@ module Viewrail
             
             # Draw preview glass panels
             draw_preview_panels(view)
+          end
+        end
+
+        def draw_face_preview_panels(view)
+          return if @face_edges.empty?
+          
+          # For each selected face edge, draw preview panels
+          @face_edges.each_with_index do |edge_points, face_index|
+            face = @selected_faces[face_index]
+            next unless face && edge_points
+            
+            # Calculate offset direction (away from face normal)
+            face_normal = face.normal
+            offset_vector = face_normal.reverse
+            offset_vector.normalize!
+            
+            # Create offset points for the edge
+            start_pt = edge_points[0].offset(offset_vector, @offset_distance)
+            end_pt = edge_points[1].offset(offset_vector, @offset_distance)
+            
+            # Draw preview panels along this edge
+            segment_vector = end_pt - start_pt
+            segment_length = segment_vector.length
+            next if segment_length == 0
+            segment_vector.normalize!
+            
+            # Set preview drawing style
+            view.drawing_color = [100, 150, 200, 128]  # Semi-transparent blue
+            view.line_width = 1
+            view.line_stipple = "-"
+            
+            # Calculate number of panels
+            available_length = segment_length - @panel_gap
+            num_panels = calculate_panel_count(available_length)
+            
+            if num_panels > 0
+              total_gaps = (num_panels - 1) * @panel_gap
+              panel_width = (available_length - total_gaps) / num_panels
+              
+              # Draw each panel outline
+              (0...num_panels).each do |j|
+                panel_start_distance = j * (panel_width + @panel_gap)
+                panel_end_distance = panel_start_distance + panel_width
+                
+                # Calculate panel corners
+                panel_start = start_pt.offset(segment_vector, panel_start_distance)
+                panel_end = start_pt.offset(segment_vector, panel_end_distance)
+                
+                # Draw panel outline
+                bottom_start = panel_start
+                bottom_end = panel_end
+                top_start = Geom::Point3d.new(panel_start.x, panel_start.y, panel_start.z + @glass_height)
+                top_end = Geom::Point3d.new(panel_end.x, panel_end.y, panel_end.z + @glass_height)
+                
+                # Draw the four edges of each panel
+                view.draw_line(bottom_start, bottom_end)
+                view.draw_line(bottom_end, top_end)
+                view.draw_line(top_end, top_start)
+                view.draw_line(top_start, bottom_start)
+              end
+            end
+            
+            view.line_stipple = ""
           end
         end
 
@@ -242,26 +446,58 @@ module Viewrail
         end
         
         def onMouseMove(flags, x, y, view)
-          if flags & CONSTRAIN_MODIFIER_MASK > 0  # Shift key pressed
-            # Lock to axis if we have a previous point
-            if @points.length > 0
-              @ip.pick(view, x, y, @ip)  # Pass previous InputPoint for inference
+          if @selection_mode == :face
+            # Face selection mode - track hover
+            ph = view.pick_helper
+            ph.do_pick(x, y)
+            face = ph.best_picked
+            
+            if face.is_a?(Sketchup::Face)
+              if face != @hover_face
+                @hover_face = face
+                # Try to extract the top edge for preview
+                begin
+                  @hover_edge = extract_top_edge_from_face(face)
+                rescue
+                  @hover_edge = nil
+                end
+                view.invalidate
+              end
+            else
+              if @hover_face
+                @hover_face = nil
+                @hover_edge = nil
+                view.invalidate
+              end
+            end
+            
+            view.tooltip = face.is_a?(Sketchup::Face) ? "Click to select face" : ""
+          else
+            # Path drawing mode (original behavior)
+            if flags & CONSTRAIN_MODIFIER_MASK > 0  # Shift key pressed
+              # Lock to axis if we have a previous point
+              if @points.length > 0
+                @ip.pick(view, x, y, @ip)  # Pass previous InputPoint for inference
+              else
+                @ip.pick(view, x, y)
+              end
             else
               @ip.pick(view, x, y)
             end
-          else
-            @ip.pick(view, x, y)
+            
+            if @ip.valid?
+              @current_point = @ip.position
+              view.tooltip = @ip.tooltip if @ip.tooltip
+            end
+            view.invalidate
           end
-          
-          if @ip.valid?
-            @current_point = @ip.position
-            view.tooltip = @ip.tooltip if @ip.tooltip
-          end
-          view.invalidate
         end
         
         def activate
           @points = []
+          @selected_faces = []
+          @face_edges = []
+          @selection_mode = :face  # Default to face selection
           update_status_text
         end
         
@@ -270,35 +506,132 @@ module Viewrail
         end
         
         def onCancel(reason, view)
-          if @points.empty?
-            Sketchup.active_model.select_tool(nil)
+          if @selection_mode == :face
+            if @selected_faces.empty?
+              Sketchup.active_model.select_tool(nil)
+            else
+              @selected_faces.clear
+              @face_edges.clear
+              update_status_text
+              view.invalidate
+            end
           else
-            @points.clear
-            update_status_text
-            view.invalidate
+            if @points.empty?
+              Sketchup.active_model.select_tool(nil)
+            else
+              @points.clear
+              update_status_text
+              view.invalidate
+            end
           end
         end
         
         def onReturn(view)
-          if @points.length >= 2
-            create_glass_railings
-            @points.clear
-            update_status_text
-            view.invalidate
+          if @selection_mode == :face
+            if @face_edges.length >= 1
+              # Convert face edges to points for railing creation
+              convert_face_edges_to_points
+              create_glass_railings
+              @selected_faces.clear
+              @face_edges.clear
+              @points.clear
+              update_status_text
+              view.invalidate
+            end
+          else
+            if @points.length >= 2
+              create_glass_railings
+              @points.clear
+              update_status_text
+              view.invalidate
+            end
           end
         end
         
         def update_status_text
-          if @points.empty?
-            Sketchup.status_text = "Click to start drawing glass railing path"
-          elsif @points.length == 1
-            Sketchup.status_text = "Click to add next point, Enter to finish, Esc to cancel"
+          if @selection_mode == :face
+            if @selected_faces.empty?
+              Sketchup.status_text = "Click to select face(s) for railing | Shift: Switch to path drawing mode"
+            else
+              count = @selected_faces.length
+              Sketchup.status_text = "#{count} face(s) selected | Enter: Create railing | Esc: Clear | Shift: Switch to path mode"
+            end
           else
-            Sketchup.status_text = "Click to continue, Enter to create railing, Esc to clear"
+            if @points.empty?
+              Sketchup.status_text = "Click to start drawing path | Shift: Switch to face selection mode"
+            elsif @points.length == 1
+              Sketchup.status_text = "Click next point | Enter: Finish | Esc: Cancel | Shift: Switch to face mode"
+            else
+              Sketchup.status_text = "Click to continue | Enter: Create railing | Esc: Clear | Shift: Switch to face mode"
+            end
           end
+        end
+
+        def extract_top_edge_from_face(face)
+          # Find all edges of the face
+          edges = face.edges
+          
+          # Filter for horizontal edges (perpendicular to Z axis)
+          horizontal_edges = edges.select do |edge|
+            edge_vector = edge.line[1]
+            edge_vector.perpendicular?([0, 0, 1])
+          end
+          
+          if horizontal_edges.empty?
+            raise "Face has no horizontal edges"
+          end
+          
+          # Find the edge with the highest Z coordinate
+          top_edge = horizontal_edges.max_by do |edge|
+            # Get average Z of the edge's vertices
+            (edge.vertices[0].position.z + edge.vertices[1].position.z) / 2.0
+          end
+          
+          # Verify the edge is truly horizontal (not angled)
+          v1 = top_edge.vertices[0].position
+          v2 = top_edge.vertices[1].position
+          if (v1.z - v2.z).abs > 0.001  # Tolerance for floating point
+            raise "Top edge is not horizontal (angled)"
+          end
+          
+          # Return the two points of the edge
+          [v1, v2]
+        end
+
+        def convert_face_edges_to_points
+          # Convert face edges to points - each face edge becomes a separate segment
+          # We'll store them as separate segment pairs rather than trying to connect them
+          @points.clear
+          @face_segments = []  # Store face segments separately
+          
+          @face_edges.each_with_index do |edge_points, index|
+            face = @selected_faces[index]
+            
+            # Calculate offset direction (away from face normal)
+            face_normal = face.normal
+            offset_vector = face_normal.reverse
+            offset_vector.normalize!
+            
+            # Create offset points
+            start_pt = edge_points[0].offset(offset_vector, @offset_distance)
+            end_pt = edge_points[1].offset(offset_vector, @offset_distance)
+            
+            # Store as separate segment
+            @face_segments << [start_pt, end_pt]
+          end
+          
+          # For compatibility with existing create_glass_railings,
+          # we'll process each segment separately
+          @selection_mode_backup = @selection_mode
         end
         
         def create_glass_railings
+          # Handle face selection mode differently
+          if @selection_mode == :face && defined?(@face_segments) && @face_segments && !@face_segments.empty?
+            create_glass_railings_from_face_segments
+            return
+          end
+          
           return if @points.length < 2
           
           model = Sketchup.active_model
@@ -335,6 +668,204 @@ module Viewrail
           end
         end
         
+        def create_glass_railings_from_face_segments
+          return if @face_segments.empty?
+          
+          model = Sketchup.active_model
+          model.start_operation('Create Glass Railings from Faces', true)
+          
+          begin
+            entities = model.active_entities
+            main_group = entities.add_group
+            main_group.name = "Glass Railing Assembly"
+            
+            # Get materials
+            glass_material = Viewrail::SharedUtilities.get_or_create_glass_material(model)
+            aluminum_material = get_or_create_aluminum_material(model)
+            
+            # Process each face segment separately
+            @face_segments.each_with_index do |segment_points, index|
+              @points = segment_points  # Temporarily set points for this segment
+              
+              segment_group = main_group.entities.add_group
+              segment_group.name = "Glass Railing Face #{index + 1}"
+              
+              # Create glass panels for this segment
+              create_glass_panels_for_segment(segment_group, glass_material, segment_points)
+              
+              # Create handrail for this segment if enabled
+              if @include_handrail
+                create_handrail_for_segment(segment_group, aluminum_material, segment_points)
+              end
+              
+              # Create base channel for this segment if enabled
+              if @include_base_channel
+                create_base_channel_for_segment(segment_group, aluminum_material, segment_points)
+              end
+            end
+            
+            model.commit_operation
+            Sketchup.active_model.select_tool(nil)
+            
+          rescue => e
+            model.abort_operation
+            UI.messagebox("Error creating glass railings: #{e.message}")
+          ensure
+            @face_segments = []
+            @points.clear
+          end
+        end
+        
+        def create_glass_panels_for_segment(parent_group, glass_material, segment_points)
+          start_pt = segment_points[0]
+          end_pt = segment_points[1]
+          
+          segment_vector = end_pt - start_pt
+          segment_length = segment_vector.length
+          return if segment_length == 0
+          segment_vector.normalize!
+          
+          # Note: Offset already applied in convert_face_edges_to_points
+          # No additional perpendicular offset needed
+          
+          available_length = segment_length - @panel_gap
+          num_panels = calculate_panel_count(available_length)
+          
+          if num_panels > 0
+            total_gaps = (num_panels - 1) * @panel_gap
+            panel_width = (available_length - total_gaps) / num_panels
+            
+            (0...num_panels).each do |j|
+              panel_start_distance = j * (panel_width + @panel_gap)
+              panel_end_distance = panel_start_distance + panel_width
+              
+              panel_start = start_pt.offset(segment_vector, panel_start_distance)
+              panel_end = start_pt.offset(segment_vector, panel_end_distance)
+              
+              glass_points = [
+                panel_start,
+                panel_end,
+                [panel_end.x, panel_end.y, panel_end.z + @glass_height],
+                [panel_start.x, panel_start.y, panel_start.z + @glass_height]
+              ]
+              
+              face = parent_group.entities.add_face(glass_points)
+              if face
+                face.pushpull(@glass_thickness)
+                
+                parent_group.entities.grep(Sketchup::Face).each do |f|
+                  bounds = f.bounds
+                  if bounds.min.x >= [panel_start.x, panel_end.x].min - 0.1 &&
+                     bounds.max.x <= [panel_start.x, panel_end.x].max + @glass_thickness + 0.1
+                    f.material = glass_material
+                    f.back_material = glass_material
+                  end
+                end
+              end
+            end
+          end
+        end
+        
+        def create_handrail_for_segment(parent_group, aluminum_material, segment_points)
+          handrail_group = parent_group.entities.add_group
+          handrail_group.name = "Handrail"
+          
+          start_pt = segment_points[0]
+          end_pt = segment_points[1]
+          
+          vec = end_pt - start_pt
+          segment_length = vec.length
+          return if segment_length == 0
+          vec.normalize!
+          
+          # Position handrail at correct height
+          handrail_start = Geom::Point3d.new(
+            start_pt.x, 
+            start_pt.y, 
+            start_pt.z + @glass_height - (@glass_recess - @handrail_height/2.0)
+          )
+          
+          # Create handrail profile
+          profile = create_handrail_profile
+          
+          # Create transformation for profile
+          z_axis = Geom::Vector3d.new(0, 0, 1)
+          x_axis = vec
+          y_axis = z_axis.cross(x_axis)
+          
+          # Create face at start point
+          profile_points = profile.map do |p|
+            transformed_pt = handrail_start.offset(y_axis, p[0])
+            transformed_pt.offset(z_axis, p[1])
+          end
+          
+          face = handrail_group.entities.add_face(profile_points)
+          if face
+            face.pushpull(-segment_length)
+            
+            # Apply aluminum material
+            handrail_group.entities.grep(Sketchup::Face).each do |f|
+              f.material = aluminum_material
+              f.back_material = aluminum_material
+            end
+            
+            # Soften edges for rounded appearance
+            handrail_group.entities.grep(Sketchup::Edge).each do |edge|
+              edge_vec = edge.line[1]
+              if edge_vec.parallel?([0,0,1])
+                edge.soft = true
+                edge.smooth = true
+              end
+            end
+          end
+        end
+        
+        def create_base_channel_for_segment(parent_group, aluminum_material, segment_points)
+          base_group = parent_group.entities.add_group
+          base_group.name = "Base Channel"
+          
+          start_pt = segment_points[0]
+          end_pt = segment_points[1]
+          
+          vec = end_pt - start_pt
+          segment_length = vec.length
+          return if segment_length == 0
+          vec.normalize!
+          
+          # Create perpendicular vector
+          perp_vec = Geom::Vector3d.new(-vec.y, vec.x, 0)
+          
+          # Create base channel cross-section
+          half_width = @base_channel_width / 2.0
+          
+          # Simple rectangular profile
+          profile_points = []
+          profile_points << start_pt.offset(perp_vec, -half_width)
+          profile_points << start_pt.offset(perp_vec, -half_width).offset([0,0,1], @base_channel_height)
+          profile_points << start_pt.offset(perp_vec, half_width).offset([0,0,1], @base_channel_height)
+          profile_points << start_pt.offset(perp_vec, half_width)
+          
+          face = base_group.entities.add_face(profile_points)
+          if face
+            face.pushpull(-segment_length, vec)
+            
+            # Apply aluminum material
+            base_group.entities.grep(Sketchup::Face).each do |f|
+              f.material = aluminum_material
+              f.back_material = aluminum_material
+            end
+            
+            # Soften vertical edges for rounded appearance
+            base_group.entities.grep(Sketchup::Edge).each do |edge|
+              edge_vec = edge.line[1]
+              if edge_vec.parallel?([0,0,1])
+                edge.soft = true
+                edge.smooth = true
+              end
+            end
+          end
+        end
+        
         private
         
         def create_glass_panels(main_group, glass_material)
@@ -347,10 +878,17 @@ module Viewrail
             
             segment_vector = end_pt - start_pt
             segment_length = segment_vector.length
+            next if segment_length == 0
             segment_vector.normalize!
             
-            perp_vector = Geom::Vector3d.new(-segment_vector.y, segment_vector.x, 0)
-            perp_vector.normalize!
+            # Only apply perpendicular offset for path mode
+            # Face mode already has offset applied in convert_face_edges_to_points
+            if @selection_mode == :path
+              perp_vector = Geom::Vector3d.new(-segment_vector.y, segment_vector.x, 0)
+              perp_vector.normalize!
+              start_pt = start_pt.offset(perp_vector, @offset_distance)
+              end_pt = end_pt.offset(perp_vector, @offset_distance)
+            end
             
             available_length = segment_length - @panel_gap
             num_panels = calculate_panel_count(available_length)
@@ -364,10 +902,7 @@ module Viewrail
                 panel_end_distance = panel_start_distance + panel_width
                 
                 panel_start = start_pt.offset(segment_vector, panel_start_distance)
-                panel_start = panel_start.offset(perp_vector, @offset_distance)
-                
                 panel_end = start_pt.offset(segment_vector, panel_end_distance)
-                panel_end = panel_end.offset(perp_vector, @offset_distance)
                 
                 glass_points = [
                   panel_start,
@@ -407,7 +942,11 @@ module Viewrail
               vec = next_pt - pt
               vec.normalize!
               perp = Geom::Vector3d.new(-vec.y, vec.x, 0)
-              offset_pt = pt.offset(perp, @offset_distance - @glass_thickness/2.0)
+              
+              # Check if we're in face mode (offset already applied)
+              offset_pt = @selection_mode == :face ? 
+                pt.offset(perp, -@glass_thickness/2.0) :
+                pt.offset(perp, @offset_distance - @glass_thickness/2.0)
               base_path << [offset_pt.x, offset_pt.y, offset_pt.z]
             elsif i == @points.length - 1
               # Last point
@@ -415,7 +954,10 @@ module Viewrail
               vec = pt - prev_pt
               vec.normalize!
               perp = Geom::Vector3d.new(-vec.y, vec.x, 0)
-              offset_pt = pt.offset(perp, @offset_distance - @glass_thickness/2.0)
+              
+              offset_pt = @selection_mode == :face ?
+                pt.offset(perp, -@glass_thickness/2.0) :
+                pt.offset(perp, @offset_distance - @glass_thickness/2.0)
               base_path << [offset_pt.x, offset_pt.y, offset_pt.z]
             else
               # Middle points - calculate miter
@@ -437,7 +979,10 @@ module Viewrail
               # Calculate miter offset distance
               angle = vec1.angle_between(vec2)
               miter_factor = 1.0 / Math.cos(angle / 2.0)
-              offset_distance = (@offset_distance + @glass_thickness/2.0) * miter_factor
+              
+              offset_distance = @selection_mode == :face ?
+                (@glass_thickness/2.0) * miter_factor :
+                (@offset_distance + @glass_thickness/2.0) * miter_factor
               
               offset_pt = pt.offset(perp, offset_distance)
               base_path << [offset_pt.x, offset_pt.y, offset_pt.z]
@@ -502,7 +1047,10 @@ module Viewrail
               vec = next_pt - pt
               vec.normalize!
               perp = Geom::Vector3d.new(-vec.y, vec.x, 0)
-              offset_pt = pt.offset(perp, @offset_distance - @glass_thickness/2.0)
+              
+              offset_pt = @selection_mode == :face ?
+                pt.offset(perp, -@glass_thickness/2.0) :
+                pt.offset(perp, @offset_distance - @glass_thickness/2.0)
               handrail_path << [offset_pt.x, offset_pt.y, offset_pt.z + @glass_height - (@glass_recess - @handrail_height/2.0)]
     
             elsif i == @points.length - 1
@@ -511,7 +1059,10 @@ module Viewrail
               vec = pt - prev_pt
               vec.normalize!
               perp = Geom::Vector3d.new(-vec.y, vec.x, 0)
-              offset_pt = pt.offset(perp, @offset_distance - @glass_thickness/2.0)
+              
+              offset_pt = @selection_mode == :face ?
+                pt.offset(perp, -@glass_thickness/2.0) :
+                pt.offset(perp, @offset_distance - @glass_thickness/2.0)
               handrail_path << [offset_pt.x, offset_pt.y, offset_pt.z + @glass_height - (@glass_recess - @handrail_height/2.0)]
              
             else
@@ -534,7 +1085,10 @@ module Viewrail
               # Calculate miter offset distance
               angle = vec1.angle_between(vec2)
               miter_factor = 1.0 / Math.cos(angle / 2.0)
-              offset_distance = (@offset_distance + @glass_thickness/2.0) * miter_factor
+              
+              offset_distance = @selection_mode == :face ?
+                (@glass_thickness/2.0) * miter_factor :
+                (@offset_distance + @glass_thickness/2.0) * miter_factor
               
               offset_pt = pt.offset(perp, offset_distance)
               handrail_path << [offset_pt.x, offset_pt.y, offset_pt.z + @glass_height - @glass_recess]
