@@ -3,13 +3,104 @@ module Viewrail
   module RailingGenerator
     module Tools
       class GlassRailingTool
+        def self.show
+          last_values = {}
+
+          # Create the HTML dialog
+          dialog = UI::HtmlDialog.new(
+            {
+              :dialog_title => "Glass Railing Configuration",
+              :preferences_key => "com.viewrail.railing_generator",
+              :scrollable => false,
+              :resizable => false,
+              :width => 450,
+              :height => 700,
+              :left => 100,
+              :top => 100,
+              :style => UI::HtmlDialog::STYLE_DIALOG
+            }
+          )
+
+           # Render the HTML content from ERB template
+          begin
+            renderer = Viewrail::SharedUtilities::FormRenderer.new(last_values)
+            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/railing_generator/forms/glass_railing_form.html.erb")
+            dialog.set_html(html_content)
+          rescue => e
+            UI.messagebox("Error loading form template: #{e.message}\n\nPlease check that the template file exists.")
+            return
+          end
+
+          # Add callbacks
+          dialog.add_action_callback("create_glass_railing") do |action_context, params|
+            begin
+              values = JSON.parse(params, symbolize_names: true)
+              
+              # Store the values for next time (if you want persistence)
+              # Viewrail::RailingGenerator.save_form_values(values)
+              
+              # Create a new instance of the tool
+              tool = Viewrail::RailingGenerator::Tools::GlassRailingTool.new
+              
+              # Configure it with the dialog values
+              tool.configure_from_dialog(values)
+              
+              # Activate the tool
+              Sketchup.active_model.select_tool(tool)
+            rescue => e
+              puts "Error: #{e.message}"
+              UI.messagebox("Error: #{e.message}")
+            end
+          end
+
+          dialog.add_action_callback("cancel") do |action_context|
+            dialog.close
+          end
+
+          dialog.show
+        end
+
+        # Add this new method to configure the tool from dialog values
+        def configure_from_dialog(params)
+          # Apply configuration from dialog
+          @railing_type = params[:railing_type] || "Hidden"
+          @total_height = params[:railing_height] || 42.0
+          @include_handrail = params[:include_caprail] || false
+          @handrail_material = params[:caprail_material] || "Aluminum"
+          
+          # Adjust base channel visibility based on railing type
+          @include_base_channel = (@railing_type == "Baserail")
+          
+          # Recalculate glass height based on configuration
+          @glass_height = @include_handrail ? 
+            @total_height - @handrail_height + @glass_recess : 
+            @total_height
+
+          # Use a case statement to set defaults based on railing type
+          case @railing_type
+          when "Hidden"
+            @offset_distance = 1.0
+          when "Baserail"
+            @offset_distance = 2.0
+          else
+            @offset_distance = -1.0
+          end
+
+          puts "Glass Railing configured:"
+          puts "  Type: #{@railing_type}"
+          puts "  Height: #{@total_height}"
+          puts "  Caprail: #{@include_handrail}"
+          puts "  Caprail Material: #{@handrail_material}" if @include_handrail
+        end
+
+        # Update your initialize method to set default values
         def initialize
           puts "GlassRailingTool initialized"
           @points = []
           @current_point = nil
           @ip = Sketchup::InputPoint.new
           
-          # Configurable variables
+          # Default configurable variables
           @total_height = 42.0       # Total height including handrail
           @glass_thickness = 0.5     # Thickness of glass panels
           @max_panel_width = 48.0    # Maximum width of each panel
@@ -17,14 +108,14 @@ module Viewrail
           @offset_distance = 2.0     # Offset from drawn line
           
           # Handrail dimensions
-          @include_handrail = true   # Make this configurable via dialog
+          @include_handrail = true   # Default, will be overridden by dialog
           @handrail_width = 1.69
           @handrail_height = 1.35
           @glass_recess = 0.851      # How deep glass goes into handrail
           @corner_radius = 0.160
           
           # Base channel dimensions
-          @include_base_channel = true  # Make this configurable via dialog
+          @include_base_channel = true  # Default, will be overridden by dialog
           @base_channel_width = 2.5
           @base_channel_height = 4.188
           @glass_bottom_offset = 1.188  # Height of glass bottom above floor
@@ -32,8 +123,8 @@ module Viewrail
 
           # Calculate glass height based on handrail
           @glass_height = @include_handrail ? 
-          @total_height - @handrail_height + @glass_recess : 
-          @total_height
+            @total_height - @handrail_height + @glass_recess : 
+            @total_height
         end
 
         def onLButtonDown(flags, x, y, view)
@@ -51,7 +142,7 @@ module Viewrail
         def draw(view)
           if @points.length > 0
             view.drawing_color = "blue"
-            view.line_width = 2
+            view.line_width = 4
             
             # Draw existing segments
             (0...@points.length - 1).each do |i|

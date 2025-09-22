@@ -27,7 +27,7 @@ module Viewrail
       
       # Glass railing command
       cmd_glass_railing = UI::Command.new("Glass Railing") {
-        Sketchup.active_model.select_tool(Tools::GlassRailingTool.new)
+        Viewrail::RailingGenerator::Tools::GlassRailingTool.show
       }
       cmd_glass_railing.small_icon = "C:/Viewrail-Sketchup/plugins/railing_generator/icons/add_glass_railing.svg"
       cmd_glass_railing.large_icon = "C:/Viewrail-Sketchup/plugins/railing_generator/icons/add_glass_railing.svg"
