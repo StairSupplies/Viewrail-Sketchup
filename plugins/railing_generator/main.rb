@@ -1,4 +1,4 @@
-# railing_generator/main.rb
+require 'erb'
 require_relative '../viewrail_shared/utilities'
 require_relative 'tools/glass_railing_tool'
 
