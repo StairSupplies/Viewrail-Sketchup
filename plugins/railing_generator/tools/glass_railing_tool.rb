@@ -38,14 +38,8 @@ module Viewrail
           dialog.add_action_callback("create_glass_railing") do |action_context, params|
             begin
               values = JSON.parse(params, symbolize_names: true)
-              
-              # Create a new instance of the tool
               tool = Viewrail::RailingGenerator::Tools::GlassRailingTool.new
-              
-              # Configure it with the dialog values
               tool.configure_from_dialog(values)
-              
-              # Activate the tool
               Sketchup.active_model.select_tool(tool)
             rescue => e
               puts "Error: #{e.message}"
@@ -60,7 +54,6 @@ module Viewrail
           dialog.show
         end
 
-        # Add this new method to configure the tool from dialog values
         def configure_from_dialog(params)
           # Apply configuration from dialog
           @railing_type = params[:railing_type] || "Hidden"
@@ -93,7 +86,6 @@ module Viewrail
           puts "  Caprail Material: #{@handrail_material}" if @include_handrail
         end
 
-        # Update your initialize method to set default values
         def initialize
           puts "GlassRailingTool initialized"
           @points = []
@@ -169,7 +161,7 @@ module Viewrail
             if face.is_a?(Sketchup::Face)
               begin
                 # Extract top horizontal edge
-                top_edge_points = extract_top_edge_from_face(face)
+                top_edge_points = Viewrail::SharedUtilities.extract_top_edge_from_face(face)
                 
                 # Check if this face was already selected (toggle selection)
                 existing_index = @selected_faces.index(face)
@@ -373,7 +365,6 @@ module Viewrail
           end
         end
 
-        # Add this new method to draw preview panels
         def draw_preview_panels(view)
           # Create temporary points array including current mouse position
           preview_points = @points.dup
@@ -460,7 +451,7 @@ module Viewrail
                 @hover_face = face
                 # Try to extract the top edge for preview
                 begin
-                  @hover_edge = extract_top_edge_from_face(face)
+                  @hover_edge = Viewrail::SharedUtilities.extract_top_edge_from_face(face)
                 rescue
                   @hover_edge = nil
                 end
@@ -570,61 +561,49 @@ module Viewrail
           end
         end
 
-        def extract_top_edge_from_face(face)
-          # Find all edges of the face
-          edges = face.edges
+        # def extract_top_edge_from_face(face)
+        #   # Find all edges of the face
+        #   edges = face.edges
           
-          # Filter for horizontal edges (perpendicular to Z axis)
-          horizontal_edges = edges.select do |edge|
-            edge_vector = edge.line[1]
-            edge_vector.perpendicular?([0, 0, 1])
-          end
+        #   # Filter for horizontal edges (perpendicular to Z axis)
+        #   horizontal_edges = edges.select do |edge|
+        #     edge_vector = edge.line[1]
+        #     edge_vector.perpendicular?([0, 0, 1])
+        #   end
           
-          if horizontal_edges.empty?
-            raise "Face has no horizontal edges"
-          end
+        #   if horizontal_edges.empty?
+        #     raise "Face has no horizontal edges"
+        #   end
           
-          # Find the edge with the highest Z coordinate
-          top_edge = horizontal_edges.max_by do |edge|
-            # Get average Z of the edge's vertices
-            (edge.vertices[0].position.z + edge.vertices[1].position.z) / 2.0
-          end
+        #   # Find the edge with the highest Z coordinate
+        #   top_edge = horizontal_edges.max_by do |edge|
+        #     # Get average Z of the edge's vertices
+        #     (edge.vertices[0].position.z + edge.vertices[1].position.z) / 2.0
+        #   end
           
-          # Verify the edge is truly horizontal (not angled)
-          v1 = top_edge.vertices[0].position
-          v2 = top_edge.vertices[1].position
-          if (v1.z - v2.z).abs > 0.001  # Tolerance for floating point
-            raise "Top edge is not horizontal (angled)"
-          end
+        #   # Verify the edge is truly horizontal (not angled)
+        #   v1 = top_edge.vertices[0].position
+        #   v2 = top_edge.vertices[1].position
+        #   if (v1.z - v2.z).abs > 0.001  # Tolerance for floating point
+        #     raise "Top edge is not horizontal (angled)"
+        #   end
           
-          # Return the two points of the edge
-          [v1, v2]
-        end
+        #   # Return the two points of the edge
+        #   [v1, v2]
+        # end
 
         def convert_face_edges_to_points
-          # Convert face edges to points - each face edge becomes a separate segment
-          # We'll store them as separate segment pairs rather than trying to connect them
+          # Use the utility method to get face segments
+          @face_segments = Viewrail::SharedUtilities.convert_face_edges_to_segments(
+            @face_edges, 
+            @selected_faces, 
+            @offset_distance
+          )
+          
+          # Clear points for compatibility with existing code
           @points.clear
-          @face_segments = []  # Store face segments separately
           
-          @face_edges.each_with_index do |edge_points, index|
-            face = @selected_faces[index]
-            
-            # Calculate offset direction (away from face normal)
-            face_normal = face.normal
-            offset_vector = face_normal.reverse
-            offset_vector.normalize!
-            
-            # Create offset points
-            start_pt = edge_points[0].offset(offset_vector, @offset_distance)
-            end_pt = edge_points[1].offset(offset_vector, @offset_distance)
-            
-            # Store as separate segment
-            @face_segments << [start_pt, end_pt]
-          end
-          
-          # For compatibility with existing create_glass_railings,
-          # we'll process each segment separately
+          # Store the selection mode for later reference
           @selection_mode_backup = @selection_mode
         end
         
@@ -647,7 +626,7 @@ module Viewrail
             
             # Get materials
             glass_material = Viewrail::SharedUtilities.get_or_create_glass_material(model)
-            aluminum_material = get_or_create_aluminum_material(model)
+            aluminum_material = Viewrail::SharedUtilities.get_or_create_aluminum_material(model)
             
             # Create glass panels first
             create_glass_panels(main_group, glass_material)
@@ -684,7 +663,7 @@ module Viewrail
             
             # Get materials
             glass_material = Viewrail::SharedUtilities.get_or_create_glass_material(model)
-            aluminum_material = get_or_create_aluminum_material(model)
+            aluminum_material = Viewrail::SharedUtilities.get_or_create_aluminum_material(model)
             
             # Process each face segment separately
             @face_segments.each_with_index do |segment_points, index|
@@ -1175,16 +1154,6 @@ module Viewrail
           profile << [half_width - @corner_radius, -half_height]
           
           profile
-        end
-        
-        def get_or_create_aluminum_material(model)
-          materials = model.materials
-          aluminum_material = materials["Aluminum_Brushed"]
-          if !aluminum_material
-            aluminum_material = materials.add("Aluminum_Brushed")
-            aluminum_material.color = [180, 184, 189]  # Brushed aluminum color
-          end
-          aluminum_material
         end
 
         def calculate_panel_count(length)
