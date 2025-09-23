@@ -1,9 +1,10 @@
-# vr_railing_generator_loader.rb
 require 'sketchup.rb'
 require 'extensions.rb'
 
 module Viewrail
+  
   module RailingGeneratorLoader
+
     unless file_loaded?(__FILE__)
       ex = SketchupExtension.new('Viewrail Railing Generator', 'railing_generator/main')
       ex.description = 'Creates various types of railings including glass and cable systems.'
@@ -13,5 +14,7 @@ module Viewrail
       Sketchup.register_extension(ex, true)
       file_loaded(__FILE__)
     end
-  end
-end
+
+  end # module RailingGeneratorLoader
+
+end # module Viewrail

@@ -1,13 +1,14 @@
-# viewrail_shared/form_renderer.rb
 module Viewrail
+
   module SharedUtilities
+
     class FormRenderer
+
       def initialize(values)
         @last_values = values  # ERB templates expect @last_values
       end
 
       def render(template_path)
-        # Read the template file
         template_string = File.read(template_path)
         
         # Create ERB object and render with current binding
@@ -26,6 +27,9 @@ module Viewrail
           super
         end
       end
-    end
-  end
-end
+
+    end # class FormRenderer
+
+  end # module SharedUtilities
+
+end # module Viewrail

@@ -2,8 +2,11 @@
 require_relative 'form_renderer'
 
 module Viewrail
+
   module SharedUtilities
+
     class << self
+      
       def get_or_create_glass_material(model)
         materials = model.materials
         glass_material = materials["Glass_Transparent"]
@@ -24,6 +27,9 @@ module Viewrail
         end
         cable_material
       end
-    end
-  end
-end
+
+    end # class << self
+
+  end # module SharedUtilities
+
+end # module Viewrail

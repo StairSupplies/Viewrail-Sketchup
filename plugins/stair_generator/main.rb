@@ -3,8 +3,9 @@ require_relative '../viewrail_shared/utilities'
 require_relative 'tools/create_90'
 require_relative 'tools/create_straight'
 module Viewrail
+
   module StairGenerator
-    #Version 8 - Stair Generator
+    
     class << self
 
       def last_form_values(stair_type = :straight)
@@ -372,7 +373,7 @@ module Viewrail
         )
       end
 
-    end
+    end # class << self
 
     # Create toolbar
     unless file_loaded?(__FILE__)
@@ -437,5 +438,7 @@ module Viewrail
 
       file_loaded(__FILE__)
     end
-  end
-end
+
+  end # module StairGenerator
+
+end # module Viewrail

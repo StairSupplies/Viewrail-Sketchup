@@ -1,9 +1,8 @@
-# Developed by: D Mosher using Claude
-
 require 'sketchup.rb'
 require 'extensions.rb'
 
 module Viewrail
+  
   module StairGenerator
 
     unless file_loaded?(__FILE__)
@@ -16,4 +15,5 @@ module Viewrail
     end
 
   end # module StairGenerator
+
 end # module Viewrail

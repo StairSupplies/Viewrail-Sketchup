@@ -1,8 +1,11 @@
-# railing_generator/tools/glass_railing_tool.rb
 module Viewrail
+
   module RailingGenerator
+
     module Tools
+
       class GlassRailingTool
+
         def self.show
           last_values = {}
 
@@ -1209,8 +1212,10 @@ module Viewrail
           
           return panels
         end
-        
       end
-    end
-  end
-end
+
+    end # class GlassRailingTool
+
+  end # module RailingGenerator
+
+end # module Viewrail
