@@ -278,6 +278,8 @@
         // Calculate what the actual rise would be
         const totalTreads = lowerTreads + numTreadsUpper;
         const calculatedRise = totalRise / (totalTreads + 1);
+        //define a flag to track if we need to update the number of treads
+        let updateNumTreads = false;
         
         // If rise is outside 6-9" range, adjust lower treads
         if (calculatedRise > 9) {
@@ -287,6 +289,7 @@
             const newTotalTreads = lowerTreads + numTreadsUpper;
             const newRise = totalRise / (newTotalTreads + 1);
             if (newRise <= 9) break;
+            updateNumTreads = true
           }
         } else if (calculatedRise < 6) {
           // Rise too low, need fewer treads
@@ -295,11 +298,12 @@
             const newTotalTreads = lowerTreads + numTreadsUpper;
             const newRise = totalRise / (newTotalTreads + 1);
             if (newRise >= 6) break;
+            updateNumTreads = true;
           }
         }
-        
-        numTreadsLowerInput.value = lowerTreads;
-        
+
+        if (updateNumTreads) numTreadsLowerInput.value = lowerTreads;
+
         // Trigger rise calculation
         calculateStairRise();
       }

@@ -28,67 +28,70 @@ module Viewrail
           }
           )
 
-         # Render the HTML content from ERB template
-        begin
-          renderer = Viewrail::SharedUtilities::FormRenderer.new(last_values)
-          html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/90_stair_form.html.erb")
-          dialog.set_html(html_content)
-        rescue => e
-          UI.messagebox("Error loading landing form template: #{e.message}\n\nPlease check that the template file exists.")
-          return
-        end
+          # Render the HTML content from ERB template
+          begin
+            renderer = Viewrail::SharedUtilities::FormRenderer.new(last_values)
+            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/90_stair_form.html.erb")
+            dialog.set_html(html_content)
+          rescue => e
+            UI.messagebox("Error loading landing form template: #{e.message}\n\nPlease check that the template file exists.")
+            return
+          end
 
-        # Add callbacks
-        dialog.add_action_callback("resize_dialog") do |action_context, params|
-          dimensions = JSON.parse(params)
-          dialog.set_size(dimensions["width"], dimensions["height"])
-        end
+          # Add callbacks
+          dialog.add_action_callback("resize_dialog") do |action_context, params|
+            dimensions = JSON.parse(params)
+            dialog.set_size(dimensions["width"], dimensions["height"])
+          end
 
-        dialog.add_action_callback("create_landing_stairs") do |action_context, params|
-          values = JSON.parse(params)
+          dialog.add_action_callback("create_landing_stairs") do |action_context, params|
+            values = JSON.parse(params)
 
-          # Store the values for next time
-          last_values[:num_treads_lower] = values["num_treads_lower"]
-          last_values[:num_treads_upper] = values["num_treads_upper"]
-          last_values[:header_to_wall] = values["header_to_wall"]
-          last_values[:tread_width_lower] = values["tread_width_lower"]
-          last_values[:tread_width_upper] = values["tread_width_upper"]
-          last_values[:landing_width] = values["landing_width"]
-          last_values[:landing_depth] = values["landing_depth"]
-          last_values[:tread_run] = values["tread_run"]
-          last_values[:stair_rise] = values["stair_rise"]
-          last_values[:total_rise] = values["total_rise"]
-          last_values[:turn_direction] = values["turn_direction"]
-          last_values[:glass_railing] = values["glass_railing"]
+            # Store the values for next time
+            last_values[:num_treads_lower] = values["num_treads_lower"]
+            last_values[:num_treads_upper] = values["num_treads_upper"]
+            last_values[:header_to_wall] = values["header_to_wall"]
+            last_values[:tread_width_lower] = values["tread_width_lower"]
+            last_values[:tread_width_upper] = values["tread_width_upper"]
+            last_values[:landing_width] = values["landing_width"]
+            last_values[:landing_depth] = values["landing_depth"]
+            last_values[:tread_run] = values["tread_run"]
+            last_values[:stair_rise] = values["stair_rise"]
+            last_values[:total_rise] = values["total_rise"]
+            last_values[:turn_direction] = values["turn_direction"]
+            last_values[:glass_railing] = values["glass_railing"]
 
-          dialog.close
+            dialog.close
 
-          # Create the landing stairs
-          self.create_90_geometry(values)
+            # Create the landing stairs and get the group
+            stair_group = self.create_90_geometry(values)
+            
+            # Store ALL parameters for future modification
+            Viewrail::StairGenerator.store_stair_parameters(stair_group, values, :landing_90)
 
-          # Display parameters
-          puts "Landing Stair parameters:"
-          puts "  Lower Treads: #{values["num_treads_lower"]}"
-          puts "  Upper Treads: #{values["num_treads_upper"]}"
-          puts "  Header to Wall: #{values["header_to_wall"].round(2)}\""
-          puts "  Tread Width Lower: #{values["tread_width_lower"].round(2)}\""
-          puts "  Tread Width Upper: #{values["tread_width_upper"].round(2)}\""
-          puts "  Landing: #{values["landing_width"].round(2)}\" x #{values["landing_depth"].round(2)}\""
-          puts "  Turn Direction: #{values["turn_direction"]}"
-          puts "  Stair Rise: #{values["stair_rise"].round(2)}\""
-          puts "  Total Rise: #{values["total_rise"].round(2)}\""
-          puts "  Glass Railing: #{values["glass_railing"]}"
-        end
+            # Display parameters
+            puts "Landing Stair parameters:"
+            puts "  Lower Treads: #{values["num_treads_lower"]}"
+            puts "  Upper Treads: #{values["num_treads_upper"]}"
+            puts "  Header to Wall: #{values["header_to_wall"].round(2)}\""
+            puts "  Tread Width Lower: #{values["tread_width_lower"].round(2)}\""
+            puts "  Tread Width Upper: #{values["tread_width_upper"].round(2)}\""
+            puts "  Landing: #{values["landing_width"].round(2)}\" x #{values["landing_depth"].round(2)}\""
+            puts "  Turn Direction: #{values["turn_direction"]}"
+            puts "  Stair Rise: #{values["stair_rise"].round(2)}\""
+            puts "  Total Rise: #{values["total_rise"].round(2)}\""
+            puts "  Glass Railing: #{values["glass_railing"]}"
+          end
 
-        dialog.add_action_callback("cancel") do |action_context|
-          dialog.close
-        end
+          dialog.add_action_callback("cancel") do |action_context|
+            dialog.close
+          end
 
-        dialog.show
-        end
+          dialog.show
+        end # show
 
          # Create stairs with landing (orchestrator method)
-        def self.create_90_geometry(params)
+        def self.create_90_geometry(params, start_point = [0, 0, 0])
           model = Sketchup.active_model
 
           # Start operation for undo functionality
@@ -214,15 +217,21 @@ module Viewrail
             end
 
             # Add all groups to master group
-            model.active_entities.add_group([lower_stairs, landing, upper_stairs])
-            # stair_group = model.active_entities.add_group([lower_stairs, landing, upper_stairs])
-            # stair_component = stair_group.to_component
+            stair_group = model.active_entities.add_group([lower_stairs, landing, upper_stairs])
+            stair_group.name = "90° Stairs - #{params["num_treads_lower"] + params["num_treads_upper"] + 1} treads"           
 
+            # Apply starting transformation if provided
+            if start_point != [0, 0, 0]
+              transform = Geom::Transformation.new(start_point)
+              stair_group.transform!(transform)
+            end
+            
             # Commit the operation
             model.commit_operation
 
             # Zoom to fit
             Sketchup.active_model.active_view.zoom_extents
+            return stair_group
 
           rescue => e
             model.abort_operation

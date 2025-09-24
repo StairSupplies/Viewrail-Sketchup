@@ -53,9 +53,11 @@ module Viewrail
             dialog.close
 
             # Create the stairs with the parameters
-            # Use default tread width of 36" for straight stairs
             params_with_width = values.merge({"tread_width" => 36.0})
-            Viewrail::StairGenerator.create_stair_segment(params_with_width)
+            new_stair = Viewrail::StairGenerator.create_stair_segment(params_with_width)
+            
+            # Store ALL parameters for future modification
+            Viewrail::StairGenerator.store_stair_parameters(new_stair, values, :straight)
 
             # Display parameters
             puts "Stair parameters:"

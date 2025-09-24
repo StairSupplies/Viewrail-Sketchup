@@ -2,6 +2,7 @@ require 'erb'
 require_relative '../viewrail_shared/utilities'
 require_relative 'tools/create_90'
 require_relative 'tools/create_straight'
+require_relative 'tools/modify_stair'
 module Viewrail
 
   module StairGenerator
@@ -356,6 +357,110 @@ module Viewrail
         end
       end
 
+       # Retrieve parameters from a selected stair group/component
+      def get_selected_stair_parameters
+        model = Sketchup.active_model
+        selection = model.selection
+        
+        return nil if selection.empty?
+        
+        # Get the first selected entity
+        entity = selection.first
+        
+        # Check if it's a group or component instance
+        if entity.is_a?(Sketchup::Group) || entity.is_a?(Sketchup::ComponentInstance)
+          # Check if it has stair_generator attributes
+          if entity.attribute_dictionary("stair_generator")
+            params = {}
+            dict = entity.attribute_dictionary("stair_generator")
+            
+            # Get the segment type to determine which parameters to retrieve
+            segment_type = dict["segment_type"]
+            
+            case segment_type
+            when "stairs"
+              # Retrieve straight stair parameters
+              params[:num_treads] = dict["num_treads"]
+              params[:tread_run] = dict["tread_run"]
+              params[:tread_width] = dict["tread_width"]
+              params[:stair_rise] = dict["stair_rise"]
+              params[:glass_railing] = dict["glass_railing"]
+              
+              # Calculate derived values
+              params[:total_tread_run] = params[:num_treads] * params[:tread_run] if params[:num_treads] && params[:tread_run]
+              params[:total_rise] = (params[:num_treads] + 1) * params[:stair_rise] if params[:num_treads] && params[:stair_rise]
+              
+              params[:type] = :straight
+              
+            when "landing_stairs"
+              puts "Pulling values for 90-degree stairs"
+              # Retrieve 90-degree stair parameters
+              params[:num_treads_lower] = dict["num_treads_lower"]
+              params[:num_treads_upper] = dict["num_treads_upper"]
+              params[:header_to_wall] = dict["header_to_wall"]
+              params[:tread_width_lower] = dict["tread_width_lower"]
+              params[:tread_width_upper] = dict["tread_width_upper"]
+              params[:landing_width] = dict["landing_width"]
+              params[:landing_depth] = dict["landing_depth"]
+              params[:tread_run] = dict["tread_run"]
+              params[:stair_rise] = dict["stair_rise"]
+              params[:total_rise] = dict["total_rise"]
+              params[:turn_direction] = dict["turn_direction"]
+              params[:glass_railing] = dict["glass_railing"]
+              
+              params[:type] = :landing_90
+              
+            when "landing"
+              # This is just a landing component, not a full stair system
+              return nil
+            end
+            
+            return params
+          else
+            puts "Selected entity does not have stair_generator attributes"
+          end
+        end
+        
+        return nil
+      end
+      
+      # Check if a valid stair entity is selected
+      def has_valid_stair_selection?
+        params = get_selected_stair_parameters
+        return !params.nil?
+      end
+      
+      # Store all parameters needed for regeneration
+      def store_stair_parameters(group, params, stair_type)
+        case stair_type
+          when :straight
+            group.set_attribute("stair_generator", "segment_type", "stairs")
+            group.set_attribute("stair_generator", "num_treads", params["num_treads"])
+            group.set_attribute("stair_generator", "tread_run", params["tread_run"])
+            group.set_attribute("stair_generator", "tread_width", params["tread_width"] || 36.0)
+            group.set_attribute("stair_generator", "stair_rise", params["stair_rise"])
+            group.set_attribute("stair_generator", "glass_railing", params["glass_railing"])
+            # Store calculated values for reference
+            group.set_attribute("stair_generator", "total_tread_run", params["total_tread_run"])
+            group.set_attribute("stair_generator", "total_rise", params["total_rise"])
+            
+          when :landing_90
+            group.set_attribute("stair_generator", "segment_type", "landing_stairs")
+            group.set_attribute("stair_generator", "num_treads_lower", params["num_treads_lower"])
+            group.set_attribute("stair_generator", "num_treads_upper", params["num_treads_upper"])
+            group.set_attribute("stair_generator", "header_to_wall", params["header_to_wall"])
+            group.set_attribute("stair_generator", "tread_width_lower", params["tread_width_lower"])
+            group.set_attribute("stair_generator", "tread_width_upper", params["tread_width_upper"])
+            group.set_attribute("stair_generator", "landing_width", params["landing_width"])
+            group.set_attribute("stair_generator", "landing_depth", params["landing_depth"])
+            group.set_attribute("stair_generator", "tread_run", params["tread_run"])
+            group.set_attribute("stair_generator", "stair_rise", params["stair_rise"])
+            group.set_attribute("stair_generator", "total_rise", params["total_rise"])
+            group.set_attribute("stair_generator", "turn_direction", params["turn_direction"])
+            group.set_attribute("stair_generator", "glass_railing", params["glass_railing"])
+        end
+      end
+
       def show_about
         UI.messagebox(
           "Stair Generator Extension v3.0.0\n\n" +
@@ -401,6 +506,25 @@ module Viewrail
       cmd_landing_stairs.status_bar_text = "Create L-shaped stairs with landing platform"
       cmd_landing_stairs.menu_text = "Create 90 System Stairs"
 
+      # Create command for modifying existing stairs
+      cmd_modify = UI::Command.new("Modify Stairs") {
+        Viewrail::StairGenerator::Tools::ModifyStairTool.activate
+      }
+      cmd_modify.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/modify.svg"
+      cmd_modify.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/modify.svg"
+      cmd_modify.tooltip = "Modify Existing Stairs"
+      cmd_modify.status_bar_text = "Modify parameters of selected stairs"
+      cmd_modify.menu_text = "Modify Stairs"
+
+      # Add validation proc to enable/disable based on selection
+      cmd_modify.set_validation_proc {
+        if Viewrail::StairGenerator.has_valid_stair_selection?
+          MF_ENABLED
+        else
+          MF_GRAYED
+        end
+      }
+
       # Create command for About
       cmd_about = UI::Command.new("About") {
         self.show_about
@@ -414,6 +538,7 @@ module Viewrail
       # Add commands to toolbar
       toolbar = toolbar.add_item(cmd_stairs)
       toolbar = toolbar.add_item(cmd_landing_stairs)
+      toolbar = toolbar.add_item(cmd_modify)
       toolbar = toolbar.add_separator
       toolbar = toolbar.add_item(cmd_about)
 
@@ -425,6 +550,7 @@ module Viewrail
       stairs_menu = menu.add_submenu("Stair Generator")
       stairs_menu.add_item(cmd_stairs)
       stairs_menu.add_item(cmd_landing_stairs)
+      stairs_menu.add_item(cmd_modify)
       stairs_menu.add_separator
       stairs_menu.add_item(cmd_about)
 
@@ -434,6 +560,7 @@ module Viewrail
         stairs_context = context_menu.add_submenu("Stair Generator")
         stairs_context.add_item(cmd_stairs)
         stairs_context.add_item(cmd_landing_stairs)
+        stairs_context.add_item(cmd_modify)
       end
 
       file_loaded(__FILE__)
