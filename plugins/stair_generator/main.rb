@@ -203,7 +203,7 @@ module Viewrail
       def add_glass_railings_to_segment(entities, num_treads, tread_run, tread_width,stair_rise, glass_railing, glass_thickness, glass_inset, glass_height)
 
         model = Sketchup.active_model
-        glass_material = Viewrail::SharedUtilities.get_or_create_glass_material(model)
+        glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
         total_rise = (num_treads + 1) * stair_rise
         panel_extension = 1.0
         bottom_x_back = tread_run + 5
@@ -270,7 +270,7 @@ module Viewrail
 
       def add_glass_railings_to_landing(entities, width, depth, thickness, glass_railing, turn_direction)
         model = Sketchup.active_model
-        glass_material = Viewrail::SharedUtilities.get_or_create_glass_material(model)
+        glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
         glass_thickness = 0.5
         glass_inset = 1.0
         glass_height = 36.0

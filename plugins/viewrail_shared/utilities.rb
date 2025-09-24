@@ -7,35 +7,96 @@ module Viewrail
 
     class << self
 
-      def get_or_create_glass_material(model)
-        materials = model.materials
-        glass_material = materials["Glass_Transparent"]
-        if !glass_material
-          glass_material = materials.add("Glass_Transparent")
-          glass_material.color = [200, 220, 240, 128]
-          glass_material.alpha = 0.3
+      # Material definitions hash
+      MATERIAL_DEFINITIONS = {
+        glass: {
+          name: "Glass_Transparent",
+          color: [200, 220, 240, 128],
+          alpha: 0.3
+        },
+        cable: {
+          name: "Cable_Steel",
+          color: [80, 80, 80],
+          alpha: 1.0
+        },
+        aluminum: {
+          name: "Aluminum_Brushed",
+          color: [180, 184, 189],
+          alpha: 1.0
+        },
+        steel: {
+          name: "Steel_Powder_Coated",
+          color: [50, 50, 50],
+          alpha: 1.0
+        },
+        pc_white: {
+          name: "Powder_Coat_White",
+          color: [245, 245, 245],
+          alpha: 1.0
+        },
+        pc_black: {
+          name: "Powder_Coat_Black",
+          color: [25, 25, 25],
+          alpha: 1.0
+        }
+      }
+
+      # Unified material getter/creator
+      def get_or_add_material(type, model = nil)
+        model ||= Sketchup.active_model        
+        material_def = MATERIAL_DEFINITIONS[type]
+
+        # Return nil if material type not found
+        if material_def.nil?
+          puts "Warning: Material type '#{type}' not found in definitions"
+          return nil
         end
-        glass_material
-      end
-      
-      def get_or_create_cable_material(model)
+        
         materials = model.materials
-        cable_material = materials["Cable_Steel"]
-        if !cable_material
-          cable_material = materials.add("Cable_Steel")
-          cable_material.color = [80, 80, 80]
+        material = materials[material_def[:name]]
+        
+        # Create material if it doesn't exist
+        if !material
+          add_material_to_model(materials, material_def)
         end
-        cable_material
+        
+        material
       end
 
-      def get_or_create_aluminum_material(model)
-        materials = model.materials
-        aluminum_material = materials["Aluminum_Brushed"]
-        if !aluminum_material
-          aluminum_material = materials.add("Aluminum_Brushed")
-          aluminum_material.color = [180, 184, 189]  # Brushed aluminum color
+      def add_material_to_model(materials, material_def)
+          material = materials.add(material_def[:name])
+          material.color = material_def[:color]
+          material.alpha = material_def[:alpha] if material_def[:alpha] && material_def[:alpha] < 1.0
+          
+          # Add texture if specified
+          if material_def[:texture_path] && File.exist?(material_def[:texture_path])
+            material.texture = material_def[:texture_path]
+            material.texture.size = material_def[:texture_size] || [48, 48]
+          end      
+      end    
+
+      # Add custom material definition at runtime
+      def create_material_definition(key, name, color, alpha = 1.0, texture_path = nil, texture_size = nil)
+        MATERIAL_DEFINITIONS[key] = {
+          name: name,
+          color: color,
+          alpha: alpha
+        }
+        
+        if texture_path
+          MATERIAL_DEFINITIONS[key][:texture_path] = texture_path
+          MATERIAL_DEFINITIONS[key][:texture_size] = texture_size if texture_size
         end
-        aluminum_material
+      end
+      
+      # Get all available material types
+      def available_material_types
+        MATERIAL_DEFINITIONS.keys
+      end
+      
+      # Check if material type exists
+      def material_type_exists?(type)
+        MATERIAL_DEFINITIONS.key?(type)
       end
 
       def extract_top_edge_from_face(face)
