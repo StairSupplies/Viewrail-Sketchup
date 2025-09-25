@@ -625,8 +625,8 @@ module Viewrail
             main_group.name = "Glass Railing Assembly"
 
             # Get materials
-            glass_material = Viewrail::SharedUtilities.get_or_create_glass_material(model)
-            aluminum_material = Viewrail::SharedUtilities.get_or_create_aluminum_material(model)
+            glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
+            aluminum_material = Viewrail::SharedUtilities.get_or_add_material(:aluminum)
 
             # Create glass panels first
             create_glass_panel_group(main_group, glass_material)
@@ -662,8 +662,8 @@ module Viewrail
             main_group.name = "Glass Railing Assembly"
 
             # Get materials
-            glass_material = Viewrail::SharedUtilities.get_or_create_glass_material(model)
-            aluminum_material = Viewrail::SharedUtilities.get_or_create_aluminum_material(model)
+            glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
+            aluminum_material = Viewrail::SharedUtilities.get_or_add_material(:aluminum)
 
             # Process each face segment separately
             @face_segments.each_with_index do |segment_points, index|

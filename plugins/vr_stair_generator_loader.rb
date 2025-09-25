@@ -3,7 +3,7 @@ require 'extensions.rb'
 
 module Viewrail
   
-  module StairGenerator
+  module StairGeneratorLoader
 
     unless file_loaded?(__FILE__)
       ex = SketchupExtension.new('Stair Generator', 'stair_generator/main')
@@ -14,6 +14,6 @@ module Viewrail
       file_loaded(__FILE__)
     end
 
-  end # module StairGenerator
+  end # module StairGeneratorLoader
 
 end # module Viewrail
