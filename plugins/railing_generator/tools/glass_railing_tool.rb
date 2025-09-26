@@ -810,11 +810,11 @@ module Viewrail
         #new create glass panels function that takes a group, glass material, and start and end points
 
         def create_glass_panels(group, glass_material, start_pt, end_pt, segmented=false)
-          work_group = nil
+          glass_group = nil
           if segmented
-            work_group = group
+            glass_group = group
           else
-            work_group = group.entities.add_group
+            glass_group = group.entities.add_group
           end
 
           segment_vector = end_pt - start_pt
@@ -852,17 +852,13 @@ module Viewrail
                 [panel_start.x, panel_start.y, panel_start.z + @glass_height]
               ]
 
-              face = work_group.entities.add_face(glass_points)
+              face = glass_group.entities.add_face(glass_points)
               if face
                 face.pushpull(@glass_thickness)
 
-                work_group.entities.grep(Sketchup::Face).each do |f|
-                  bounds = f.bounds
-                  if bounds.min.x >= [panel_start.x, panel_end.x].min - 0.1 &&
-                      bounds.max.x <= [panel_start.x, panel_end.x].max + @glass_thickness + 0.1
-                    f.material = glass_material
-                    f.back_material = glass_material
-                  end
+                glass_group.entities.grep(Sketchup::Face).each do |f|
+                  f.material = glass_material
+                  f.back_material = glass_material
                 end
               end
             end

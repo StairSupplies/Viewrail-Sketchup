@@ -55,7 +55,3 @@ module Plugins
   }
 
 end # module Examples
-
-# Create a file in your Plugins folder with these lines:
-# $LOAD_PATH << 'C:\Viewrail-Sketchup'
-# require 'load_plugins.rb'

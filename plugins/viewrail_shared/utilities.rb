@@ -43,7 +43,7 @@ module Viewrail
 
       # Unified material getter/creator
       def get_or_add_material(type, model = nil)
-        model ||= Sketchup.active_model        
+        model ||= Sketchup.active_model
         material_def = MATERIAL_DEFINITIONS[type]
 
         # Return nil if material type not found
@@ -57,10 +57,10 @@ module Viewrail
         
         # Create material if it doesn't exist
         if !material
-          add_material_to_model(materials, material_def)
+          material = add_material_to_model(materials, material_def)
         end
         
-        material
+        return material
       end
 
       def add_material_to_model(materials, material_def)
@@ -72,7 +72,9 @@ module Viewrail
           if material_def[:texture_path] && File.exist?(material_def[:texture_path])
             material.texture = material_def[:texture_path]
             material.texture.size = material_def[:texture_size] || [48, 48]
-          end      
+          end
+          
+          return material
       end    
 
       # Add custom material definition at runtime
