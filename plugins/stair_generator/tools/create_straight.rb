@@ -8,6 +8,9 @@ module Viewrail
         def self.show
           # Get persistent values from the main module
           last_values = Viewrail::StairGenerator.last_form_values(:straight)
+          
+          # Set default tread_width if not present
+          last_values[:tread_width] ||= 36.0
 
           # Create the HTML dialog
           dialog = UI::HtmlDialog.new(
@@ -17,11 +20,11 @@ module Viewrail
               :scrollable => false,
               :resizable => false,
               :width => 500,
-              :height => 720,
+              :height => 750,
               :left => 100,
               :top => 100,
               :min_width => 500,
-              :min_height => 720,
+              :min_height => 750,
               :max_width => 500,
               :max_height => 820,
               :style => UI::HtmlDialog::STYLE_DIALOG
@@ -45,6 +48,7 @@ module Viewrail
             # Store the values for next time
             last_values[:num_treads] = values["num_treads"]
             last_values[:tread_run] = values["tread_run"]
+            last_values[:tread_width] = values["tread_width"]  # Store tread width
             last_values[:total_tread_run] = values["total_tread_run"]
             last_values[:stair_rise] = values["stair_rise"]
             last_values[:total_rise] = values["total_rise"]
@@ -52,9 +56,8 @@ module Viewrail
 
             dialog.close
 
-            # Create the stairs with the parameters
-            params_with_width = values.merge({"tread_width" => 36.0})
-            new_stair = Viewrail::StairGenerator.create_stair_segment(params_with_width)
+            # Create the stairs with the parameters (no need to merge anymore)
+            new_stair = Viewrail::StairGenerator.create_stair_segment(values)
             
             # Store ALL parameters for future modification
             Viewrail::StairGenerator.store_stair_parameters(new_stair, values, :straight)
@@ -63,6 +66,7 @@ module Viewrail
             puts "Stair parameters:"
             puts "  Number of Treads: #{values["num_treads"]}"
             puts "  Tread Run: #{values["tread_run"].round(2)}\""
+            puts "  Tread Width: #{values["tread_width"].round(2)}\""  # Add tread width to output
             puts "  Total Tread Run: #{values["total_tread_run"].round(2)}\""
             puts "  Stair Rise: #{values["stair_rise"].round(2)}\""
             puts "  Total Rise: #{values["total_rise"].round(2)}\""

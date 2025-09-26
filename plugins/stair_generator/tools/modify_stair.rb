@@ -35,6 +35,9 @@ module Viewrail
         end
         
         def self.show_straight_modify_form(existing_params)
+          # Ensure tread_width has a default if not present
+          existing_params[:tread_width] ||= 36.0
+          
           # Create the HTML dialog
           dialog = UI::HtmlDialog.new(
             {
@@ -43,11 +46,11 @@ module Viewrail
               :scrollable => false,
               :resizable => false,
               :width => 500,
-              :height => 720,
+              :height => 750,
               :left => 100,
               :top => 100,
               :min_width => 500,
-              :min_height => 720,
+              :min_height => 750,
               :max_width => 500,
               :max_height => 820,
               :style => UI::HtmlDialog::STYLE_DIALOG
@@ -82,14 +85,15 @@ module Viewrail
               begin
                 # Get the transformation of the existing stair
                 transformation = @selected_stair.transformation
-                position = transformation.origin.to_a
                 
                 # Delete the old stair
                 @selected_stair.erase!
                 
-                # Create new stair with updated parameters
-                params_with_width = values.merge({"tread_width" => 36.0})
-                new_stair = Viewrail::StairGenerator.create_stair_segment(params_with_width, position)
+                # Create new stair at origin first
+                new_stair = Viewrail::StairGenerator.create_stair_segment(values, [0, 0, 0])
+                
+                # Apply the original transformation (position and rotation)
+                new_stair.transformation = transformation
                 
                 # Store all parameters for future modification
                 Viewrail::StairGenerator.store_stair_parameters(new_stair, values, :straight)
@@ -99,6 +103,16 @@ module Viewrail
                 model.selection.add(new_stair)
                 
                 model.commit_operation
+                
+                # Display updated parameters
+                puts "Modified stair parameters:"
+                puts "  Number of Treads: #{values["num_treads"]}"
+                puts "  Tread Run: #{values["tread_run"].round(2)}\""
+                puts "  Tread Width: #{values["tread_width"].round(2)}\""
+                puts "  Total Tread Run: #{values["total_tread_run"].round(2)}\""
+                puts "  Stair Rise: #{values["stair_rise"].round(2)}\""
+                puts "  Total Rise: #{values["total_rise"].round(2)}\""
+                puts "  Glass Railing: #{values["glass_railing"]}"
                 
               rescue => e
                 model.abort_operation
@@ -171,16 +185,16 @@ module Viewrail
               begin
                 # Get the transformation of the existing stair
                 transformation = @selected_stair.transformation
-                position = transformation.origin.to_a
                 
                 # Delete the old stair
                 @selected_stair.erase!
                 
-                # Create new 90-degree stairs with updated parameters
-                new_stair = Viewrail::StairGenerator::Tools::NinetyStairMenu.create_90_geometry(values, position)
+                # Create new 90-degree stairs at origin first
+                new_stair = Viewrail::StairGenerator::Tools::NinetyStairMenu.create_90_geometry(values, [0, 0, 0])
                 
-                # Store all parameters for future modification
+                # Apply the original transformation (position and rotation)
                 if new_stair
+                  new_stair.transformation = transformation
                   Viewrail::StairGenerator.store_stair_parameters(new_stair, values, :landing_90)
                   
                   # Select the new stair

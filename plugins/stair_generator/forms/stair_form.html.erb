@@ -115,14 +115,17 @@
         <div class="error" id="tread-run-error"></div>
       </div>
       <div class="form-group">
+        <label for="tread_width">Tread Width (inches):</label>
+        <input type="number" id="tread_width" value="<%= @last_values[:tread_width] || 36 %>" min="24" max="60" step="1">
+        <div class="error" id="tread-width-error"></div>
+      </div>
+      <div class="form-group">
         <label for="total_tread_run">Total Tread Run (inches):</label>
         <input type="number" id="total_tread_run" value="<%= @last_values[:total_tread_run].round(2) %>" readonly>
         <div class="error" id="total-tread-run-error"></div>
       </div>
       <div class="info">
-        Total Tread Run = Number of Treads × Tread Run<br>
-        Standard tread width: 36 inches<br>
-        Standard tread thickness: 1 inch
+        Total Tread Run = Number of Treads × Tread Run
       </div>
     </div>
 
@@ -173,6 +176,7 @@
     // Get input elements
     const numTreadsInput = document.getElementById('num_treads');
     const treadRunInput = document.getElementById('tread_run');
+    const treadWidthInput = document.getElementById('tread_width');
     const totalTreadRunInput = document.getElementById('total_tread_run');
     const stairRiseInput = document.getElementById('stair_rise');
     const totalRiseInput = document.getElementById('total_rise');
@@ -218,6 +222,7 @@
       calculateStairRise();
     });
     treadRunInput.addEventListener('input', calculateTotalTreadRun);
+    treadWidthInput.addEventListener('input', validateInputs);
     totalRiseInput.addEventListener('input', calculateStairRise);
 
     // Validation function
@@ -230,6 +235,7 @@
       // Validate tread parameters
       const numTreads = parseInt(numTreadsInput.value);
       const treadRun = parseFloat(treadRunInput.value);
+      const treadWidth = parseFloat(treadWidthInput.value);
 
       if (numTreads < 1 || numTreads > 22) {
         document.getElementById('treads-error').textContent = 'Must be between 1 and 22';
@@ -240,6 +246,12 @@
       if (treadRun < 11 || treadRun > 13) {
         document.getElementById('tread-run-error').textContent = 'Must be between 11" and 13"';
         document.getElementById('tread-run-error').style.display = 'block';
+        isValid = false;
+      }
+
+      if (treadWidth < 24 || treadWidth > 60) {
+        document.getElementById('tread-width-error').textContent = 'Must be between 24" and 60"';
+        document.getElementById('tread-width-error').style.display = 'block';
         isValid = false;
       }
 
@@ -270,6 +282,7 @@
       const values = {
         num_treads: parseInt(document.getElementById('num_treads').value),
         tread_run: parseFloat(document.getElementById('tread_run').value),
+        tread_width: parseFloat(document.getElementById('tread_width').value),
         total_tread_run: parseFloat(document.getElementById('total_tread_run').value),
         stair_rise: parseFloat(document.getElementById('stair_rise').value),
         total_rise: parseFloat(document.getElementById('total_rise').value),
