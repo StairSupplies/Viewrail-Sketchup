@@ -159,12 +159,12 @@ module Viewrail
               # Left turn: upper stairs go in positive Y direction
               upper_start = [
                 landing_x + params["landing_depth"],
-                landing_y + params["landing_depth"],
+                landing_y + params["landing_width"],
                 landing_z
               ]
               upper_rotation = 90.degrees
             else
-              # Right turn: upper stairs go in positive (switch to negative) Y direction
+              # Right turn: upper stairs go in opposite direction
               upper_start = [
                 landing_x,
                 landing_y,

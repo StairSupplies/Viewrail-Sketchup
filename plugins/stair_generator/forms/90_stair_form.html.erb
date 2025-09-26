@@ -261,48 +261,39 @@
         // Target rise is 7 inches
         const targetRise = 7.0;
         
-        // Calculate total risers needed (treads + 1)
-        const totalRisersNeeded = Math.round(totalRise / targetRise);
-        
-        // Calculate lower treads: total risers - upper treads - 1 (for landing) - 1 (risers = treads + 1)
-        let lowerTreads = totalRisersNeeded - numTreadsUpper - 1 - 1;
-        
-        // Round to nearest integer
-        lowerTreads = Math.round(lowerTreads);
-        
-        // Check if within valid range and adjust if needed to keep rise within code
-        if (lowerTreads < 1) {
-          lowerTreads = 1;
-        }
+        // Calculate total risers needed (treads + landing + top finish floor)
+        const totalRisesNeeded = Math.round(totalRise / targetRise);
+        const totalTreadsNeeded = totalRisesNeeded - 2; // subtract for landing and final rise to floor
+        let numTreadsLower = Math.max(totalTreadsNeeded - numTreadsUpper, 1);     
         
         // Calculate what the actual rise would be
-        const totalTreads = lowerTreads + numTreadsUpper;
-        const calculatedRise = totalRise / (totalTreads + 1);
+        const totalTreads = numTreadsLower + numTreadsUpper;
+        const calculatedRise = totalRise / (totalTreads + 2);
         //define a flag to track if we need to update the number of treads
         let updateNumTreads = false;
         
         // If rise is outside 6-9" range, adjust lower treads
         if (calculatedRise > 9) {
           // Rise too high, need more treads
-          while (lowerTreads < 22) {
-            lowerTreads++;
-            const newTotalTreads = lowerTreads + numTreadsUpper;
-            const newRise = totalRise / (newTotalTreads + 1);
+          while (numTreadsLower < 22) {
+            numTreadsLower++;
+            const newTotalTreads = numTreadsLower + numTreadsUpper;
+            const newRise = totalRise / (newTotalTreads + 2);
             if (newRise <= 9) break;
             updateNumTreads = true
           }
         } else if (calculatedRise < 6) {
           // Rise too low, need fewer treads
-          while (lowerTreads > 1) {
-            lowerTreads--;
-            const newTotalTreads = lowerTreads + numTreadsUpper;
-            const newRise = totalRise / (newTotalTreads + 1);
+          while (numTreadsLower > 1) {
+            numTreadsLower--;
+            const newTotalTreads = numTreadsLower + numTreadsUpper;
+            const newRise = totalRise / (newTotalTreads + 2);
             if (newRise >= 6) break;
             updateNumTreads = true;
           }
         }
 
-        if (updateNumTreads) numTreadsLowerInput.value = lowerTreads;
+        if (updateNumTreads) numTreadsLowerInput.value = numTreadsLower;
 
         // Trigger rise calculation
         calculateStairRise();
@@ -346,7 +337,7 @@
       const totalRise = parseFloat(totalRiseInput.value) || 0;
 
       if (totalTreads > 0 && totalRise > 0) {
-        const stairRise = totalRise / (totalTreads + 1);
+        const stairRise = totalRise / (totalTreads + 2);
         stairRiseInput.value = stairRise.toFixed(2);
       }
 
