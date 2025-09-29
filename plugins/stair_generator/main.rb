@@ -16,6 +16,7 @@ module Viewrail
             {
               :num_treads => 13,
               :tread_run => 11.0,
+              :tread_width => 36.0,
               :total_tread_run => 143.0,
               :stair_rise => 7.5,
               :total_rise => 105.0,
@@ -200,10 +201,35 @@ module Viewrail
       end
 
       # Helper method to add glass railings to a stair segment
-      def add_glass_railings_to_segment(entities, num_treads, tread_run, tread_width,stair_rise, glass_railing, glass_thickness, glass_inset, glass_height)
-
+      def add_glass_railings_to_segment(entities, num_treads, tread_run, tread_width, stair_rise, glass_railing, glass_thickness, glass_inset, glass_height)
         model = Sketchup.active_model
         glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
+        
+        # Calculate panel divisions based on 48" max width
+        max_panel_width = 48.0
+        panel_gap = 1.0
+
+        # Calculate how many treads per panel to stay under 48"
+        treads_per_panel = (max_panel_width / tread_run).floor
+
+        # Distribute treads as evenly as possible
+        panels_needed = (num_treads.to_f / treads_per_panel).ceil
+        base_treads = num_treads / panels_needed
+        extra_treads = num_treads % panels_needed
+
+        # Create array of tread counts per panel
+        panel_tread_counts = []
+        panels_needed.times do |i|
+          if i < panels_needed - extra_treads
+            # First panels get base amount
+            panel_tread_counts << base_treads
+          else
+            # Last panels get the extra treads
+            panel_tread_counts << base_treads + 1
+          end
+        end
+        
+        # Original positioning variables
         total_rise = (num_treads + 1) * stair_rise
         panel_extension = 1.0
         bottom_x_back = tread_run + 5
@@ -212,58 +238,121 @@ module Viewrail
         top_z = total_rise + glass_height
         left_y = tread_width - glass_inset - glass_thickness
         right_y = glass_inset
-
-        # Define panel sides
+        stair_angle = (stair_rise / tread_run)
+        
+        # Define panel sides configuration
         panel_sides = [
           {
             name: "Left",
             enabled: glass_railing == "Left" || glass_railing == "Both",
-            y: glass_inset,
+            y: left_y,
             y_min: left_y - 0.01,
-            y_max: left_y + glass_thickness + 0.01,
-            build_points: lambda {
-              points = []
-              points << [0, left_y, bottom_z]
-              points << [bottom_x_back, left_y, bottom_z]
-              points << [top_x_end, left_y, top_z - glass_height - (2*stair_rise)]
-              points << [top_x_end, left_y, top_z]
-              points << [0, left_y, bottom_z + glass_height]
-              points
-            }
+            y_max: left_y + glass_thickness + 0.01
           },
           {
             name: "Right",
             enabled: glass_railing == "Right" || glass_railing == "Both",
-            y: tread_width - glass_inset - glass_thickness,
-            y_max: right_y + glass_thickness + 0.01,
+            y: right_y,
             y_min: right_y - 0.01,
-            build_points: lambda {
-              points = []
-              points << [0, right_y, bottom_z]
-              points << [bottom_x_back, right_y, bottom_z]
-              points << [top_x_end, right_y, top_z - glass_height - (2*stair_rise)]
-              points << [top_x_end, right_y, top_z]
-              points << [0, right_y, bottom_z + glass_height]
-              points
-            }
+            y_max: right_y + glass_thickness + 0.01
           }
         ]
-
+        
         panel_sides.each do |side|
           next unless side[:enabled]
-          glass_points = side[:build_points].call
-          face = entities.add_face(glass_points)
-          if face
-            face.pushpull(-glass_thickness)
-            face.material = glass_material
-            face.back_material = glass_material
-            # Apply material to all faces
-            entities.grep(Sketchup::Face).each do |f|
-              if f.bounds.min.y >= side[:y_min] && f.bounds.max.y <= side[:y_max]
-                f.material = glass_material
-                f.back_material = glass_material
+          
+          tread_start = 0
+          
+          # Create each glass panel section
+          panel_tread_counts.each_with_index do |treads_in_panel, panel_index|
+            tread_end = tread_start + treads_in_panel
+            is_first_panel = (panel_index == 0)
+            is_last_panel = (panel_index == panel_tread_counts.length - 1)
+            
+            glass_points = []
+            
+            if is_first_panel
+              # First panel - includes horizontal bottom portion
+              start_x = 0
+              end_x = tread_end * tread_run + 5
+              
+              # Bottom edge points
+              bottom_start_z = bottom_z
+              bottom_end_z = (tread_end - 1) * stair_rise + bottom_z
+              
+              # Top edge points  
+              top_start_z = glass_height + stair_rise
+              top_end_z = end_x * stair_angle + top_start_z
+              
+              # Build 5-point polygon like original
+              glass_points << [start_x, side[:y], bottom_start_z]
+              glass_points << [bottom_x_back, side[:y], bottom_start_z]
+              glass_points << [end_x, side[:y], bottom_end_z]
+              glass_points << [end_x, side[:y], top_end_z]
+              glass_points << [start_x, side[:y], top_start_z]
+              
+            elsif is_last_panel
+              # Last panel - includes top extension
+              start_x = (tread_start * tread_run) + 5 + panel_gap
+              end_x = (tread_end * tread_run) + 5 + panel_extension
+              
+              # Calculate slope-aligned positions
+              # Bottom edge continues the slope from the original line
+              bottom_start_z = (tread_start - 1) * stair_rise + bottom_z
+              bottom_end_z = (tread_end - 1) * stair_rise + bottom_z
+              angle_start_z = glass_height + stair_rise
+              top_start_z = angle_start_z + start_x * stair_angle
+              top_end_z = angle_start_z + end_x * stair_angle
+
+              # Build 4-point parallelogram
+              glass_points << [start_x, side[:y], bottom_start_z]
+              glass_points << [end_x, side[:y], bottom_end_z]
+              glass_points << [end_x, side[:y], top_end_z]
+              glass_points << [start_x, side[:y], top_start_z]
+              
+            else
+              # Middle panels - pure parallelograms following slope
+              start_x = tread_start * tread_run + 5 + panel_gap
+              end_x = tread_end * tread_run + 5
+              
+              # Calculate slope-aligned positions
+              # Bottom edge continues the slope from the original line
+              bottom_start_z = (tread_start - 1) * stair_rise + bottom_z
+              bottom_end_z = (tread_end - 1) * stair_rise + bottom_z
+              angle_start_z = glass_height + stair_rise
+              top_start_z = angle_start_z + start_x * stair_angle
+              top_end_z = angle_start_z + end_x * stair_angle
+              
+              # Build 4-point parallelogram
+              glass_points << [start_x, side[:y], bottom_start_z]
+              glass_points << [end_x, side[:y], bottom_end_z]
+              glass_points << [end_x, side[:y], top_end_z]
+              glass_points << [start_x, side[:y], top_start_z]
+            end
+            
+            # Create the face and extrude
+            face = entities.add_face(glass_points)
+            if face
+              face.pushpull(-glass_thickness)
+              face.material = glass_material
+              face.back_material = glass_material
+              
+              # Apply material to all faces in this panel
+              entities.grep(Sketchup::Face).each do |f|
+                if f.bounds.min.y >= side[:y_min] && f.bounds.max.y <= side[:y_max]
+                  # Check if face is within this panel's x-range
+                  panel_x_min = is_first_panel ? 0 : (tread_start * tread_run + 5 - 0.01)
+                  panel_x_max = is_last_panel ? 
+                    (tread_end * tread_run + 5 + panel_extension + 0.01) : 
+                    (tread_end * tread_run + 5 + 0.01)
+                    
+                  f.material = glass_material
+                  f.back_material = glass_material
+                end
               end
             end
+            
+            tread_start = tread_end
           end
         end
       end
@@ -275,84 +364,128 @@ module Viewrail
         glass_inset = 1.0
         glass_height = 36.0
         corner_gap = 1.0
+        max_panel_width = 48.0
+        panel_gap = 1.0
 
-        # Determine which edges get railings based on turn direction and railing option
-        # For L-shaped stairs, inner/outer refers to the inside/outside of the L
+        # Determine which edges get railings
         edges_to_rail = []
-
         if turn_direction == "Left"
           case glass_railing
           when "Inner"
-            #do nothing, for now
+            # do nothing for now
           when "Outer", "Both"
-            edges_to_rail = ["front", "right"]    # Outer edges
+            edges_to_rail = ["front", "right"]
           end
         else # Right turn
           case glass_railing
           when "Inner"
-            #do nothing, for now
+            # do nothing for now
           when "Outer", "Both"
-            edges_to_rail = ["back", "right"]   # Outer edges
+            edges_to_rail = ["back", "right"]
           end
         end
 
-        # Create glass panels for specified edges with corner gaps
+        # Create glass panels for specified edges with splits if needed
         edges_to_rail.each do |edge|
           case edge
-          when "front"
-            glass_points = [
-              [corner_gap, glass_inset, glass_height],
-              [depth - corner_gap, glass_inset, glass_height],
-              [depth - corner_gap, glass_inset, 0],
-              [corner_gap, glass_inset, 0]
-            ]
-          when "back"
-            glass_points = [
-              [corner_gap, width - glass_inset - glass_thickness, glass_height],
-              [depth - corner_gap, width - glass_inset - glass_thickness, glass_height],
-              [depth - corner_gap, width - glass_inset - glass_thickness, 0],
-              [corner_gap, width - glass_inset - glass_thickness, 0]
-            ]
-          when "left"
-            glass_points = [
-              [glass_inset, corner_gap, glass_height],
-              [glass_inset, width - corner_gap, glass_height],
-              [glass_inset, width - corner_gap, 0],
-              [glass_inset, corner_gap, 0]
-            ]
-          when "right"
-            glass_points = [
-              [depth - glass_inset - glass_thickness, corner_gap, glass_height],
-              [depth - glass_inset - glass_thickness, width - corner_gap, glass_height],
-              [depth - glass_inset - glass_thickness, width - corner_gap, 0],
-              [depth - glass_inset - glass_thickness, corner_gap, 0]
-            ]
-          end
-
-          face = entities.add_face(glass_points)
-          if face
-            face.pushpull(glass_thickness)
-            face.material = glass_material
-            face.back_material = glass_material
-            # Apply material to all faces of the panel
-            entities.grep(Sketchup::Face).each do |f|
-              bbox = f.bounds
-              if bbox.min.z >= -0.01 && bbox.max.z <= glass_height + 0.01
-                # Check if this face is part of the current glass panel
-                case edge
-                when "front", "back"
-                  if (bbox.min.x >= corner_gap - 0.01) && (bbox.max.x <= depth - corner_gap + 0.01)
-                    f.material = glass_material
-                    f.back_material = glass_material
-                  end
-                when "left", "right"
-                  if (bbox.min.y >= corner_gap - 0.01) && (bbox.max.y <= width - corner_gap + 0.01)
-                    f.material = glass_material
-                    f.back_material = glass_material
-                  end
+          when "front", "back"
+            # Calculate panel length (accounting for corner gaps)
+            panel_length = depth - (2 * corner_gap)
+            y_pos = edge == "front" ? glass_inset : width - glass_inset - glass_thickness
+            
+            if panel_length <= max_panel_width
+              # Single panel
+              glass_points = [
+                [corner_gap, y_pos, glass_height],
+                [depth - corner_gap, y_pos, glass_height],
+                [depth - corner_gap, y_pos, 0],
+                [corner_gap, y_pos, 0]
+              ]
+              
+              face = entities.add_face(glass_points)
+              if face
+                face.pushpull(glass_thickness)
+                face.material = glass_material
+                face.back_material = glass_material
+              end
+            else
+              # Multiple panels - split symmetrically
+              num_panels = (panel_length / max_panel_width).ceil
+              actual_panel_width = (panel_length - (num_panels - 1) * panel_gap) / num_panels
+              
+              num_panels.times do |i|
+                start_x = corner_gap + i * (actual_panel_width + panel_gap)
+                end_x = start_x + actual_panel_width
+                
+                glass_points = [
+                  [start_x, y_pos, glass_height],
+                  [end_x, y_pos, glass_height],
+                  [end_x, y_pos, 0],
+                  [start_x, y_pos, 0]
+                ]
+                
+                face = entities.add_face(glass_points)
+                if face
+                  face.pushpull(glass_thickness)
+                  face.material = glass_material
+                  face.back_material = glass_material
                 end
               end
             end
+            
+          when "left", "right"
+            # Calculate panel length (accounting for corner gaps)
+            panel_length = width - (2 * corner_gap)
+            x_pos = edge == "left" ? glass_inset : depth - glass_inset - glass_thickness
+            
+            if panel_length <= max_panel_width
+              # Single panel
+              glass_points = [
+                [x_pos, corner_gap, glass_height],
+                [x_pos, width - corner_gap, glass_height],
+                [x_pos, width - corner_gap, 0],
+                [x_pos, corner_gap, 0]
+              ]
+              
+              face = entities.add_face(glass_points)
+              if face
+                face.pushpull(glass_thickness)
+                face.material = glass_material
+                face.back_material = glass_material
+              end
+            else
+              # Multiple panels - split symmetrically
+              num_panels = (panel_length / max_panel_width).ceil
+              actual_panel_width = (panel_length - (num_panels - 1) * panel_gap) / num_panels
+              
+              num_panels.times do |i|
+                start_y = corner_gap + i * (actual_panel_width + panel_gap)
+                end_y = start_y + actual_panel_width
+                
+                glass_points = [
+                  [x_pos, start_y, glass_height],
+                  [x_pos, end_y, glass_height],
+                  [x_pos, end_y, 0],
+                  [x_pos, start_y, 0]
+                ]
+                
+                face = entities.add_face(glass_points)
+                if face
+                  face.pushpull(glass_thickness)
+                  face.material = glass_material
+                  face.back_material = glass_material
+                end
+              end
+            end
+          end
+        end
+        
+        # Apply material to all glass faces
+        entities.grep(Sketchup::Face).each do |f|
+          bbox = f.bounds
+          if bbox.min.z >= -0.01 && bbox.max.z <= glass_height + 0.01
+            f.material = glass_material if f.material != glass_material
+            f.back_material = glass_material if f.back_material != glass_material
           end
         end
       end
@@ -382,7 +515,7 @@ module Viewrail
               # Retrieve straight stair parameters
               params[:num_treads] = dict["num_treads"]
               params[:tread_run] = dict["tread_run"]
-              params[:tread_width] = dict["tread_width"]
+              params[:tread_width] = dict["tread_width"] || 36.0
               params[:stair_rise] = dict["stair_rise"]
               params[:glass_railing] = dict["glass_railing"]
               
