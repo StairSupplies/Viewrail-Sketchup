@@ -147,9 +147,9 @@ module Viewrail
           end
         end
 
-        def onKeyUp(key, repeat, flags, view)
-          # Handle key up if needed
-        end
+        # def onKeyUp(key, repeat, flags, view)
+        #   # Handle key up if needed
+        # end
 
         def onLButtonDown(flags, x, y, view)
           if @selection_mode == :face
@@ -212,14 +212,12 @@ module Viewrail
               polygon.each do |vertex_index|
                 points << mesh.point_at(vertex_index.abs)
               end
-
-              # Draw filled polygon
               view.draw(GL_POLYGON, points)
             end
 
             # Also draw the face edges for better visibility
             view.drawing_color = [50, 150, 50, 200]  # Darker green for edges
-            view.line_width = 2
+            view.line_width = 5
             face.edges.each do |edge|
               view.draw_line(edge.vertices[0].position, edge.vertices[1].position)
             end
@@ -227,7 +225,7 @@ module Viewrail
             # Draw the top edge in blue
             if @face_edges[index]
               view.drawing_color = "blue"
-              view.line_width = 4
+              view.line_width = 8
               edge_points = @face_edges[index]
               view.draw_line(edge_points[0], edge_points[1])
 
@@ -560,37 +558,6 @@ module Viewrail
             end
           end
         end
-
-        # def extract_top_edge_from_face(face)
-        #   # Find all edges of the face
-        #   edges = face.edges
-
-        #   # Filter for horizontal edges (perpendicular to Z axis)
-        #   horizontal_edges = edges.select do |edge|
-        #     edge_vector = edge.line[1]
-        #     edge_vector.perpendicular?([0, 0, 1])
-        #   end
-
-        #   if horizontal_edges.empty?
-        #     raise "Face has no horizontal edges"
-        #   end
-
-        #   # Find the edge with the highest Z coordinate
-        #   top_edge = horizontal_edges.max_by do |edge|
-        #     # Get average Z of the edge's vertices
-        #     (edge.vertices[0].position.z + edge.vertices[1].position.z) / 2.0
-        #   end
-
-        #   # Verify the edge is truly horizontal (not angled)
-        #   v1 = top_edge.vertices[0].position
-        #   v2 = top_edge.vertices[1].position
-        #   if (v1.z - v2.z).abs > 0.001  # Tolerance for floating point
-        #     raise "Top edge is not horizontal (angled)"
-        #   end
-
-        #   # Return the two points of the edge
-        #   [v1, v2]
-        # end
 
         def convert_face_edges_to_points
           # Use the utility method to get face segments
