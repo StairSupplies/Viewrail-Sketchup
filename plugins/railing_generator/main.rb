@@ -1,6 +1,6 @@
 require 'erb'
 require_relative '../viewrail_shared/utilities'
-require_relative 'tools/glass_railing_tool'
+require_relative 'tools/glass_railing_face_tool'
 
 module Viewrail
   module RailingGenerator
@@ -20,11 +20,11 @@ module Viewrail
         )
       end
     end
-    
+
     # Create toolbar and menu
     unless file_loaded?(__FILE__)
       toolbar = UI::Toolbar.new("Railing Generator")
-      
+
       # Glass railing command
       cmd_glass_railing = UI::Command.new("Glass Railing") {
         Viewrail::RailingGenerator::Tools::GlassRailingTool.show
@@ -44,7 +44,7 @@ module Viewrail
       cmd_railing_placeholder.tooltip = "Railing Placeholder (Coming Soon)"
       cmd_railing_placeholder.status_bar_text = "Railing Placeholder Tool - Coming Soon!"
       cmd_railing_placeholder.menu_text = "Railing Placeholder"
-      
+
       # About command
       cmd_about = UI::Command.new("About") {
         show_about
@@ -54,14 +54,14 @@ module Viewrail
       cmd_about.tooltip = "About Railing Generator"
       cmd_about.status_bar_text = "About Railing Generator Extension"
       cmd_about.menu_text = "About"
-      
+
       # Build toolbar
       toolbar = toolbar.add_item(cmd_glass_railing)
       toolbar = toolbar.add_item(cmd_railing_placeholder)
       toolbar = toolbar.add_separator
       toolbar = toolbar.add_item(cmd_about)
       toolbar.show
-      
+
       # Create menu
       menu = UI.menu("Extensions")
       railing_menu = menu.add_submenu("Railing Generator")
@@ -69,7 +69,7 @@ module Viewrail
       railing_menu.add_item(cmd_railing_placeholder)
       railing_menu.add_separator
       railing_menu.add_item(cmd_about)
-      
+
       file_loaded(__FILE__)
     end
   end
