@@ -8,6 +8,14 @@ module Viewrail
   module StairGenerator
     
     class << self
+      # Cache for selection validation - MODIFY TOOL
+      attr_accessor :selection_cache, :cached_validation_result
+
+       # Initialize cache
+      def init_selection_cache
+        @selection_cache_id = nil
+        @cached_validation_result = false
+      end
 
       def last_form_values(stair_type = :straight)
         @last_form_values ||= {}
@@ -559,8 +567,41 @@ module Viewrail
       
       # Check if a valid stair entity is selected
       def has_valid_stair_selection?
+        puts "Getting selected stair parameters for validation"
         params = get_selected_stair_parameters
         return !params.nil?
+      end
+
+      # Optimized validation check with caching
+      def has_valid_stair_selection_cached?
+        model = Sketchup.active_model
+        selection = model.selection
+        
+        # Create a unique identifier for the current selection
+        # Using entity IDs of selected entities to detect changes
+        current_selection_id = if selection.empty?
+          "empty"
+        else
+          selection.map(&:entityID).sort.join("-")
+        end
+        
+        # If selection hasn't changed, return cached result
+        if @selection_cache_id == current_selection_id
+          # Return cached result without re-checking
+          return @cached_validation_result
+        end
+        
+        # Selection has changed, update cache
+        @selection_cache_id = current_selection_id
+        
+        # Perform the actual validation only when selection changes
+        @cached_validation_result = has_valid_stair_selection?
+        
+        # Optional: Add debug output to confirm it's working
+        # Remove this line in production
+        puts "Selection changed - recalculated validation: #{@cached_validation_result}"
+        
+        return @cached_validation_result
       end
       
       # Store all parameters needed for regeneration
@@ -616,6 +657,9 @@ module Viewrail
     # Create toolbar
     unless file_loaded?(__FILE__)
 
+      # Init selection cache for modify tool
+      Viewrail::StairGenerator.init_selection_cache
+
       # Create the toolbar
       toolbar = UI::Toolbar.new("Stair Generator")
 
@@ -651,7 +695,7 @@ module Viewrail
 
       # Add validation proc to enable/disable based on selection
       cmd_modify.set_validation_proc {
-        if Viewrail::StairGenerator.has_valid_stair_selection?
+        if Viewrail::StairGenerator.has_valid_stair_selection_cached?
           MF_ENABLED
         else
           MF_GRAYED
