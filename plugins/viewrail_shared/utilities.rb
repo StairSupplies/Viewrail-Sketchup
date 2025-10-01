@@ -319,6 +319,17 @@ module Viewrail
         offset_segments
       end
 
+      def convert_points_to_segments(points)
+
+        return if points.length < 2
+        segments = []        
+        (points.length - 1).times do |i|
+          segments << [points[i], points[i + 1]]
+        end
+        return segments
+
+      end #convert_points_to_segments
+
       def get_vector_from_face(face)
         offset_vector = face.normal
         offset_vector.normalize!
