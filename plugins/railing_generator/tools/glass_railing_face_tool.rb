@@ -336,7 +336,7 @@ module Viewrail
 
         def convert_face_edges_to_points
           # Use the utility method to get face segments
-          @face_segments = Viewrail::SharedUtilities.convert_face_edges_to_segments(
+          @face_segments = Viewrail::SharedUtilities.create_offset_line_from_edges(
             @face_edges,
             @selected_faces,
             @offset_distance
@@ -385,11 +385,17 @@ module Viewrail
                 create_handrail_for_segment(segment_group, aluminum_material, segment_points)
               end
 
-              # Create base channel for this segment if enabled
-              if @include_base_channel
-                create_base_channel_for_segment(segment_group, aluminum_material, segment_points)
-              end
+              # # Create base channel for this segment if enabled
+              # if @include_base_channel
+              #   create_base_channel_for_segment(segment_group, aluminum_material, segment_points)
+              # end
             end
+
+            puts "Creating continuous base channel: #{@include_base_channel}"
+            if @include_base_channel
+              create_continuous_base_channel(main_group, aluminum_material)
+            end
+            puts "continuous base channel created successfully."
 
             model.commit_operation
             Sketchup.active_model.select_tool(nil)
@@ -463,51 +469,51 @@ module Viewrail
           end
         end # create_handrail_for_segment
 
-        def create_base_channel_for_segment(parent_group, aluminum_material, segment_points)
-          base_group = parent_group.entities.add_group
-          base_group.name = "Base Channel"
+        # def create_base_channel_for_segment(parent_group, aluminum_material, segment_points)
+        #   base_group = parent_group.entities.add_group
+        #   base_group.name = "Base Channel"
 
-          start_pt = segment_points[0]
-          end_pt = segment_points[1]
+        #   start_pt = segment_points[0]
+        #   end_pt = segment_points[1]
 
-          vec = end_pt - start_pt
-          segment_length = vec.length
-          return if segment_length == 0
-          vec.normalize!
+        #   vec = end_pt - start_pt
+        #   segment_length = vec.length
+        #   return if segment_length == 0
+        #   vec.normalize!
 
-          # Create perpendicular vector
-          perp_vec = Geom::Vector3d.new(-vec.y, vec.x, 0)
+        #   # Create perpendicular vector
+        #   perp_vec = Geom::Vector3d.new(-vec.y, vec.x, 0)
 
-          # Create base channel cross-section
-          half_width = @base_channel_width / 2.0
+        #   # Create base channel cross-section
+        #   half_width = @base_channel_width / 2.0
 
-          # Simple rectangular profile
-          profile_points = []
-          profile_points << start_pt.offset(perp_vec, -half_width)
-          profile_points << start_pt.offset(perp_vec, -half_width).offset([0,0,1], @base_channel_height)
-          profile_points << start_pt.offset(perp_vec, half_width).offset([0,0,1], @base_channel_height)
-          profile_points << start_pt.offset(perp_vec, half_width)
+        #   # Simple rectangular profile
+        #   profile_points = []
+        #   profile_points << start_pt.offset(perp_vec, -half_width)
+        #   profile_points << start_pt.offset(perp_vec, -half_width).offset([0,0,1], @base_channel_height)
+        #   profile_points << start_pt.offset(perp_vec, half_width).offset([0,0,1], @base_channel_height)
+        #   profile_points << start_pt.offset(perp_vec, half_width)
 
-          face = base_group.entities.add_face(profile_points)
-          if face
-            face.pushpull(-segment_length, vec)
+        #   face = base_group.entities.add_face(profile_points)
+        #   if face
+        #     face.pushpull(-segment_length, vec)
 
-            # Apply aluminum material
-            base_group.entities.grep(Sketchup::Face).each do |f|
-              f.material = aluminum_material
-              f.back_material = aluminum_material
-            end
+        #     # Apply aluminum material
+        #     base_group.entities.grep(Sketchup::Face).each do |f|
+        #       f.material = aluminum_material
+        #       f.back_material = aluminum_material
+        #     end
 
-            # Soften vertical edges for rounded appearance
-            base_group.entities.grep(Sketchup::Edge).each do |edge|
-              edge_vec = edge.line[1]
-              if edge_vec.parallel?([0,0,1])
-                edge.soft = true
-                edge.smooth = true
-              end
-            end
-          end
-        end # create_base_channel_for_segment
+        #     # Soften vertical edges for rounded appearance
+        #     base_group.entities.grep(Sketchup::Edge).each do |edge|
+        #       edge_vec = edge.line[1]
+        #       if edge_vec.parallel?([0,0,1])
+        #         edge.soft = true
+        #         edge.smooth = true
+        #       end
+        #     end
+        #   end
+        # end # create_base_channel_for_segment       
 
         def create_glass_panels(group, glass_material, start_pt, end_pt, segmented=false)
           glass_group = nil
@@ -618,6 +624,297 @@ module Viewrail
 
           return panels
         end # calculate_panel_count
+
+       # def create_continuous_base_channel(main_group, aluminum_material)
+        #   base_group = main_group.entities.add_group
+        #   base_group.name = "Base Channel"
+
+        #   # Calculate base channel path with offsets
+        #   base_path = []          
+
+        #   # Extrude base channel along path
+        #   (0...base_path.length - 1).each do |i|
+        #     start_pt = Geom::Point3d.new(base_path[i])
+        #     end_pt = Geom::Point3d.new(base_path[i + 1])
+
+        #     vec = end_pt - start_pt
+        #     segment_length = vec.length
+        #     vec.normalize!
+
+        #     # Create perpendicular vector
+        #     perp_vec = Geom::Vector3d.new(-vec.y, vec.x, 0)
+
+        #     # Create base channel cross-section
+        #     half_width = @base_channel_width / 2.0
+
+        #     # Simple rectangular profile (softened edges will handle rounding visually)
+        #     profile_points = []
+        #     profile_points << start_pt.offset(perp_vec, -half_width)
+        #     profile_points << start_pt.offset(perp_vec, -half_width).offset([0,0,1], @base_channel_height)
+        #     profile_points << start_pt.offset(perp_vec, half_width).offset([0,0,1], @base_channel_height)
+        #     profile_points << start_pt.offset(perp_vec, half_width)
+
+        #     face = base_group.entities.add_face(profile_points)
+        #     if face
+        #       face.pushpull(-segment_length, vec)
+
+        #       # Apply aluminum material
+        #       base_group.entities.grep(Sketchup::Face).each do |f|
+        #         f.material = aluminum_material
+        #         f.back_material = aluminum_material
+        #       end
+
+        #       # Soften vertical edges for rounded appearance
+        #       base_group.entities.grep(Sketchup::Edge).each do |edge|
+        #         # Soften vertical edges (those parallel to Z-axis)
+        #         edge_vec = edge.line[1]
+        #         if edge_vec.parallel?([0,0,1])
+        #           edge.soft = true
+        #           edge.smooth = true
+        #         end
+        #       end
+        #     end
+        #   end
+        # end # create_continuous_base_channel
+
+        def create_continuous_base_channel(main_group, aluminum_material)
+          puts "Starting create_continuous_base_channel"
+          base_group = main_group.entities.add_group
+          base_group.name = "Base Channel"
+
+          # Get the offset path using your new method
+          # Assuming you have edges and faces available from your selection
+          puts "Getting offset segments for base channel"
+          baserail_center_offset = @offset_distance - (@glass_thickness / 2.0)
+          offset_segments = Viewrail::SharedUtilities.create_offset_line_from_edges(@face_edges, @selected_faces, baserail_center_offset)
+          
+          puts "Offset segments for base channel: #{offset_segments.length}"
+          return unless offset_segments && !offset_segments.empty?
+          puts "Offset segments: #{offset_segments.inspect}"
+
+          # Create path edges from segments
+          path_edges = []
+          offset_segments.each do |segment|
+            edge = base_group.entities.add_line(segment[0], segment[1])
+            path_edges << edge if edge
+          end
+
+          puts "Created #{path_edges.length} path edges for base channel"
+
+          # Get starting point and direction for profile orientation
+          first_segment = offset_segments.first
+          start_pt = first_segment[0]
+          end_pt = first_segment[1]
+          
+          # Calculate path direction at start
+          path_vec = end_pt - start_pt
+          path_vec.normalize!
+          
+          # Create perpendicular vector for profile orientation
+          perp_vec = Geom::Vector3d.new(-path_vec.y, path_vec.x, 0)
+          perp_vec.normalize!
+          
+          # Create base channel profile at the start of the path
+          half_width = @base_channel_width / 2.0
+          
+          profile_points = []
+          profile_points << start_pt.offset(perp_vec, -half_width)
+          profile_points << start_pt.offset(perp_vec, -half_width).offset([0,0,1], @base_channel_height)
+          profile_points << start_pt.offset(perp_vec, half_width).offset([0,0,1], @base_channel_height)
+          profile_points << start_pt.offset(perp_vec, half_width)
+          
+          # Create profile face
+          profile_face = base_group.entities.add_face(profile_points)
+          
+          if profile_face
+            # Use Follow Me to extrude profile along path
+            profile_face.followme(path_edges)
+            
+            # Clean up the path edges if desired (optional)
+            # path_edges.each { |edge| edge.erase! if edge.valid? && edge.faces.empty? }
+            
+            # Apply aluminum material to all faces
+            base_group.entities.grep(Sketchup::Face).each do |face|
+              face.material = aluminum_material
+              face.back_material = aluminum_material
+            end
+            
+            # Soften vertical edges for rounded appearance
+            base_group.entities.grep(Sketchup::Edge).each do |edge|
+              edge_vec = edge.line[1]
+              if edge_vec.parallel?([0,0,1])
+                edge.soft = true
+                edge.smooth = true
+              end
+            end
+          end
+          
+          base_group
+        end
+
+        # # Alternative version with more control over the profile shape
+        # def create_continuous_base_channel_v2(main_group, aluminum_material, edges, faces, offset_distance)
+        #   model = Sketchup.active_model
+          
+        #   model.start_operation('Create Base Channel', true)
+          
+        #   begin
+        #     base_group = main_group.entities.add_group
+        #     base_group.name = "Base Channel"
+            
+        #     # Get offset path
+        #     offset_segments = create_offset_line_from_edges(edges, faces, offset_distance)
+            
+        #     if offset_segments.empty?
+        #       puts "No valid offset path created"
+        #       model.abort_operation
+        #       return nil
+        #     end
+            
+        #     # Build continuous path edges
+        #     path_edges = []
+        #     offset_segments.each do |segment|
+        #       edge = base_group.entities.add_line(segment[0], segment[1])
+        #       path_edges << edge if edge
+        #     end
+            
+        #     # Create profile with rounded corners (optional enhancement)
+        #     profile_face = create_base_channel_profile(base_group, offset_segments.first)
+            
+        #     if profile_face
+        #       # Perform Follow Me
+        #       profile_face.followme(path_edges)
+              
+        #       # Apply materials and softening
+        #       apply_base_channel_finish(base_group, aluminum_material)
+        #     end
+            
+        #     model.commit_operation
+        #     base_group
+            
+        #   rescue => e
+        #     puts "Error creating base channel: #{e.message}"
+        #     model.abort_operation
+        #     nil
+        #   end
+        # end
+
+        # def create_base_channel_profile(group, first_segment)
+        #   start_pt = first_segment[0]
+        #   end_pt = first_segment[1]
+          
+        #   # Calculate orientation
+        #   path_vec = end_pt - start_pt
+        #   path_vec.normalize!
+          
+        #   # Create perpendicular vector
+        #   perp_vec = Geom::Vector3d.new(-path_vec.y, path_vec.x, 0)
+        #   perp_vec.normalize!
+          
+        #   half_width = @base_channel_width / 2.0
+        #   corner_radius = @base_channel_corner_radius || 0.125.inch
+          
+        #   # Create profile with optional rounded corners
+        #   if corner_radius > 0 && corner_radius < half_width && corner_radius < @base_channel_height / 2.0
+        #     # Create rounded rectangle profile
+        #     profile_points = create_rounded_rectangle_profile(
+        #       start_pt, perp_vec, half_width, @base_channel_height, corner_radius
+        #     )
+        #   else
+        #     # Simple rectangular profile
+        #     profile_points = []
+        #     profile_points << start_pt.offset(perp_vec, -half_width)
+        #     profile_points << start_pt.offset(perp_vec, -half_width).offset([0,0,1], @base_channel_height)
+        #     profile_points << start_pt.offset(perp_vec, half_width).offset([0,0,1], @base_channel_height)
+        #     profile_points << start_pt.offset(perp_vec, half_width)
+        #   end
+          
+        #   # Create face
+        #   face = group.entities.add_face(profile_points)
+        #   face
+        # end
+
+        # def create_rounded_rectangle_profile(center, perp_vec, half_width, height, radius)
+        #   points = []
+          
+        #   # Bottom edge with rounded corners
+        #   points << center.offset(perp_vec, -half_width + radius)
+          
+        #   # Bottom-left corner arc
+        #   add_corner_arc(points, 
+        #     center.offset(perp_vec, -half_width + radius).offset([0,0,1], radius),
+        #     radius, Math::PI, Math::PI * 1.5, perp_vec)
+          
+        #   # Left edge
+        #   points << center.offset(perp_vec, -half_width).offset([0,0,1], radius)
+        #   points << center.offset(perp_vec, -half_width).offset([0,0,1], height - radius)
+          
+        #   # Top-left corner arc
+        #   add_corner_arc(points,
+        #     center.offset(perp_vec, -half_width + radius).offset([0,0,1], height - radius),
+        #     radius, Math::PI * 0.5, Math::PI, perp_vec)
+          
+        #   # Top edge
+        #   points << center.offset(perp_vec, -half_width + radius).offset([0,0,1], height)
+        #   points << center.offset(perp_vec, half_width - radius).offset([0,0,1], height)
+          
+        #   # Top-right corner arc
+        #   add_corner_arc(points,
+        #     center.offset(perp_vec, half_width - radius).offset([0,0,1], height - radius),
+        #     radius, 0, Math::PI * 0.5, perp_vec)
+          
+        #   # Right edge
+        #   points << center.offset(perp_vec, half_width).offset([0,0,1], height - radius)
+        #   points << center.offset(perp_vec, half_width).offset([0,0,1], radius)
+          
+        #   # Bottom-right corner arc
+        #   add_corner_arc(points,
+        #     center.offset(perp_vec, half_width - radius).offset([0,0,1], radius),
+        #     radius, Math::PI * 1.5, Math::PI * 2, perp_vec)
+          
+        #   # Close to starting point
+        #   points << center.offset(perp_vec, half_width - radius)
+          
+        #   points
+        # end
+
+        # def add_corner_arc(points, center, radius, start_angle, end_angle, perp_vec)
+        #   segments = 4 # Number of segments for corner arc
+        #   angle_step = (end_angle - start_angle) / segments
+          
+        #   (1..segments).each do |i|
+        #     angle = start_angle + (angle_step * i)
+        #     x = Math.cos(angle) * radius
+        #     y = Math.sin(angle) * radius
+            
+        #     # Transform based on orientation
+        #     if perp_vec.x.abs > 0.9
+        #       offset_point = center.offset([x, 0, y])
+        #     else
+        #       offset_point = center.offset([0, x, y])
+        #     end
+            
+        #     points << offset_point
+        #   end
+        # end
+
+        def apply_base_channel_finish(group, material)
+          # Apply material
+          group.entities.grep(Sketchup::Face).each do |face|
+            face.material = material
+            face.back_material = material
+          end
+          
+          # Soften appropriate edges
+          group.entities.grep(Sketchup::Edge).each do |edge|
+            edge_vec = edge.line[1]
+            # Soften vertical edges and small corner edges
+            if edge_vec.parallel?([0,0,1]) || edge.length < (@base_channel_corner_radius || 0.125.inch) * 2
+              edge.soft = true
+              edge.smooth = true
+            end
+          end
+        end
 
       end # class GlassRailingTool
 

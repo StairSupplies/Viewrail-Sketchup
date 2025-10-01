@@ -182,6 +182,149 @@ module Viewrail
         face_segments
       end
 
+      #================ IN DEVELOPMENT================
+
+      def build_path_from_edges(edges)
+        points = []
+        
+        # Handle both Edge objects and point pair arrays
+        if edges.first.is_a?(Array)
+          # edges is an array of point pairs [[pt1, pt2], [pt3, pt4], ...]
+          return [] if edges.empty?
+          
+          # Start with first edge points
+          first_edge = edges.first
+          points << first_edge[0]
+          points << first_edge[1]
+          
+          # Add remaining edges (assuming they're connected)
+          edges[1..-1].each do |edge_points|
+            start_pt = edge_points[0]
+            end_pt = edge_points[1]
+            
+            # Check which end connects to our path
+            if start_pt == points.last
+              points << end_pt
+            elsif end_pt == points.last
+              points << start_pt
+            elsif end_pt == points.first
+              # Edge connects to beginning
+              points.unshift(start_pt)
+            elsif start_pt == points.first
+              points.unshift(end_pt)
+            else
+              # Edge doesn't connect - try to find closest connection
+              # This handles cases where points might be very close but not exactly equal
+              tolerance = 0.001.inch
+              
+              if start_pt.distance(points.last) < tolerance
+                points << end_pt
+              elsif end_pt.distance(points.last) < tolerance
+                points << start_pt
+              elsif end_pt.distance(points.first) < tolerance
+                points.unshift(start_pt)
+              elsif start_pt.distance(points.first) < tolerance
+                points.unshift(end_pt)
+              end
+            end
+          end
+          
+        else
+          # Original code for Edge objects
+          first_edge = edges.first
+          points << first_edge.start.position
+          points << first_edge.end.position
+          
+          edges[1..-1].each do |edge|
+            if edge.start.position == points.last
+              points << edge.end.position
+            elsif edge.end.position == points.last
+              points << edge.start.position
+            elsif edge.end.position == points.first
+              points.unshift(edge.start.position)
+            elsif edge.start.position == points.first
+              points.unshift(edge.end.position)
+            end
+          end
+        end
+        
+        # Remove duplicate points if path is closed
+        points.pop if points.first == points.last && points.length > 2
+        
+        points
+      end
+
+      # Alternative: If your face_edges are already just point pairs and don't need connecting
+      def build_path_from_point_pairs(edge_point_pairs)
+        # If the edges are separate segments that don't connect into a continuous path,
+        # just extract all unique points in order
+        points = []
+        
+        edge_point_pairs.each do |edge_points|
+          if points.empty?
+            points << edge_points[0]
+            points << edge_points[1]
+          elsif edge_points[0] == points.last
+            points << edge_points[1]
+          elsif edge_points[1] == points.last
+            points << edge_points[0]
+          else
+            # If not connected, you might want to handle this differently
+            # For now, just add as a new segment
+            points << edge_points[0] unless points.include?(edge_points[0])
+            points << edge_points[1] unless points.include?(edge_points[1])
+          end
+        end
+        
+        points
+      end
+
+      # Or if you want to modify create_offset_line_from_edges to handle point pairs directly:
+      def create_offset_line_from_edges(edges_or_points, faces, offset_distance)
+       
+        return [] if edges_or_points.empty? || faces.empty? || offset_distance == 0
+        
+        # Build continuous path from edges or point pairs
+        if edges_or_points.first.is_a?(Array)
+          # It's already point pairs
+          points = build_path_from_point_pairs(edges_or_points)
+        else
+          # It's Edge objects
+          points = build_path_from_edges(edges_or_points)
+        end
+        
+        return [] if points.length < 2
+        
+        # Create offset points on XY plane
+        offset_points = []
+        
+        points.each_with_index do |point, index|
+          if index == 0
+            edge_vector = get_vector_from_face(faces[index]) # Use first face normal for start
+            offset_point = point.offset(edge_vector, -offset_distance)
+          elsif index == points.length - 1
+            edge_vector = get_vector_from_face(faces[index - 1]) # Use last face normal for end
+            offset_point = point.offset(edge_vector, -offset_distance)
+          else
+            prev_vector = get_vector_from_face(faces[index - 1]) # Use previous face normal            
+            next_vector = get_vector_from_face(faces[index])     # Use current face normal
+            offset_point = point.offset(prev_vector, -offset_distance).offset(next_vector, -offset_distance)
+          end
+
+          offset_points << offset_point
+        end
+        
+        offset_segments = convert_points_to_segments(offset_points)
+        
+        offset_segments
+      end
+
+      def get_vector_from_face(face)
+        offset_vector = face.normal
+        offset_vector.normalize!
+        return offset_vector
+      end
+
     end # class << self
 
   end # module SharedUtilities
