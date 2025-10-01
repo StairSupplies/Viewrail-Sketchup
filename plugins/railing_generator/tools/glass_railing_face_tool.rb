@@ -551,6 +551,18 @@ module Viewrail
           profile
         end # create_handrail_profile
 
+        def create_base_channel_profile
+          half_width = @base_channel_width / 2.0
+          
+          profile = []
+          profile << [-half_width, 0]
+          profile << [-half_width, @base_channel_height]
+          profile << [half_width, @base_channel_height]
+          profile << [half_width, 0]
+          
+          profile
+        end
+
         def calculate_panel_count(length)
           return 0 if length <= 0
 
@@ -577,24 +589,11 @@ module Viewrail
           base_group = main_group.entities.add_group
           base_group.name = "Base Channel"
 
-          # Get the offset path using your new method
-          # Assuming you have edges and faces available from your selection
-          puts "Getting offset segments for base channel"
+          # Use offset distance to create segments, then convert them to a path
           baserail_center_offset = @offset_distance - (@glass_thickness / 2.0)
-          offset_segments = Viewrail::SharedUtilities.create_offset_line_from_edges(@face_edges, @selected_faces, baserail_center_offset)
-          
-          puts "Offset segments for base channel: #{offset_segments.length}"
+          offset_segments = Viewrail::SharedUtilities.create_offset_line_from_edges(@face_edges, @selected_faces, baserail_center_offset)          
           return unless offset_segments && !offset_segments.empty?
-          puts "Offset segments: #{offset_segments.inspect}"
-
-          # Create path edges from segments
-          path_edges = []
-          offset_segments.each do |segment|
-            edge = base_group.entities.add_line(segment[0], segment[1])
-            path_edges << edge if edge
-          end
-
-          puts "Created #{path_edges.length} path edges for base channel"
+          path_edges = Viewrail::SharedUtilities.create_path_edges_from_segments(base_group, offset_segments)
 
           # Get starting point and direction for profile orientation
           first_segment = offset_segments.first
@@ -602,25 +601,18 @@ module Viewrail
           path_vec, perp_vec = calculate_path_vectors(first_segment)
           
           # Create base channel profile at the start of the path
-          half_width = @base_channel_width / 2.0
-          
-          profile_points = []
-          profile_points << start_pt.offset(perp_vec, -half_width)
-          profile_points << start_pt.offset(perp_vec, -half_width).offset([0,0,1], @base_channel_height)
-          profile_points << start_pt.offset(perp_vec, half_width).offset([0,0,1], @base_channel_height)
-          profile_points << start_pt.offset(perp_vec, half_width)
-          
-          # Create profile face
-          profile_face = base_group.entities.add_face(profile_points)
-          
-          if profile_face
-            # Use Follow Me to extrude profile along path
-            profile_face.followme(path_edges)
-            
-            apply_aluminum_finish(base_group, aluminum_material)
+          profile = create_base_channel_profile
+          profile_points = profile.map do |p|
+            transformed_pt = start_pt.offset(perp_vec, p[0])
+            transformed_pt.offset([0,0,1], p[1])
           end
+
+          # Create extrusion along path & apply material
+          Viewrail::SharedUtilities.extrude_profile_along_path(base_group, profile_points, path_edges)
+          apply_aluminum_finish(base_group, aluminum_material)
           
-          base_group
+          return base_group
+
         end #create_continuous_base_channel
 
         def create_continuous_handrail(main_group, aluminum_material)
@@ -628,21 +620,11 @@ module Viewrail
           handrail_group = main_group.entities.add_group
           handrail_group.name = "Handrail"
           
-          puts "Getting offset segments for handrail"
+          # Use offset distance to create segments, then convert them to a path
           handrail_center_offset = @offset_distance - (@glass_thickness / 2.0)
-          offset_segments = Viewrail::SharedUtilities.create_offset_line_from_edges(@face_edges, @selected_faces, handrail_center_offset)
-          
-          puts "Offset segments for handrail: #{offset_segments.length}"
+          offset_segments = Viewrail::SharedUtilities.create_offset_line_from_edges(@face_edges, @selected_faces, handrail_center_offset)          
           return unless offset_segments && !offset_segments.empty?
-          puts "Offset segments: #{offset_segments.inspect}"
-
-          # Create path edges from segments
-          path_edges = []
-          offset_segments.each do |segment|
-            edge = handrail_group.entities.add_line(segment[0], segment[1])
-            path_edges << edge if edge
-          end
-          puts "Created #{path_edges.length} path edges for handrail"
+          path_edges = Viewrail::SharedUtilities.create_path_edges_from_segments(handrail_group, offset_segments)
 
           # Get starting point and direction for profile orientation
           first_segment = offset_segments.first
@@ -670,14 +652,12 @@ module Viewrail
             transformed_pt.offset(z_axis, p[1])
           end
 
-          profile_face = handrail_group.entities.add_face(profile_points)
+          # Create extrusion along path & apply material
+          Viewrail::SharedUtilities.extrude_profile_along_path(handrail_group, profile_points, path_edges)
+          apply_aluminum_finish(handrail_group, aluminum_material)
           
-          if profile_face
-            profile_face.followme(path_edges)
-            apply_aluminum_finish(handrail_group, aluminum_material)
-          end
-          
-          handrail_group
+          return handrail_group
+
         end #create_continuous_handrail
 
         def apply_aluminum_finish(group, material)

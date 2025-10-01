@@ -336,6 +336,22 @@ module Viewrail
         return offset_vector
       end
 
+      def create_path_edges_from_segments(group, segments)
+        path_edges = []
+        segments.each do |segment|
+          edge = group.entities.add_line(segment[0], segment[1])
+          path_edges << edge if edge
+        end
+        path_edges
+      end
+
+      def extrude_profile_along_path(group, profile_points, path_edges)
+        profile_face = group.entities.add_face(profile_points)
+        return unless profile_face
+        profile_face.followme(path_edges)
+        profile_face
+      end
+
     end # class << self
 
   end # module SharedUtilities
