@@ -111,7 +111,7 @@ module Viewrail
           edge_vector.perpendicular?([0, 0, 1])
         end
         
-        if horizontal_edges.empty?
+        if horizontal_edges.nil?
           raise "Face has no horizontal edges"
         end
         
@@ -185,12 +185,17 @@ module Viewrail
       #================ IN DEVELOPMENT================
 
       def build_path_from_edges(edges)
+        unless !edges.nil? && !edges.nil? 
+          UI.messagebox("No valid edges found for building path.")
+          return []
+        end
+
         points = []
         
         # Handle both Edge objects and point pair arrays
         if edges.first.is_a?(Array)
           # edges is an array of point pairs [[pt1, pt2], [pt3, pt4], ...]
-          return [] if edges.empty?
+          return [] if edges.nil?
           
           # Start with first edge points
           first_edge = edges.first
@@ -249,9 +254,11 @@ module Viewrail
         end
         
         # Remove duplicate points if path is closed
-        points.pop if points.first == points.last && points.length > 2
+        if points.first == points.last && points.length > 2
+          points.pop
+        end
         
-        points
+        return points
       end
 
       # Alternative: If your face_edges are already just point pairs and don't need connecting
@@ -261,7 +268,7 @@ module Viewrail
         points = []
         
         edge_point_pairs.each do |edge_points|
-          if points.empty?
+          if points.nil?
             points << edge_points[0]
             points << edge_points[1]
           elsif edge_points[0] == points.last
@@ -281,9 +288,7 @@ module Viewrail
 
       # Or if you want to modify create_offset_line_from_edges to handle point pairs directly:
       def create_offset_line_from_edges(edges_or_points, faces, offset_distance)
-       
-        return [] if edges_or_points.empty? || faces.empty? || offset_distance == 0
-        
+        return [] if edges_or_points.nil? || faces.nil?
         # Build continuous path from edges or point pairs
         if edges_or_points.first.is_a?(Array)
           # It's already point pairs
@@ -316,7 +321,7 @@ module Viewrail
         
         offset_segments = convert_points_to_segments(offset_points)
         
-        offset_segments
+        return offset_segments
       end
 
       def convert_points_to_segments(points)
@@ -336,13 +341,18 @@ module Viewrail
         return offset_vector
       end
 
-      def create_path_edges_from_segments(group, segments)
+      def create_offset_path(face_edges, selected_faces, group, offset_distance)
+        segments = create_offset_line_from_edges(face_edges, selected_faces, offset_distance)
+        if segments.nil? || segments.empty?
+          UI.messagebox("No segments created for offset path!")
+          return []
+        end
         path_edges = []
         segments.each do |segment|
           edge = group.entities.add_line(segment[0], segment[1])
           path_edges << edge if edge
         end
-        path_edges
+        return path_edges
       end
 
       def extrude_profile_along_path(group, profile_points, path_edges)

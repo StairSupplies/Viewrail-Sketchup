@@ -72,15 +72,9 @@ module Viewrail
             @offset_distance = -1.0
           end
 
-          puts "Glass Railing configured:"
-          puts "  Type: #{@railing_type}"
-          puts "  Height: #{@total_height}"
-          puts "  Caprail: #{@include_handrail}"
-          puts "  Caprail Material: #{@handrail_material}" if @include_handrail
         end # configure_from_dialog
 
         def initialize
-          puts "GlassRailingTool initialized"
           @points = []
           @current_point = nil
           @ip = Sketchup::InputPoint.new
@@ -210,7 +204,7 @@ module Viewrail
         end # draw_face_selection_mode
 
         def draw_face_preview_panels(view)
-          return if @face_edges.empty?
+          return if @face_edges.nil?
 
           @face_edges.each_with_index do |edge_points, face_index|
             face = @selected_faces[face_index]
@@ -301,7 +295,7 @@ module Viewrail
         end # deactivate
 
         def onCancel(reason, view)
-          if @selected_faces.empty?
+          if @selected_faces.nil?
             Sketchup.active_model.select_tool(nil)
           else
             @selected_faces.clear
@@ -324,7 +318,7 @@ module Viewrail
         end # onReturn
 
         def update_status_text
-          if @selected_faces.empty?
+          if @selected_faces.nil?
             Sketchup.status_text = "Click to select face(s) for railing | Shift: Switch to path drawing mode"
           else
             count = @selected_faces.length
@@ -347,16 +341,18 @@ module Viewrail
         end # convert_face_edges_to_points
 
         def create_glass_railings
-          if defined?(@face_segments) && @face_segments && !@face_segments.empty?
-            create_glass_railings_from_face_segments
-            return
+          if defined?(@face_segments) && !@face_segments.nil? 
+            if !@face_segments.nil?
+              create_glass_railings_from_face_segments
+              return
+            end
           end
 
           return if @points.length < 2
         end # create_glass_railings
 
         def create_glass_railings_from_face_segments
-          return if @face_segments.empty?
+          return if @face_segments.nil?
 
           model = Sketchup.active_model
           model.start_operation('Create Glass Railings from Faces', true)
@@ -378,15 +374,18 @@ module Viewrail
               segment_group.name = "Glass Railing Face #{index + 1}"
 
               # Create glass panels for this segment
-              create_glass_panel_group_for_segment(segment_group, glass_material, segment_points)              
+              create_glass_panel_group_for_segment(segment_group, glass_material, segment_points)
+              puts "-- Created glass panels for segment #{index + 1}"
             end
 
             if @include_base_channel
               create_continuous_base_channel(main_group, aluminum_material)
+              puts "-- Created continuous base channel"
             end
 
             if @include_handrail
               create_continuous_handrail(main_group, aluminum_material)
+              puts "-- Created continuous handrail"
             end
 
 
@@ -585,20 +584,18 @@ module Viewrail
         end # calculate_panel_count
 
         def create_continuous_base_channel(main_group, aluminum_material)
-          puts "Starting create_continuous_base_channel"
           base_group = main_group.entities.add_group
           base_group.name = "Base Channel"
 
           # Use offset distance to create segments, then convert them to a path
           baserail_center_offset = @offset_distance - (@glass_thickness / 2.0)
-          offset_segments = Viewrail::SharedUtilities.create_offset_line_from_edges(@face_edges, @selected_faces, baserail_center_offset)          
-          return unless offset_segments && !offset_segments.empty?
-          path_edges = Viewrail::SharedUtilities.create_path_edges_from_segments(base_group, offset_segments)
-
+          path_edges = Viewrail::SharedUtilities.create_offset_path(@face_edges, @selected_faces, base_group, baserail_center_offset)
+          
           # Get starting point and direction for profile orientation
-          first_segment = offset_segments.first
+          first_edge = path_edges.first
+          first_segment = [first_edge.start.position, first_edge.end.position]
           start_pt = first_segment[0]
-          path_vec, perp_vec = calculate_path_vectors(first_segment)
+          perp_vec = calculate_path_vectors(first_segment)
           
           # Create base channel profile at the start of the path
           profile = create_base_channel_profile
@@ -616,46 +613,36 @@ module Viewrail
         end #create_continuous_base_channel
 
         def create_continuous_handrail(main_group, aluminum_material)
-          puts "Starting create_continuous_handrail"
+          
           handrail_group = main_group.entities.add_group
           handrail_group.name = "Handrail"
           
           # Use offset distance to create segments, then convert them to a path
-          handrail_center_offset = @offset_distance - (@glass_thickness / 2.0)
-          offset_segments = Viewrail::SharedUtilities.create_offset_line_from_edges(@face_edges, @selected_faces, handrail_center_offset)          
-          return unless offset_segments && !offset_segments.empty?
-          path_edges = Viewrail::SharedUtilities.create_path_edges_from_segments(handrail_group, offset_segments)
-
+          handrail_center_offset = @offset_distance - (@glass_thickness / 2.0)          
+          path_edges = Viewrail::SharedUtilities.create_offset_path(@face_edges, @selected_faces, handrail_group, handrail_center_offset)
+         
           # Get starting point and direction for profile orientation
-          first_segment = offset_segments.first
+          first_edge = path_edges.first
+          first_segment = [first_edge.start.position, first_edge.end.position]
           start_pt = first_segment[0]
-          path_vec, perp_vec = calculate_path_vectors(first_segment)
+          perp_vec = calculate_path_vectors(first_segment)
 
           # Position handrail at correct height
-          handrail_start = Geom::Point3d.new(
-            start_pt.x,
-            start_pt.y,
-            start_pt.z + @glass_height - (@glass_recess - @handrail_height/2.0)
-          )
+          start_pt.z = start_pt.z + @glass_height - (@glass_recess - @handrail_height/2.0)
           
           # Create handrail profile
           profile = create_handrail_profile
 
-          # Create transformation for profile
-          z_axis = Geom::Vector3d.new(0, 0, 1)
-          x_axis = path_vec
-          y_axis = z_axis.cross(x_axis)
-
           # Create face at start point
           profile_points = profile.map do |p|
-            transformed_pt = handrail_start.offset(y_axis, p[0])
-            transformed_pt.offset(z_axis, p[1])
+            transformed_pt = start_pt.offset(perp_vec, p[0])
+            transformed_pt.offset([0,0,1], p[1])
           end
 
           # Create extrusion along path & apply material
           Viewrail::SharedUtilities.extrude_profile_along_path(handrail_group, profile_points, path_edges)
           apply_aluminum_finish(handrail_group, aluminum_material)
-          
+
           return handrail_group
 
         end #create_continuous_handrail
@@ -690,7 +677,7 @@ module Viewrail
           perp_vec = Geom::Vector3d.new(-path_vec.y, path_vec.x, 0)
           perp_vec.normalize!
           
-          return path_vec, perp_vec
+          return perp_vec
         end # calculate_path_vectors
 
       end # class GlassRailingTool

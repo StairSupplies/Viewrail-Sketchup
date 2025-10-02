@@ -503,7 +503,7 @@ module Viewrail
         model = Sketchup.active_model
         selection = model.selection
         
-        return nil if selection.empty?
+        return nil if selection.nil?
         
         # Get the first selected entity
         entity = selection.first
@@ -534,7 +534,6 @@ module Viewrail
               params[:type] = :straight
               
             when "landing_stairs"
-              puts "Pulling values for 90-degree stairs"
               # Retrieve 90-degree stair parameters
               params[:num_treads_lower] = dict["num_treads_lower"]
               params[:num_treads_upper] = dict["num_treads_upper"]
@@ -557,8 +556,6 @@ module Viewrail
             end
             
             return params
-          else
-            puts "Selected entity does not have stair_generator attributes"
           end
         end
         
@@ -567,7 +564,6 @@ module Viewrail
       
       # Check if a valid stair entity is selected
       def has_valid_stair_selection?
-        puts "Getting selected stair parameters for validation"
         params = get_selected_stair_parameters
         return !params.nil?
       end
@@ -579,7 +575,7 @@ module Viewrail
         
         # Create a unique identifier for the current selection
         # Using entity IDs of selected entities to detect changes
-        current_selection_id = if selection.empty?
+        current_selection_id = if selection.nil?
           "empty"
         else
           selection.map(&:entityID).sort.join("-")
@@ -596,10 +592,6 @@ module Viewrail
         
         # Perform the actual validation only when selection changes
         @cached_validation_result = has_valid_stair_selection?
-        
-        # Optional: Add debug output to confirm it's working
-        # Remove this line in production
-        puts "Selection changed - recalculated validation: #{@cached_validation_result}"
         
         return @cached_validation_result
       end
