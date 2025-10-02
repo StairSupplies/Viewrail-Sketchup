@@ -61,16 +61,6 @@ module Viewrail
             
             # Store ALL parameters for future modification
             Viewrail::StairGenerator.store_stair_parameters(new_stair, values, :straight)
-
-            # Display parameters
-            puts "Stair parameters:"
-            puts "  Number of Treads: #{values["num_treads"]}"
-            puts "  Tread Run: #{values["tread_run"].round(2)}\""
-            puts "  Tread Width: #{values["tread_width"].round(2)}\""  # Add tread width to output
-            puts "  Total Tread Run: #{values["total_tread_run"].round(2)}\""
-            puts "  Stair Rise: #{values["stair_rise"].round(2)}\""
-            puts "  Total Rise: #{values["total_rise"].round(2)}\""
-            puts "  Glass Railing: #{values["glass_railing"]}"
           end
 
           dialog.add_action_callback("cancel") do |action_context|

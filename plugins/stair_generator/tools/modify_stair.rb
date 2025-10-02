@@ -104,16 +104,6 @@ module Viewrail
                 
                 model.commit_operation
                 
-                # Display updated parameters
-                puts "Modified stair parameters:"
-                puts "  Number of Treads: #{values["num_treads"]}"
-                puts "  Tread Run: #{values["tread_run"].round(2)}\""
-                puts "  Tread Width: #{values["tread_width"].round(2)}\""
-                puts "  Total Tread Run: #{values["total_tread_run"].round(2)}\""
-                puts "  Stair Rise: #{values["stair_rise"].round(2)}\""
-                puts "  Total Rise: #{values["total_rise"].round(2)}\""
-                puts "  Glass Railing: #{values["glass_railing"]}"
-                
               rescue => e
                 model.abort_operation
                 UI.messagebox("Error modifying stairs: #{e.message}")

@@ -68,19 +68,6 @@ module Viewrail
             
             # Store ALL parameters for future modification
             Viewrail::StairGenerator.store_stair_parameters(stair_group, values, :landing_90)
-
-            # Display parameters
-            puts "Landing Stair parameters:"
-            puts "  Lower Treads: #{values["num_treads_lower"]}"
-            puts "  Upper Treads: #{values["num_treads_upper"]}"
-            puts "  Header to Wall: #{values["header_to_wall"].round(2)}\""
-            puts "  Tread Width Lower: #{values["tread_width_lower"].round(2)}\""
-            puts "  Tread Width Upper: #{values["tread_width_upper"].round(2)}\""
-            puts "  Landing: #{values["landing_width"].round(2)}\" x #{values["landing_depth"].round(2)}\""
-            puts "  Turn Direction: #{values["turn_direction"]}"
-            puts "  Stair Rise: #{values["stair_rise"].round(2)}\""
-            puts "  Total Rise: #{values["total_rise"].round(2)}\""
-            puts "  Glass Railing: #{values["glass_railing"]}"
           end
 
           dialog.add_action_callback("cancel") do |action_context|
