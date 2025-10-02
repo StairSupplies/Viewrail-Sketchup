@@ -4,7 +4,7 @@ module Viewrail
 
     module Tools
 
-      class GlassRailingTool
+      class GlassRailingLineTool
 
         def self.show
           last_values = {}
@@ -125,31 +125,6 @@ module Viewrail
             @total_height - @handrail_height + @glass_recess :
             @total_height
         end
-
-        def onKeyDown(key, repeat, flags, view)
-          if key == CONSTRAIN_MODIFIER_KEY  # Shift key
-            # Toggle selection mode
-            @selection_mode = @selection_mode == :face ? :path : :face
-
-            # Clear current selections when switching modes
-            if @selection_mode == :face
-              @points.clear
-              @current_point = nil
-            else
-              @selected_faces.clear
-              @face_edges.clear
-              @hover_face = nil
-              @hover_edge = nil
-            end
-
-            update_status_text
-            view.invalidate
-          end
-        end
-
-        # def onKeyUp(key, repeat, flags, view)
-        #   # Handle key up if needed
-        # end
 
         def onLButtonDown(flags, x, y, view)
           if @selection_mode == :face
@@ -1057,7 +1032,7 @@ module Viewrail
               end
             end
           end
-        end
+        end #create_continuous_handrail
 
         def create_handrail_profile
           # Create profile with rounded corners

@@ -75,11 +75,7 @@ module Viewrail
         end # configure_from_dialog
 
         def initialize
-          @points = []
-          @current_point = nil
-          @ip = Sketchup::InputPoint.new
 
-          @selection_mode = :face
           @selected_faces = []
           @face_edges = []
           @hover_face = nil
@@ -283,10 +279,8 @@ module Viewrail
         end # onMouseMove
 
         def activate
-          @points = []
           @selected_faces = []
           @face_edges = []
-          @selection_mode = :face
           update_status_text
         end # activate
 
@@ -311,7 +305,6 @@ module Viewrail
             create_glass_railings
             @selected_faces.clear
             @face_edges.clear
-            @points.clear
             update_status_text
             view.invalidate
           end
@@ -319,10 +312,10 @@ module Viewrail
 
         def update_status_text
           if @selected_faces.nil?
-            Sketchup.status_text = "Click to select face(s) for railing | Shift: Switch to path drawing mode"
+            Sketchup.status_text = "Click to select face(s) for railing | Esc: Cancel"
           else
             count = @selected_faces.length
-            Sketchup.status_text = "#{count} face(s) selected | Enter: Create railing | Esc: Clear | Shift: Switch to path mode"
+            Sketchup.status_text = "#{count} face(s) selected | Enter: Create railing | Esc: Clear"
           end
         end # update_status_text
 
@@ -335,9 +328,6 @@ module Viewrail
             @selected_faces,
             @offset_distance
           )
-
-          # Clear points for compatibility with existing code
-          @points.clear
         end # convert_face_edges_to_points
 
         def create_glass_railings
@@ -347,8 +337,6 @@ module Viewrail
               return
             end
           end
-
-          return if @points.length < 2
         end # create_glass_railings
 
         def create_glass_railings_from_face_segments
@@ -368,11 +356,8 @@ module Viewrail
 
             # Process each face segment separately
             @face_segments.each_with_index do |segment_points, index|
-              @points = segment_points  # Temporarily set points for this segment
-
               segment_group = main_group.entities.add_group
               segment_group.name = "Glass Railing Face #{index + 1}"
-
               # Create glass panels for this segment
               create_glass_panel_group_for_segment(segment_group, glass_material, segment_points)
               puts "-- Created glass panels for segment #{index + 1}"
@@ -384,7 +369,8 @@ module Viewrail
             end
 
             if @include_handrail
-              create_continuous_handrail(main_group, aluminum_material)
+              z_adjust = @glass_height - (@glass_recess - @handrail_height/2.0)
+              create_continuous_handrail(main_group, aluminum_material, [0,0,z_adjust])
               puts "-- Created continuous handrail"
             end
 
@@ -397,7 +383,6 @@ module Viewrail
             UI.messagebox("Error creating glass railings: #{e.message}")
           ensure
             @face_segments = []
-            @points.clear
           end
         end # create_glass_railings_from_face_segments
 
@@ -406,60 +391,6 @@ module Viewrail
           end_pt = segment_points[1]
           create_glass_panels(parent_group, glass_material, start_pt, end_pt, true)
         end # create_glass_panel_group_for_segment
-
-        def create_handrail_for_segment(parent_group, aluminum_material, segment_points)
-          handrail_group = parent_group.entities.add_group
-          handrail_group.name = "Handrail"
-
-          start_pt = segment_points[0]
-          end_pt = segment_points[1]
-
-          vec = end_pt - start_pt
-          segment_length = vec.length
-          return if segment_length == 0
-          vec.normalize!
-
-          # Position handrail at correct height
-          handrail_start = Geom::Point3d.new(
-            start_pt.x,
-            start_pt.y,
-            start_pt.z + @glass_height - (@glass_recess - @handrail_height/2.0)
-          )
-
-          # Create handrail profile
-          profile = create_handrail_profile
-
-          # Create transformation for profile
-          z_axis = Geom::Vector3d.new(0, 0, 1)
-          x_axis = vec
-          y_axis = z_axis.cross(x_axis)
-
-          # Create face at start point
-          profile_points = profile.map do |p|
-            transformed_pt = handrail_start.offset(y_axis, p[0])
-            transformed_pt.offset(z_axis, p[1])
-          end
-
-          face = handrail_group.entities.add_face(profile_points)
-          if face
-            face.pushpull(-segment_length)
-
-            # Apply aluminum material
-            handrail_group.entities.grep(Sketchup::Face).each do |f|
-              f.material = aluminum_material
-              f.back_material = aluminum_material
-            end
-
-            # Soften edges for rounded appearance
-            handrail_group.entities.grep(Sketchup::Edge).each do |edge|
-              edge_vec = edge.line[1]
-              if edge_vec.parallel?([0,0,1])
-                edge.soft = true
-                edge.smooth = true
-              end
-            end
-          end
-        end # create_handrail_for_segment     
 
         def create_glass_panels(group, glass_material, start_pt, end_pt, segmented=false)
           glass_group = nil
@@ -473,15 +404,6 @@ module Viewrail
           segment_length = segment_vector.length
           return if segment_length == 0
           segment_vector.normalize!
-
-          unless segmented
-            if @selection_mode == :path
-              perp_vector = Geom::Vector3d.new(-segment_vector.y, segment_vector.x, 0)
-              perp_vector.normalize!
-              start_pt = start_pt.offset(perp_vector, @offset_distance)
-              end_pt = end_pt.offset(perp_vector, @offset_distance)
-            end
-          end
 
           available_length = segment_length - @panel_gap
           num_panels = calculate_panel_count(available_length)
@@ -516,15 +438,6 @@ module Viewrail
             end
           end
         end # create_glass_panels
-
-        def create_glass_panel_group(main_group, glass_material)
-          (0...@points.length - 1).each do |i|
-            start_pt = @points[i]
-            end_pt = @points[i + 1]
-
-            create_glass_panels(main_group, glass_material, start_pt, end_pt)
-          end
-        end # create_glass_panel_group
 
         def create_handrail_profile
           profile = []
@@ -583,7 +496,7 @@ module Viewrail
           return panels
         end # calculate_panel_count
 
-        def create_continuous_base_channel(main_group, aluminum_material)
+        def create_continuous_base_channel(main_group, aluminum_material, adjust_position = [0,0,0])
           base_group = main_group.entities.add_group
           base_group.name = "Base Channel"
 
@@ -597,6 +510,11 @@ module Viewrail
           start_pt = first_segment[0]
           perp_vec = calculate_path_vectors(first_segment)
           
+          # Adjust position based on user input
+          start_pt.x += adjust_position[0]
+          start_pt.y += adjust_position[1]
+          start_pt.z += adjust_position[2]
+
           # Create base channel profile at the start of the path
           profile = create_base_channel_profile
           profile_points = profile.map do |p|
@@ -612,8 +530,7 @@ module Viewrail
 
         end #create_continuous_base_channel
 
-        def create_continuous_handrail(main_group, aluminum_material)
-          
+        def create_continuous_handrail(main_group, aluminum_material, adjust_position = [0,0,0])
           handrail_group = main_group.entities.add_group
           handrail_group.name = "Handrail"
           
@@ -627,13 +544,13 @@ module Viewrail
           start_pt = first_segment[0]
           perp_vec = calculate_path_vectors(first_segment)
 
-          # Position handrail at correct height
-          start_pt.z = start_pt.z + @glass_height - (@glass_recess - @handrail_height/2.0)
+          # Adjust position based on user input
+          start_pt.x += adjust_position[0]
+          start_pt.y += adjust_position[1]
+          start_pt.z += adjust_position[2]
           
           # Create handrail profile
           profile = create_handrail_profile
-
-          # Create face at start point
           profile_points = profile.map do |p|
             transformed_pt = start_pt.offset(perp_vec, p[0])
             transformed_pt.offset([0,0,1], p[1])
