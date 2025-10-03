@@ -1,5 +1,6 @@
 require 'erb'
 require_relative '../viewrail_shared/utilities'
+require_relative 'tools/create_U'
 require_relative 'tools/create_90'
 require_relative 'tools/create_straight'
 require_relative 'tools/modify_stair'
@@ -45,9 +46,24 @@ module Viewrail
               :turn_direction => "Left",
               :glass_railing => "None"
             }
-          when :u_shape
-            # Future U-shape defaults
-            {}
+          when :landing_U
+            {
+              :num_treads_lower => 4,
+              :num_treads_middle => 4,
+              :num_treads_upper => 4,
+              :header_to_wall => 180.0,
+              :wall_to_wall => 120.0,
+              :tread_width_lower => 36.0,
+              :tread_width_middle => 36.0,
+              :tread_width_upper => 36.0,
+              :lower_landing_width => 36.0,
+              :lower_landing_depth => 36.0,
+              :tread_run => 11.0,
+              :stair_rise => 7.5,
+              :total_rise => 105.0,
+              :turn_direction => "Left",
+              :glass_railing => "None"
+            }
           when :switchback
             # Future switchback defaults
             {}
@@ -62,6 +78,10 @@ module Viewrail
 
       def add_landing_stair_menu
         Viewrail::StairGenerator::Tools::NinetyStairMenu.show
+      end
+
+      def add_u_stair_menu
+        Viewrail::StairGenerator::Tools::UStairMenu.show
       end
 
       # Create a single stair segment (modular method)
@@ -549,6 +569,24 @@ module Viewrail
               params[:glass_railing] = dict["glass_railing"]
               
               params[:type] = :landing_90
+            
+            when "landing_U"
+              # Retrieve U-shaped stair parameters
+              params[:num_treads_lower] = dict["num_treads_lower"]
+              params[:num_treads_middle] = dict["num_treads_middle"]
+              params[:num_treads_upper] = dict["num_treads_upper"]
+              params[:header_to_wall] = dict["header_to_wall"]
+              params[:wall_to_wall] = dict["wall_to_wall"]
+              params[:tread_width_lower] = dict["tread_width_lower"]
+              params[:tread_width_middle] = dict["tread_width_middle"]
+              params[:tread_width_upper] = dict["tread_width_upper"]
+              params[:lower_landing_width] = dict["lower_landing_width"]
+              params[:lower_landing_depth] = dict["lower_landing_depth"]
+              params[:tread_run] = dict["tread_run"]
+              params[:stair_rise] = dict["stair_rise"]
+              params[:total_rise] = dict["total_rise"]
+              params[:turn_direction] = dict["turn_direction"]
+              params[:glass_railing] = dict["glass_railing"]              
               
             when "landing"
               # This is just a landing component, not a full stair system
@@ -624,16 +662,33 @@ module Viewrail
             group.set_attribute("stair_generator", "total_rise", params["total_rise"])
             group.set_attribute("stair_generator", "turn_direction", params["turn_direction"])
             group.set_attribute("stair_generator", "glass_railing", params["glass_railing"])
+          when :landing_U
+            group.set_attribute("stair_generator", "segment_type", "landing_U")
+            group.set_attribute("stair_generator", "num_treads_lower", params["num_treads_lower"])
+            group.set_attribute("stair_generator", "num_treads_middle", params["num_treads_middle"])
+            group.set_attribute("stair_generator", "num_treads_upper", params["num_treads_upper"])
+            group.set_attribute("stair_generator", "header_to_wall", params["header_to_wall"])
+            group.set_attribute("stair_generator", "tread_width_lower", params["tread_width_lower"])
+            group.set_attribute("stair_generator", "tread_width_middle", params["tread_width_middle"])
+            group.set_attribute("stair_generator", "tread_width_upper", params["tread_width_upper"])
+            group.set_attribute("stair_generator", "lower_landing_width", params["lower_landing_width"])
+            group.set_attribute("stair_generator", "lower_landing_depth", params["lower_landing_depth"])
+            group.set_attribute("stair_generator", "tread_run", params["tread_run"])
+            group.set_attribute("stair_generator", "stair_rise", params["stair_rise"])
+            group.set_attribute("stair_generator", "total_rise", params["total_rise"])
+            group.set_attribute("stair_generator", "turn_direction", params["turn_direction"])
+            group.set_attribute("stair_generator", "glass_railing", params["glass_railing"])
         end
-      end
+      end # store_stair_parameters
 
       def show_about
         UI.messagebox(
-          "Stair Generator Extension v3.0.0\n\n" +
+          "Stair Generator Extension v3.1.0\n\n" +
           "Creates parametric stairs for architectural visualization.\n\n" +
           "Features:\n" +
           "• Straight stairs with customizable dimensions\n" +
-          "• L-shaped stairs with landing\n" +
+          "• L-shaped (90°) stairs with landing\n" +
+          "• U-shaped stairs with two landings\n" +
           "• Automatic calculation of stair rise\n" +
           "• Building code compliance checking\n" +
           "• 3D stair geometry with glass railings\n" +
@@ -675,6 +730,16 @@ module Viewrail
       cmd_landing_stairs.status_bar_text = "Create L-shaped stairs with landing platform"
       cmd_landing_stairs.menu_text = "Create 90 System Stairs"
 
+      # Create command for U-shaped stairs
+      cmd_u_stairs = UI::Command.new("Create U-Shaped Stairs") {
+        self.add_u_stair_menu
+      }
+      cmd_u_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_u.svg"
+      cmd_u_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_u.svg"
+      cmd_u_stairs.tooltip = "Create U-Shaped Stairs"
+      cmd_u_stairs.status_bar_text = "Create U-shaped stairs with two landings"
+      cmd_u_stairs.menu_text = "Create U-Shaped Stairs"
+
       # Create command for modifying existing stairs
       cmd_modify = UI::Command.new("Modify Stairs") {
         Viewrail::StairGenerator::Tools::ModifyStairTool.activate
@@ -707,6 +772,7 @@ module Viewrail
       # Add commands to toolbar
       toolbar = toolbar.add_item(cmd_stairs)
       toolbar = toolbar.add_item(cmd_landing_stairs)
+      toolbar = toolbar.add_item(cmd_u_stairs)
       toolbar = toolbar.add_item(cmd_modify)
       toolbar = toolbar.add_separator
       toolbar = toolbar.add_item(cmd_about)
@@ -719,6 +785,7 @@ module Viewrail
       stairs_menu = menu.add_submenu("Stair Generator")
       stairs_menu.add_item(cmd_stairs)
       stairs_menu.add_item(cmd_landing_stairs)
+      stairs_menu.add_item(cmd_u_stairs)
       stairs_menu.add_item(cmd_modify)
       stairs_menu.add_separator
       stairs_menu.add_item(cmd_about)
@@ -729,6 +796,7 @@ module Viewrail
         stairs_context = context_menu.add_submenu("Stair Generator")
         stairs_context.add_item(cmd_stairs)
         stairs_context.add_item(cmd_landing_stairs)
+        stairs_context.add_item(cmd_u_stairs)
         stairs_context.add_item(cmd_modify)
       end
 
