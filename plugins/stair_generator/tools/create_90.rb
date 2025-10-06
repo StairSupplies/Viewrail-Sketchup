@@ -222,7 +222,7 @@ module Viewrail
 
           rescue => e
             model.abort_operation
-            UI.messagebox("Error creating landing stairs: #{e.message}")
+            UI.messagebox("Error creating 90° stairs: #{e.message}")
           end
         end # create_90_geometry
       end # class NinetyStairMenu

@@ -230,7 +230,6 @@ module Viewrail
 
       # Helper method to add glass railings to a stair segment
       def add_glass_railings_to_segment(entities, num_treads, tread_run, tread_width, stair_rise, glass_railing, glass_thickness, glass_inset, glass_height)
-        model = Sketchup.active_model
         glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
         
         # Calculate panel divisions based on 48" max width
@@ -258,15 +257,12 @@ module Viewrail
         end
         
         # Original positioning variables
-        total_rise = (num_treads + 1) * stair_rise
+        stair_angle = stair_rise.to_f / tread_run.to_f
         panel_extension = 1.0
         bottom_x_back = tread_run + 5
         bottom_z = 1.0
-        top_x_end = num_treads * tread_run + 5 + panel_extension
-        top_z = total_rise + glass_height
         left_y = tread_width - glass_inset - glass_thickness
         right_y = glass_inset
-        stair_angle = (stair_rise / tread_run)
         
         # Define panel sides configuration
         panel_sides = [
@@ -315,7 +311,9 @@ module Viewrail
               # Build 5-point polygon like original
               glass_points << [start_x, side[:y], bottom_start_z]
               glass_points << [bottom_x_back, side[:y], bottom_start_z]
-              glass_points << [end_x, side[:y], bottom_end_z]
+              if treads_in_panel > 1
+                glass_points << [end_x, side[:y], bottom_end_z]
+              end
               glass_points << [end_x, side[:y], top_end_z]
               glass_points << [start_x, side[:y], top_start_z]
               
@@ -368,12 +366,6 @@ module Viewrail
               # Apply material to all faces in this panel
               entities.grep(Sketchup::Face).each do |f|
                 if f.bounds.min.y >= side[:y_min] && f.bounds.max.y <= side[:y_max]
-                  # Check if face is within this panel's x-range
-                  panel_x_min = is_first_panel ? 0 : (tread_start * tread_run + 5 - 0.01)
-                  panel_x_max = is_last_panel ? 
-                    (tread_end * tread_run + 5 + panel_extension + 0.01) : 
-                    (tread_end * tread_run + 5 + 0.01)
-                    
                   f.material = glass_material
                   f.back_material = glass_material
                 end
@@ -386,7 +378,6 @@ module Viewrail
       end
 
       def add_glass_railings_to_landing(entities, width, depth, thickness, glass_railing, turn_direction)
-        model = Sketchup.active_model
         glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
         glass_thickness = 0.5
         glass_inset = 1.0
