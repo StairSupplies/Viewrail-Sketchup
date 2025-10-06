@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Stair Generator - Landing</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      padding-bottom: 20px; /* Extra padding at the bottom */
+      background-color: #f5f5f5;
+    }
+    .container {
+      display: flex;
+      gap: 30px;
+    }
+    .column {
+      flex: 1;
+      width: 200px;
+    }
+    h3 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #0078D7;
+      padding-bottom: 5px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    label {
+      flex: 0 0 auto;
+      min-width: 180px;
+      color: #555;
+      font-weight: bold;
+      font-size: 12px;
+      text-align: left;
+      padding-right: 10px;
+    }
+    input[type="number"], select {
+      width: 90px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: #0078D7;
+      box-shadow: 0 0 5px rgba(0, 120, 215, 0.3);
+    }
+    input[readonly] {
+      background-color: #e9e9e9;
+    }
+    .button-container {
+      margin-top: 30px;
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+    }
+    button {
+      padding: 10px 25px;
+      margin: 0 10px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .btn-primary {
+      background-color: #0078D7;
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #005ca0;
+    }
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background-color: #545b62;
+    }
+    .error {
+      color: red;
+      font-size: 12px;
+      margin-top: 5px;
+      display: none;
+    }
+    .info {
+      background-color: #e3f2fd;
+      border-left: 4px solid #0078D7;
+      padding: 10px;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #555;
+    }
+    .full-width-section {
+      clear: both;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+    }
+    .subsection {
+      background-color: #f9f9f9;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      border: 1px solid #e0e0e0;
+    }
+    h4 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #555;
+      font-size: 14px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="column">
+      <h3>Overall System</h3>
+      <div class="form-group">
+        <label for="total_rise">Total Rise (inches):</label>
+        <input type="number" id="total_rise" value="<%= @last_values[:total_rise] %>" min="0" step="0.0625">
+        <div class="error" id="total-rise-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="header_to_wall">Header to Wall (inches):</label>
+        <input type="number" id="header_to_wall" value="<%= @last_values[:header_to_wall] %>" min="24" max="240" step="0.25">
+        <div class="error" id="header-to-wall-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="tread_run">Tread Run (inches):</label>
+        <input type="number" id="tread_run" value="<%= @last_values[:tread_run] %>" min="11" max="13" step="0.25">
+        <div class="error" id="tread-run-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="stair_rise">Stair Rise (inches):</label>
+        <input type="number" id="stair_rise" value="<%= @last_values[:stair_rise] %>" min="6" max="9" step="0.01" readonly>
+        <div class="error" id="rise-error"></div>
+      </div>
+
+      <div class="info">
+        Calculator Target Rise is: 7"<br>
+        Building code: Rise must be 6" to 9"
+      </div>
+
+      <h3 style="margin-top: 30px;">Railing Options</h3>
+      <div class="form-group">
+        <label for="glass_railing">Glass Railing:</label>
+        <select id="glass_railing">
+          <% ["None", "Inner", "Outer", "Both"].each do |option| %>
+            <option value="<%= option %>" <%= @last_values[:glass_railing] == option ? "selected" : "" %>><%= option %></option>
+          <% end %>
+        </select>
+      </div>
+      <div class="info">
+        Default Glass railings: 36" height, 1/2" thickness
+      </div>
+    </div>
+    <div class="column">
+      <h3>Lower Stairs</h3>
+      <div class="form-group">
+        <label for="num_treads_lower">Number of Treads (Lower):</label>
+        <input type="number" id="num_treads_lower" value="<%= @last_values[:num_treads_lower] %>" min="1" max="22" step="1">
+        <div class="error" id="treads-lower-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="tread_width_lower">Tread Width (Lower) (inches):</label>
+        <input type="number" id="tread_width_lower" value="<%= @last_values[:tread_width_lower] %>" min="24" max="60" step="1">
+        <div class="error" id="width-lower-error"></div>
+      </div>
+
+      <h3 style="margin-top: 30px;">Upper Stairs</h3>
+      <div class="form-group">
+        <label for="num_treads_upper">Number of Treads (Upper):</label>
+        <input type="number" id="num_treads_upper" value="<%= @last_values[:num_treads_upper] %>" min="1" max="22" step="1">
+        <div class="error" id="treads-upper-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="tread_width_upper">Tread Width (Upper) (inches):</label>
+        <input type="number" id="tread_width_upper" value="<%= @last_values[:tread_width_upper] %>" min="24" max="60" step="1">
+        <div class="error" id="width-upper-error"></div>
+      </div>
+
+      <h3 style="margin-top: 30px;">Landing</h3>
+      <div class="form-group">
+        <label for="landing_width">Landing Width (inches):</label>
+        <input type="number" id="landing_width" value="<%= @last_values[:landing_width] %>" min="24" max="120" step="1">
+        <div class="error" id="landing-width-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="landing_depth">Landing Depth (inches):</label>
+        <input type="number" id="landing_depth" value="<%= @last_values[:landing_depth] %>" min="24" max="120" step="1">
+        <div class="error" id="landing-depth-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="turn_direction">Turn Direction:</label>
+        <select id="turn_direction">
+          <% ["Left", "Right"].each do |option| %>
+            <option value="<%= option %>" <%= @last_values[:turn_direction] == option ? "selected" : "" %>><%= option %></option>
+          <% end %>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="button-container">
+    <button class="btn-primary" onclick="createStairs()">Create Switchback</button>
+    <button class="btn-secondary" onclick="cancel()">Cancel</button>
+  </div>
+
+  <script>
+    let isUpdating = false;
+
+    // Get input elements
+    const numTreadsLowerInput = document.getElementById('num_treads_lower');
+    const numTreadsUpperInput = document.getElementById('num_treads_upper');
+    const headerToWallInput = document.getElementById('header_to_wall');
+    const treadWidthLowerInput = document.getElementById('tread_width_lower');
+    const treadWidthUpperInput = document.getElementById('tread_width_upper');
+    const landingWidthInput = document.getElementById('landing_width');
+    const landingDepthInput = document.getElementById('landing_depth');
+    const treadRunInput = document.getElementById('tread_run');
+    const totalRiseInput = document.getElementById('total_rise');
+    const stairRiseInput = document.getElementById('stair_rise');
+    const turnDirectionSelect = document.getElementById('turn_direction');
+    const glassRailingSelect = document.getElementById('glass_railing');
+
+    // Calculate Number of Treads Upper from Header to Wall
+    function calculateUpperTreads() {
+      const headerToWall = parseFloat(headerToWallInput.value) || 0;
+      const landingWidth = parseFloat(landingWidthInput.value) || 36;
+      const treadRun = parseFloat(treadRunInput.value) || 11;
+
+      if (headerToWall > 0 && landingWidth > 0 && treadRun > 0) {
+        const availableRun = headerToWall - landingWidth;
+        const upperTreads = Math.floor(availableRun / treadRun);
+
+        // Ensure it's within valid range
+        const validUpperTreads = Math.max(1, Math.min(22, upperTreads));
+        numTreadsUpperInput.value = validUpperTreads;
+
+        // After calculating upper treads, calculate lower treads
+        calculateLowerTreads();
+      }
+    }
+
+    // Calculate Number of Treads Lower based on Total Rise and Upper Treads
+    function calculateLowerTreads() {
+      const totalRise = parseFloat(totalRiseInput.value) || 0;
+      const numTreadsUpper = parseInt(numTreadsUpperInput.value) || 0;
+
+      if (totalRise > 0 && numTreadsUpper >= 0) {
+        // Target rise is 7 inches
+        const targetRise = 7.0;
+
+        // Calculate total risers needed (treads + landing + top finish floor)
+        const totalRisesNeeded = Math.round(totalRise / targetRise);
+        const totalTreadsNeeded = totalRisesNeeded - 2; // subtract for landing and final rise to floor
+        let numTreadsLower = Math.max(totalTreadsNeeded - numTreadsUpper, 1);
+
+        // Calculate what the actual rise would be
+        const totalTreads = numTreadsLower + numTreadsUpper;
+        const calculatedRise = totalRise / (totalTreads + 2);
+        //define a flag to track if we need to update the number of treads
+        let updateNumTreads = false;
+
+        // If rise is outside 6-9" range, adjust lower treads
+        if (calculatedRise > 9) {
+          // Rise too high, need more treads
+          while (numTreadsLower < 22) {
+            numTreadsLower++;
+            const newTotalTreads = numTreadsLower + numTreadsUpper;
+            const newRise = totalRise / (newTotalTreads + 2);
+            if (newRise <= 9) break;
+            updateNumTreads = true
+          }
+        } else if (calculatedRise < 6) {
+          // Rise too low, need fewer treads
+          while (numTreadsLower > 1) {
+            numTreadsLower--;
+            const newTotalTreads = numTreadsLower + numTreadsUpper;
+            const newRise = totalRise / (newTotalTreads + 2);
+            if (newRise >= 6) break;
+            updateNumTreads = true;
+          }
+        }
+
+        if (updateNumTreads) numTreadsLowerInput.value = numTreadsLower;
+
+        // Trigger rise calculation
+        calculateStairRise();
+      }
+    }
+
+    // Auto-update landing dimensions when tread widths change
+    function checkLandingSize() {
+      const lowerWidth = parseFloat(treadWidthLowerInput.value) || 36;
+      const upperWidth = parseFloat(treadWidthUpperInput.value) || 36;
+      const landingWidth = parseFloat(landingWidthInput.value) || 36;
+      const landingDepth = parseFloat(landingDepthInput.value) || 36;
+
+      // Make Sure landing width is equal to or greater than lowerWidth and that landing depth is equal to or greater than upperWidth
+      if (landingWidth < lowerWidth) {
+        landingWidthInput.value = lowerWidth;
+        calculateUpperTreads(); // Recalculate upper treads when landing width changes
+        calculateLowerTreads(); // Recalculate lower treads when landing width changes
+      }
+      if (landingDepth < upperWidth) {
+        landingDepthInput.value = upperWidth;
+      }
+    }
+
+    // Mark fields as user-modified when changed
+    landingWidthInput.addEventListener('input', function() {
+      this.dataset.userModified = 'true';
+    });
+    landingDepthInput.addEventListener('input', function() {
+      this.dataset.userModified = 'true';
+    });
+
+    // Calculate Stair Rise from Total Rise and Total Number of Treads
+    function calculateStairRise() {
+      if (isUpdating) return;
+      isUpdating = true;
+
+      const numTreadsLower = parseInt(numTreadsLowerInput.value) || 0;
+      const numTreadsUpper = parseInt(numTreadsUpperInput.value) || 0;
+      const totalTreads = numTreadsLower + numTreadsUpper;
+      const totalRise = parseFloat(totalRiseInput.value) || 0;
+
+      if (totalTreads > 0 && totalRise > 0) {
+        const stairRise = totalRise / (totalTreads + 2);
+        stairRiseInput.value = stairRise.toFixed(2);
+      }
+
+      isUpdating = false;
+      validateInputs();
+    }
+
+    // Update Header to Wall when Upper Treads change
+    function updateHeaderToWall() {
+      if (isUpdating) return;
+      isUpdating = true;
+
+      const numTreadsUpper = parseInt(numTreadsUpperInput.value) || 0;
+      const landingWidth = parseFloat(landingWidthInput.value) || 36;
+      const treadRun = parseFloat(treadRunInput.value) || 11;
+
+      if (numTreadsUpper > 0 && landingWidth > 0 && treadRun > 0) {
+        const headerToWall = landingWidth + (numTreadsUpper * treadRun);
+        headerToWallInput.value = headerToWall.toFixed(2);
+      }
+
+      isUpdating = false;
+      validateInputs();
+    }
+
+    // Add event listeners
+    headerToWallInput.addEventListener('input', calculateUpperTreads);
+    landingWidthInput.addEventListener('input', function() {
+      this.dataset.userModified = 'true';
+      calculateUpperTreads(); // Recalculate upper treads when landing width changes
+    });
+    landingDepthInput.addEventListener('input', function() {
+      this.dataset.userModified = 'true';
+    });
+    treadWidthLowerInput.addEventListener('input', checkLandingSize);
+    treadWidthUpperInput.addEventListener('input', checkLandingSize);
+    treadRunInput.addEventListener('input', function() {
+      calculateUpperTreads(); // Recalculate upper treads when tread run changes
+    });
+    totalRiseInput.addEventListener('input', function() {
+      calculateLowerTreads(); // Calculate lower treads when total rise changes
+      calculateStairRise();
+    });
+
+    numTreadsLowerInput.addEventListener('input', function() {
+      calculateStairRise();
+      validateInputs();
+    });
+
+    numTreadsUpperInput.addEventListener('input', function() {
+      calculateStairRise();
+      updateHeaderToWall();
+      validateInputs();
+    });
+
+    // Validation function
+    function validateInputs() {
+      let isValid = true;
+
+      // Clear previous errors
+      document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
+
+      // Validate tread numbers
+      const numTreadsLower = parseInt(numTreadsLowerInput.value);
+      const numTreadsUpper = parseInt(numTreadsUpperInput.value);
+      const totalTreads = numTreadsLower + numTreadsUpper;
+
+      if (numTreadsLower < 1 || numTreadsLower > 22) {
+        document.getElementById('treads-lower-error').textContent = 'Calculated value out of range (1-22). Adjust Total Rise or Header to Wall.';
+        document.getElementById('treads-lower-error').style.display = 'block';
+        isValid = false;
+      }
+
+      // Validate Header to Wall
+      const headerToWall = parseFloat(headerToWallInput.value);
+      if (headerToWall < 24 || headerToWall > 240) {
+        document.getElementById('header-to-wall-error').textContent = 'Must be between 24" and 240"';
+        document.getElementById('header-to-wall-error').style.display = 'block';
+        isValid = false;
+      }
+
+      if (numTreadsUpper < 1 || numTreadsUpper > 22) {
+        document.getElementById('treads-upper-error').textContent = 'Calculated value out of range (1-22). Adjust Header to Wall.';
+        document.getElementById('treads-upper-error').style.display = 'block';
+        isValid = false;
+      }
+
+      if (totalTreads > 30) {
+        document.getElementById('treads-lower-error').textContent = 'Total treads cannot exceed 30';
+        document.getElementById('treads-lower-error').style.display = 'block';
+        isValid = false;
+      }
+
+      // Validate widths
+      const treadWidthLower = parseFloat(treadWidthLowerInput.value);
+      const treadWidthUpper = parseFloat(treadWidthUpperInput.value);
+
+      if (treadWidthLower < 24 || treadWidthLower > 60) {
+        document.getElementById('width-lower-error').textContent = 'Must be between 24" and 60"';
+        document.getElementById('width-lower-error').style.display = 'block';
+        isValid = false;
+      }
+
+      if (treadWidthUpper < 24 || treadWidthUpper > 60) {
+        document.getElementById('width-upper-error').textContent = 'Must be between 24" and 60"';
+        document.getElementById('width-upper-error').style.display = 'block';
+        isValid = false;
+      }
+
+      // Validate tread run
+      const treadRun = parseFloat(treadRunInput.value);
+      if (treadRun < 11 || treadRun > 13) {
+        document.getElementById('tread-run-error').textContent = 'Must be between 11" and 13"';
+        document.getElementById('tread-run-error').style.display = 'block';
+        isValid = false;
+      }
+
+      // Validate rise parameters
+      const stairRise = parseFloat(stairRiseInput.value);
+      const totalRise = parseFloat(totalRiseInput.value);
+
+      if (totalRise <= 0 || isNaN(totalRise)) {
+        document.getElementById('total-rise-error').textContent = 'Total rise must be positive';
+        document.getElementById('total-rise-error').style.display = 'block';
+        isValid = false;
+      }
+
+      if (stairRise < 6 || stairRise > 9) {
+        document.getElementById('rise-error').textContent = 'Must be between 6" and 9"';
+        document.getElementById('rise-error').style.display = 'block';
+        isValid = false;
+      }
+
+      // Validate landing dimensions
+      const landingWidth = parseFloat(landingWidthInput.value);
+      const landingDepth = parseFloat(landingDepthInput.value);
+
+      if (landingWidth < 24 || landingWidth > 120) {
+        document.getElementById('landing-width-error').textContent = 'Must be between 24" and 120"';
+        document.getElementById('landing-width-error').style.display = 'block';
+        isValid = false;
+      }
+
+      if (landingDepth < 24 || landingDepth > 120) {
+        document.getElementById('landing-depth-error').textContent = 'Must be between 24" and 120"';
+        document.getElementById('landing-depth-error').style.display = 'block';
+        isValid = false;
+      }
+
+      return isValid;
+    }
+
+    function createStairs() {
+      if (!validateInputs()) {
+        return;
+      }
+
+      const values = {
+        num_treads_lower: parseInt(numTreadsLowerInput.value),
+        num_treads_upper: parseInt(numTreadsUpperInput.value),
+        header_to_wall: parseFloat(headerToWallInput.value),
+        tread_width_lower: parseFloat(treadWidthLowerInput.value),
+        tread_width_upper: parseFloat(treadWidthUpperInput.value),
+        landing_width: parseFloat(landingWidthInput.value),
+        landing_depth: parseFloat(landingDepthInput.value),
+        tread_run: parseFloat(treadRunInput.value),
+        stair_rise: parseFloat(stairRiseInput.value),
+        total_rise: parseFloat(totalRiseInput.value),
+        turn_direction: turnDirectionSelect.value,
+        glass_railing: glassRailingSelect.value
+      };
+
+      window.location = 'skp:create_landing_stairs@' + JSON.stringify(values);
+    }
+
+    function cancel() {
+      window.location = 'skp:cancel';
+    }
+
+    // Initial calculations
+    checkLandingSize();
+    calculateUpperTreads(); // This will also trigger calculateLowerTreads()
+
+    // Auto-resize dialog to fit content
+    window.addEventListener('load', function() {
+      // Small delay to ensure content is fully rendered
+      setTimeout(function() {
+        const bodyHeight = document.body.scrollHeight;
+        const bodyWidth = document.body.scrollWidth;
+
+        // Send resize request to SketchUp
+        window.location = 'skp:resize_dialog@' + JSON.stringify({
+          width: Math.max(600, bodyWidth),
+          height: Math.max(600, bodyHeight)
+        });
+      }, 100);
+    });
+  </script>
+</body>
+</html>

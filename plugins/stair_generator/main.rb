@@ -1,12 +1,13 @@
 require 'erb'
 require_relative '../viewrail_shared/utilities'
+require_relative 'tools/create_sb'
 require_relative 'tools/create_90'
 require_relative 'tools/create_straight'
 require_relative 'tools/modify_stair'
 module Viewrail
 
   module StairGenerator
-    
+
     class << self
       # Cache for selection validation - MODIFY TOOL
       attr_accessor :selection_cache, :cached_validation_result
@@ -50,7 +51,20 @@ module Viewrail
             {}
           when :switchback
             # Future switchback defaults
-            {}
+            {
+              :num_treads_lower => 6,
+              :num_treads_upper => 6,
+              :header_to_wall => 144.0,
+              :tread_width_lower => 36.0,
+              :tread_width_upper => 36.0,
+              :landing_width => 72.0,
+              :landing_depth => 36.0,
+              :tread_run => 11.0,
+              :stair_rise => 7.5,
+              :total_rise => 91.0,
+              :turn_direction => "Left",
+              :glass_railing => "None"
+            }
           else
             {}
         end
@@ -62,6 +76,10 @@ module Viewrail
 
       def add_landing_stair_menu
         Viewrail::StairGenerator::Tools::NinetyStairMenu.show
+      end
+
+      def add_switchback_stair_menu
+        Viewrail::StairGenerator::Tools::SwitchbackStairMenu.show
       end
 
       # Create a single stair segment (modular method)
@@ -212,7 +230,7 @@ module Viewrail
       def add_glass_railings_to_segment(entities, num_treads, tread_run, tread_width, stair_rise, glass_railing, glass_thickness, glass_inset, glass_height)
         model = Sketchup.active_model
         glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
-        
+
         # Calculate panel divisions based on 48" max width
         max_panel_width = 48.0
         panel_gap = 1.0
@@ -236,7 +254,7 @@ module Viewrail
             panel_tread_counts << base_treads + 1
           end
         end
-        
+
         # Original positioning variables
         total_rise = (num_treads + 1) * stair_rise
         panel_extension = 1.0
@@ -247,7 +265,7 @@ module Viewrail
         left_y = tread_width - glass_inset - glass_thickness
         right_y = glass_inset
         stair_angle = (stair_rise / tread_run)
-        
+
         # Define panel sides configuration
         panel_sides = [
           {
@@ -265,45 +283,45 @@ module Viewrail
             y_max: right_y + glass_thickness + 0.01
           }
         ]
-        
+
         panel_sides.each do |side|
           next unless side[:enabled]
-          
+
           tread_start = 0
-          
+
           # Create each glass panel section
           panel_tread_counts.each_with_index do |treads_in_panel, panel_index|
             tread_end = tread_start + treads_in_panel
             is_first_panel = (panel_index == 0)
             is_last_panel = (panel_index == panel_tread_counts.length - 1)
-            
+
             glass_points = []
-            
+
             if is_first_panel
               # First panel - includes horizontal bottom portion
               start_x = 0
               end_x = tread_end * tread_run + 5
-              
+
               # Bottom edge points
               bottom_start_z = bottom_z
               bottom_end_z = (tread_end - 1) * stair_rise + bottom_z
-              
-              # Top edge points  
+
+              # Top edge points
               top_start_z = glass_height + stair_rise
               top_end_z = end_x * stair_angle + top_start_z
-              
+
               # Build 5-point polygon like original
               glass_points << [start_x, side[:y], bottom_start_z]
               glass_points << [bottom_x_back, side[:y], bottom_start_z]
               glass_points << [end_x, side[:y], bottom_end_z]
               glass_points << [end_x, side[:y], top_end_z]
               glass_points << [start_x, side[:y], top_start_z]
-              
+
             elsif is_last_panel
               # Last panel - includes top extension
               start_x = (tread_start * tread_run) + 5 + panel_gap
               end_x = (tread_end * tread_run) + 5 + panel_extension
-              
+
               # Calculate slope-aligned positions
               # Bottom edge continues the slope from the original line
               bottom_start_z = (tread_start - 1) * stair_rise + bottom_z
@@ -317,12 +335,12 @@ module Viewrail
               glass_points << [end_x, side[:y], bottom_end_z]
               glass_points << [end_x, side[:y], top_end_z]
               glass_points << [start_x, side[:y], top_start_z]
-              
+
             else
               # Middle panels - pure parallelograms following slope
               start_x = tread_start * tread_run + 5 + panel_gap
               end_x = tread_end * tread_run + 5
-              
+
               # Calculate slope-aligned positions
               # Bottom edge continues the slope from the original line
               bottom_start_z = (tread_start - 1) * stair_rise + bottom_z
@@ -330,36 +348,36 @@ module Viewrail
               angle_start_z = glass_height + stair_rise
               top_start_z = angle_start_z + start_x * stair_angle
               top_end_z = angle_start_z + end_x * stair_angle
-              
+
               # Build 4-point parallelogram
               glass_points << [start_x, side[:y], bottom_start_z]
               glass_points << [end_x, side[:y], bottom_end_z]
               glass_points << [end_x, side[:y], top_end_z]
               glass_points << [start_x, side[:y], top_start_z]
             end
-            
+
             # Create the face and extrude
             face = entities.add_face(glass_points)
             if face
               face.pushpull(-glass_thickness)
               face.material = glass_material
               face.back_material = glass_material
-              
+
               # Apply material to all faces in this panel
               entities.grep(Sketchup::Face).each do |f|
                 if f.bounds.min.y >= side[:y_min] && f.bounds.max.y <= side[:y_max]
                   # Check if face is within this panel's x-range
                   panel_x_min = is_first_panel ? 0 : (tread_start * tread_run + 5 - 0.01)
-                  panel_x_max = is_last_panel ? 
-                    (tread_end * tread_run + 5 + panel_extension + 0.01) : 
+                  panel_x_max = is_last_panel ?
+                    (tread_end * tread_run + 5 + panel_extension + 0.01) :
                     (tread_end * tread_run + 5 + 0.01)
-                    
+
                   f.material = glass_material
                   f.back_material = glass_material
                 end
               end
             end
-            
+
             tread_start = tread_end
           end
         end
@@ -400,7 +418,7 @@ module Viewrail
             # Calculate panel length (accounting for corner gaps)
             panel_length = depth - (2 * corner_gap)
             y_pos = edge == "front" ? glass_inset : width - glass_inset - glass_thickness
-            
+
             if panel_length <= max_panel_width
               # Single panel
               glass_points = [
@@ -409,7 +427,7 @@ module Viewrail
                 [depth - corner_gap, y_pos, 0],
                 [corner_gap, y_pos, 0]
               ]
-              
+
               face = entities.add_face(glass_points)
               if face
                 face.pushpull(glass_thickness)
@@ -420,18 +438,18 @@ module Viewrail
               # Multiple panels - split symmetrically
               num_panels = (panel_length / max_panel_width).ceil
               actual_panel_width = (panel_length - (num_panels - 1) * panel_gap) / num_panels
-              
+
               num_panels.times do |i|
                 start_x = corner_gap + i * (actual_panel_width + panel_gap)
                 end_x = start_x + actual_panel_width
-                
+
                 glass_points = [
                   [start_x, y_pos, glass_height],
                   [end_x, y_pos, glass_height],
                   [end_x, y_pos, 0],
                   [start_x, y_pos, 0]
                 ]
-                
+
                 face = entities.add_face(glass_points)
                 if face
                   face.pushpull(glass_thickness)
@@ -440,12 +458,12 @@ module Viewrail
                 end
               end
             end
-            
+
           when "left", "right"
             # Calculate panel length (accounting for corner gaps)
             panel_length = width - (2 * corner_gap)
             x_pos = edge == "left" ? glass_inset : depth - glass_inset - glass_thickness
-            
+
             if panel_length <= max_panel_width
               # Single panel
               glass_points = [
@@ -454,7 +472,7 @@ module Viewrail
                 [x_pos, width - corner_gap, 0],
                 [x_pos, corner_gap, 0]
               ]
-              
+
               face = entities.add_face(glass_points)
               if face
                 face.pushpull(glass_thickness)
@@ -465,18 +483,18 @@ module Viewrail
               # Multiple panels - split symmetrically
               num_panels = (panel_length / max_panel_width).ceil
               actual_panel_width = (panel_length - (num_panels - 1) * panel_gap) / num_panels
-              
+
               num_panels.times do |i|
                 start_y = corner_gap + i * (actual_panel_width + panel_gap)
                 end_y = start_y + actual_panel_width
-                
+
                 glass_points = [
                   [x_pos, start_y, glass_height],
                   [x_pos, end_y, glass_height],
                   [x_pos, end_y, 0],
                   [x_pos, start_y, 0]
                 ]
-                
+
                 face = entities.add_face(glass_points)
                 if face
                   face.pushpull(glass_thickness)
@@ -487,7 +505,7 @@ module Viewrail
             end
           end
         end
-        
+
         # Apply material to all glass faces
         entities.grep(Sketchup::Face).each do |f|
           bbox = f.bounds
@@ -502,22 +520,22 @@ module Viewrail
       def get_selected_stair_parameters
         model = Sketchup.active_model
         selection = model.selection
-        
+
         return nil if selection.nil?
-        
+
         # Get the first selected entity
         entity = selection.first
-        
+
         # Check if it's a group or component instance
         if entity.is_a?(Sketchup::Group) || entity.is_a?(Sketchup::ComponentInstance)
           # Check if it has stair_generator attributes
           if entity.attribute_dictionary("stair_generator")
             params = {}
             dict = entity.attribute_dictionary("stair_generator")
-            
+
             # Get the segment type to determine which parameters to retrieve
             segment_type = dict["segment_type"]
-            
+
             case segment_type
             when "stairs"
               # Retrieve straight stair parameters
@@ -526,13 +544,13 @@ module Viewrail
               params[:tread_width] = dict["tread_width"] || 36.0
               params[:stair_rise] = dict["stair_rise"]
               params[:glass_railing] = dict["glass_railing"]
-              
+
               # Calculate derived values
               params[:total_tread_run] = params[:num_treads] * params[:tread_run] if params[:num_treads] && params[:tread_run]
               params[:total_rise] = (params[:num_treads] + 1) * params[:stair_rise] if params[:num_treads] && params[:stair_rise]
-              
+
               params[:type] = :straight
-              
+
             when "landing_stairs"
               # Retrieve 90-degree stair parameters
               params[:num_treads_lower] = dict["num_treads_lower"]
@@ -547,21 +565,21 @@ module Viewrail
               params[:total_rise] = dict["total_rise"]
               params[:turn_direction] = dict["turn_direction"]
               params[:glass_railing] = dict["glass_railing"]
-              
+
               params[:type] = :landing_90
-              
+
             when "landing"
               # This is just a landing component, not a full stair system
               return nil
             end
-            
+
             return params
           end
         end
-        
+
         return nil
       end
-      
+
       # Check if a valid stair entity is selected
       def has_valid_stair_selection?
         params = get_selected_stair_parameters
@@ -572,7 +590,7 @@ module Viewrail
       def has_valid_stair_selection_cached?
         model = Sketchup.active_model
         selection = model.selection
-        
+
         # Create a unique identifier for the current selection
         # Using entity IDs of selected entities to detect changes
         current_selection_id = if selection.nil?
@@ -580,22 +598,22 @@ module Viewrail
         else
           selection.map(&:entityID).sort.join("-")
         end
-        
+
         # If selection hasn't changed, return cached result
         if @selection_cache_id == current_selection_id
           # Return cached result without re-checking
           return @cached_validation_result
         end
-        
+
         # Selection has changed, update cache
         @selection_cache_id = current_selection_id
-        
+
         # Perform the actual validation only when selection changes
         @cached_validation_result = has_valid_stair_selection?
-        
+
         return @cached_validation_result
       end
-      
+
       # Store all parameters needed for regeneration
       def store_stair_parameters(group, params, stair_type)
         case stair_type
@@ -609,7 +627,7 @@ module Viewrail
             # Store calculated values for reference
             group.set_attribute("stair_generator", "total_tread_run", params["total_tread_run"])
             group.set_attribute("stair_generator", "total_rise", params["total_rise"])
-            
+
           when :landing_90
             group.set_attribute("stair_generator", "segment_type", "landing_stairs")
             group.set_attribute("stair_generator", "num_treads_lower", params["num_treads_lower"])
@@ -675,6 +693,16 @@ module Viewrail
       cmd_landing_stairs.status_bar_text = "Create L-shaped stairs with landing platform"
       cmd_landing_stairs.menu_text = "Create 90 System Stairs"
 
+      # Create command for switchback stairs
+      cmd_switchback_stairs = UI::Command.new("Create Switchback") {
+        self.add_switchback_stair_menu
+      }
+      cmd_switchback_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_switchback.svg"
+      cmd_switchback_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_switchback.svg"
+      cmd_switchback_stairs.tooltip = "Create Switchback Stairs"
+      cmd_switchback_stairs.status_bar_text = "Create U-shaped stairs with landing platform"
+      cmd_switchback_stairs.menu_text = "Create Switchback System Stairs"
+
       # Create command for modifying existing stairs
       cmd_modify = UI::Command.new("Modify Stairs") {
         Viewrail::StairGenerator::Tools::ModifyStairTool.activate
@@ -707,6 +735,7 @@ module Viewrail
       # Add commands to toolbar
       toolbar = toolbar.add_item(cmd_stairs)
       toolbar = toolbar.add_item(cmd_landing_stairs)
+      toolbar = toolbar.add_item(cmd_switchback_stairs)
       toolbar = toolbar.add_item(cmd_modify)
       toolbar = toolbar.add_separator
       toolbar = toolbar.add_item(cmd_about)
@@ -719,6 +748,7 @@ module Viewrail
       stairs_menu = menu.add_submenu("Stair Generator")
       stairs_menu.add_item(cmd_stairs)
       stairs_menu.add_item(cmd_landing_stairs)
+      stairs_menu.add_item(cmd_switchback_stairs)
       stairs_menu.add_item(cmd_modify)
       stairs_menu.add_separator
       stairs_menu.add_item(cmd_about)
@@ -729,6 +759,7 @@ module Viewrail
         stairs_context = context_menu.add_submenu("Stair Generator")
         stairs_context.add_item(cmd_stairs)
         stairs_context.add_item(cmd_landing_stairs)
+        stairs_context.add_item(cmd_switchback_stairs)
         stairs_context.add_item(cmd_modify)
       end
 
