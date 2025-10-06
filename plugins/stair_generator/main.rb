@@ -577,7 +577,9 @@ module Viewrail
               params[:stair_rise] = dict["stair_rise"]
               params[:total_rise] = dict["total_rise"]
               params[:turn_direction] = dict["turn_direction"]
-              params[:glass_railing] = dict["glass_railing"]              
+              params[:glass_railing] = dict["glass_railing"]
+              
+              params[:type] = :landing_U
               
             when "landing"
               # This is just a landing component, not a full stair system
