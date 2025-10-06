@@ -223,58 +223,77 @@
     // Hidden variables for landing dimensions (calculated in background)
     let lowerLandingWidth = 36;
     let lowerLandingDepth = 36;
+    let upperLandingDepth = 36; 
+    let upperLandingWidth = 36;
 
     // Calculate landing dimensions from tread widths (background calculation)
     function calculateLandingDimensions() {
       const lowerWidth = parseFloat(treadWidthLowerInput.value) || 36;
       const middleWidth = parseFloat(treadWidthMiddleInput.value) || 36;
-      
-      // Landing width = lower tread width
-      lowerLandingWidth = lowerWidth;
-      
-      // Landing depth = middle tread width
-      lowerLandingDepth = middleWidth;
-    }
+      const upperWidth = parseFloat(treadWidthUpperInput.value) || 36;
 
-    // Calculate Number of Treads Middle from Wall to Wall
-    function calculateMiddleTreads() {
-      const wallToWall = parseFloat(wallToWallInput.value) || 0;
-      const treadWidthUpper = parseFloat(treadWidthUpperInput.value) || 36;
-      const treadRun = parseFloat(treadRunInput.value) || 11;
-      
-      if (wallToWall > 0 && treadRun > 0) {
-        // middle_treads = (wall_to_wall - lower_landing_width - upper_landing_depth) / tread_run
-        // upper_landing_depth = tread_width_upper (rotated)
-        const availableRun = wallToWall - lowerLandingWidth - treadWidthUpper;
-        const middleTreads = Math.floor(availableRun / treadRun);
-        
-        // Ensure it's within valid range
-        const validMiddleTreads = Math.max(1, Math.min(22, middleTreads));
-        numTreadsMiddleInput.value = validMiddleTreads;
-        
-        calculateUpperTreads();
+      // Landing minimum dimensions based on tread widths
+      if (lowerLandingWidth < lowerWidth) {
+        lowerLandingWidth = lowerWidth;
+      }
+      if (lowerLandingDepth < middleWidth) {
+        lowerLandingDepth = middleWidth;
+      }
+      if (upperLandingWidth < middleWidth) {
+        upperLandingWidth = middleWidth;
+      }
+      if (upperLandingDepth < upperWidth) {
+        upperLandingDepth = upperWidth;
       }
     }
 
     // Calculate Number of Treads Upper from Header to Wall
     function calculateUpperTreads() {
       const headerToWall = parseFloat(headerToWallInput.value) || 0;
-      const treadWidthUpper = parseFloat(treadWidthUpperInput.value) || 36;
-      const treadRun = parseFloat(treadRunInput.value) || 11;
-      const numTreadsMiddle = parseInt(numTreadsMiddleInput.value) || 0;
+      const treadRun = parseFloat(treadRunInput.value) || 11;      
       
-      if (headerToWall > 0 && lowerLandingWidth > 0 && treadRun > 0) {
+      if (headerToWall > 0 && upperLandingWidth > 0 && treadRun > 0) {
         // Available run = header_to_wall - (lower_landing_width + upper_landing_depth + middle_treads * tread_run)
-        const availableRun = headerToWall - lowerLandingWidth - treadWidthUpper - (numTreadsMiddle * treadRun);
+        const availableRun = headerToWall - upperLandingWidth;
         const upperTreads = Math.floor(availableRun / treadRun);
         
         // Ensure it's within valid range
-        const validUpperTreads = Math.max(1, Math.min(22, upperTreads));
+        const validUpperTreads = Math.max(1, Math.min(11, upperTreads));
         numTreadsUpperInput.value = validUpperTreads;
         
+        // Grow the upperLandingWidth to fill the remaining space
+        const usedRun = (validUpperTreads * treadRun);
+        upperLandingWidth = Math.max(upperLandingWidth, headerToWall - usedRun);
         calculateLowerTreads();
       }
     }
+    
+    // Calculate Number of Treads Middle from Wall to Wall
+    function calculateMiddleTreads() {
+      const wallToWall = parseFloat(wallToWallInput.value) || 0;
+      const treadRun = parseFloat(treadRunInput.value) || 11;
+      
+      if (wallToWall > 0 && treadRun > 0) {
+        // middle_treads = (wall_to_wall - lower_landing_width - upper_landing_depth) / tread_run
+        // upper_landing_depth = tread_width_upper (rotated)
+        const availableRun = wallToWall - lowerLandingWidth - upperLandingDepth;
+        const middleTreads = Math.floor(availableRun / treadRun);
+        
+        // Ensure it's within valid range
+        const validMiddleTreads = Math.max(1, Math.min(22, middleTreads));
+        numTreadsMiddleInput.value = validMiddleTreads;
+
+        //Grow the lowerLandingWidth and upperLandingDepth equally to fill the remaining space
+        const usedRun = (validMiddleTreads * treadRun);
+        const remainingRun = wallToWall - usedRun - (lowerLandingWidth + upperLandingDepth);
+        const landingAdjustment = remainingRun / 2;
+        //add the difference to both lowerLandingWidth and upperLandingDepth
+        lowerLandingWidth = lowerLandingWidth + landingAdjustment;
+        upperLandingDepth = upperLandingDepth + landingAdjustment;
+
+        calculateLowerTreads();
+      }
+    }    
 
     // Calculate Number of Treads Lower based on Total Rise
     function calculateLowerTreads() {
@@ -297,7 +316,7 @@
         
         // Adjust if rise is out of range
         if (calculatedRise > 9) {
-          while (numTreadsLower < 22) {
+          while (numTreadsLower < 15) {
             numTreadsLower++;
             const newTotalTreads = numTreadsLower + numTreadsMiddle + numTreadsUpper;
             const newRise = totalRise / (newTotalTreads + 3);
@@ -382,27 +401,28 @@
     treadWidthLowerInput.addEventListener('input', function() {
       calculateLandingDimensions();
       calculateMiddleTreads();
-      updateWallToWall();
     });
 
     treadWidthMiddleInput.addEventListener('input', function() {
       calculateLandingDimensions();
-      calculateMiddleTreads();
-      updateWallToWall();
+      calculateUpperTreads();
     });
 
     treadWidthUpperInput.addEventListener('input', function() {
+      calculateLandingDimensions()
       calculateMiddleTreads();
-      calculateUpperTreads();
       updateHeaderToWall();
       updateWallToWall();
     });
 
     wallToWallInput.addEventListener('input', function() {
+      calculateLandingDimensions();
       calculateMiddleTreads();
+
     });
 
     headerToWallInput.addEventListener('input', function() {
+      calculateLandingDimensions()
       calculateUpperTreads();
     });
 
