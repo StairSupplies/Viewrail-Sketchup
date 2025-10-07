@@ -58,6 +58,8 @@ module Viewrail
               :tread_width_upper => 36.0,
               :lower_landing_width => 36.0,
               :lower_landing_depth => 36.0,
+              :upper_landing_width => 36.0,
+              :upper_landing_depth => 36.0,
               :tread_run => 11.0,
               :stair_rise => 7.5,
               :total_rise => 105.0,
@@ -175,7 +177,7 @@ module Viewrail
 
         # Create a group for the landing
         landing_group = entities.add_group
-        landing_entities = landing_group.entities
+        landing_entities = landing_group.entities    
 
         # Create landing platform
         landing_points = [
@@ -573,6 +575,8 @@ module Viewrail
               params[:tread_width_upper] = dict["tread_width_upper"]
               params[:lower_landing_width] = dict["lower_landing_width"]
               params[:lower_landing_depth] = dict["lower_landing_depth"]
+              params[:upper_landing_width] = dict["upper_landing_width"]
+              params[:upper_landing_depth] = dict["upper_landing_depth"]
               params[:tread_run] = dict["tread_run"]
               params[:stair_rise] = dict["stair_rise"]
               params[:total_rise] = dict["total_rise"]
@@ -661,11 +665,14 @@ module Viewrail
             group.set_attribute("stair_generator", "num_treads_middle", params["num_treads_middle"])
             group.set_attribute("stair_generator", "num_treads_upper", params["num_treads_upper"])
             group.set_attribute("stair_generator", "header_to_wall", params["header_to_wall"])
+            group.set_attribute("stair_generator", "wall_to_wall", params["wall_to_wall"])
             group.set_attribute("stair_generator", "tread_width_lower", params["tread_width_lower"])
             group.set_attribute("stair_generator", "tread_width_middle", params["tread_width_middle"])
             group.set_attribute("stair_generator", "tread_width_upper", params["tread_width_upper"])
             group.set_attribute("stair_generator", "lower_landing_width", params["lower_landing_width"])
             group.set_attribute("stair_generator", "lower_landing_depth", params["lower_landing_depth"])
+            group.set_attribute("stair_generator", "upper_landing_width", params["upper_landing_width"])
+            group.set_attribute("stair_generator", "upper_landing_depth", params["upper_landing_depth"])
             group.set_attribute("stair_generator", "tread_run", params["tread_run"])
             group.set_attribute("stair_generator", "stair_rise", params["stair_rise"])
             group.set_attribute("stair_generator", "total_rise", params["total_rise"])

@@ -60,6 +60,8 @@ module Viewrail
             last_values[:tread_width_upper] = values["tread_width_upper"]
             last_values[:lower_landing_width] = values["lower_landing_width"]
             last_values[:lower_landing_depth] = values["lower_landing_depth"]
+            last_values[:upper_landing_width] = values["upper_landing_width"]
+            last_values[:upper_landing_depth] = values["upper_landing_depth"]
             last_values[:tread_run] = values["tread_run"]
             last_values[:stair_rise] = values["stair_rise"]
             last_values[:total_rise] = values["total_rise"]
@@ -171,8 +173,8 @@ module Viewrail
 
             # === UPPER LANDING ===
             # Upper landing dimensions are determined by stair widths
-            upper_landing_width = params["tread_width_middle"]
-            upper_landing_depth = params["tread_width_upper"]
+            upper_landing_width = params["upper_landing_width"]
+            upper_landing_depth = params["upper_landing_depth"]
 
             if params["turn_direction"] == "Left"
               upper_landing_x = lower_landing_x + params["lower_landing_depth"]
