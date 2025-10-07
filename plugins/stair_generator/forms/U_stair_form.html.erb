@@ -127,7 +127,7 @@
       </div>
       <div class="form-group">
         <label for="stair_rise">Stair Rise (inches):</label>
-        <input type="number" id="stair_rise" value="<%= @last_values[:stair_rise] %>" min="6" max="9" step="0.01" readonly>
+        <input type="number" id="stair_rise" value="<%= @last_values[:stair_rise] %>" step="0.01" readonly>
         <div class="error" id="rise-error"></div>
       </div>
       <div class="form-group">
@@ -174,7 +174,7 @@
       <h3 style="margin-top: 30px;">Middle Stairs</h3>
       <div class="form-group">
         <label for="num_treads_middle">Number of Treads:</label>
-        <input type="number" id="num_treads_middle" value="<%= @last_values[:num_treads_middle] %>" min="1" max="22" step="1" readonly>
+        <input type="number" id="num_treads_middle" value="<%= @last_values[:num_treads_middle] %>" min="1" max="22" step="1">
         <div class="error" id="treads-middle-error"></div>
       </div>
       <div class="form-group">
@@ -223,29 +223,8 @@
     // Hidden variables for landing dimensions (calculated in background)
     let lowerLandingWidth = 36;
     let lowerLandingDepth = 36;
-    let upperLandingDepth = 36; 
+    let upperLandingDepth = 36;
     let upperLandingWidth = 36;
-
-    // Calculate landing dimensions from tread widths (background calculation)
-    function calculateLandingDimensions() {
-      const lowerWidth = parseFloat(treadWidthLowerInput.value) || 36;
-      const middleWidth = parseFloat(treadWidthMiddleInput.value) || 36;
-      const upperWidth = parseFloat(treadWidthUpperInput.value) || 36;
-
-      // Landing minimum dimensions based on tread widths
-      if (lowerLandingWidth < lowerWidth) {
-        lowerLandingWidth = lowerWidth;
-      }
-      if (lowerLandingDepth < middleWidth) {
-        lowerLandingDepth = middleWidth;
-      }
-      if (upperLandingWidth < middleWidth) {
-        upperLandingWidth = middleWidth;
-      }
-      if (upperLandingDepth < upperWidth) {
-        upperLandingDepth = upperWidth;
-      }
-    }
 
     // Calculate Number of Treads Upper from Header to Wall
     function calculateUpperTreads() {
@@ -253,8 +232,11 @@
       const treadRun = parseFloat(treadRunInput.value) || 11;      
       
       if (headerToWall > 0 && upperLandingWidth > 0 && treadRun > 0) {
-        // Available run = header_to_wall - (lower_landing_width + upper_landing_depth + middle_treads * tread_run)
-        const availableRun = headerToWall - upperLandingWidth;
+        // Reset to minimum
+        const minUpperLandingWidth = parseFloat(treadWidthMiddleInput.value) || 36;
+        
+        // Calculate available run using MINIMUM landing size
+        const availableRun = headerToWall - minUpperLandingWidth;
         const upperTreads = Math.floor(availableRun / treadRun);
         
         // Ensure it's within valid range
@@ -263,8 +245,7 @@
         
         // Grow the upperLandingWidth to fill the remaining space
         const usedRun = (validUpperTreads * treadRun);
-        upperLandingWidth = Math.max(upperLandingWidth, headerToWall - usedRun);
-        calculateLowerTreads();
+        upperLandingWidth = headerToWall - usedRun;
       }
     }
     
@@ -274,41 +255,34 @@
       const treadRun = parseFloat(treadRunInput.value) || 11;
       
       if (wallToWall > 0 && treadRun > 0) {
-        // middle_treads = (wall_to_wall - lower_landing_width - upper_landing_depth) / tread_run
-        // upper_landing_depth = tread_width_upper (rotated)
-        const availableRun = wallToWall - lowerLandingWidth - upperLandingDepth;
+        // Reset landing dimensions to minimums before calculating
+        const minLowerLandingWidth = parseFloat(treadWidthLowerInput.value) || 36;
+        const minUpperLandingDepth = parseFloat(treadWidthUpperInput.value) || 36;
+        
+        // Calculate available run using MINIMUM landing sizes
+        const availableRun = wallToWall - minLowerLandingWidth - minUpperLandingDepth;
         const middleTreads = Math.floor(availableRun / treadRun);
         
         // Ensure it's within valid range
         const validMiddleTreads = Math.max(1, Math.min(9, middleTreads));
         numTreadsMiddleInput.value = validMiddleTreads;
 
-        //Grow the lowerLandingWidth and upperLandingDepth equally to fill the remaining space
+        // NOW grow the landings to fill the remaining space
         const usedRun = (validMiddleTreads * treadRun);
-        const remainingRun = wallToWall - usedRun - (lowerLandingWidth + upperLandingDepth);
-        const landingAdjustment = remainingRun / 2;
-        //add the difference to both lowerLandingWidth and upperLandingDepth
-        lowerLandingWidth = lowerLandingWidth + landingAdjustment;
-        upperLandingDepth = upperLandingDepth + landingAdjustment;
-
-        calculateLowerTreads();
+        const remainingRun = wallToWall - usedRun;
+        const landingAdjustment = remainingRun - minLowerLandingWidth - minUpperLandingDepth;
+        lowerLandingWidth = minLowerLandingWidth + landingAdjustment;
       }
     }    
 
     // Calculate Number of Treads Lower based on Total Rise
     function calculateLowerTreads() {
       const totalRise = parseFloat(totalRiseInput.value) || 0;
+      let numTreadsLower = parseInt(numTreadsLowerInput.value) || 0;
       const numTreadsMiddle = parseInt(numTreadsMiddleInput.value) || 0;
       const numTreadsUpper = parseInt(numTreadsUpperInput.value) || 0;
       
-      if (totalRise > 0) {
-        const targetRise = 7.0;
-        
-        // Total risers = total_treads + 3 (two landings + final rise to floor)
-        const totalRisesNeeded = Math.round(totalRise / targetRise);
-        const totalTreadsNeeded = totalRisesNeeded - 3;
-        let numTreadsLower = Math.max(totalTreadsNeeded - numTreadsMiddle - numTreadsUpper, 1);
-        
+      if (totalRise > 0) {        
         // Calculate actual rise
         const totalTreads = numTreadsLower + numTreadsMiddle + numTreadsUpper;
         const calculatedRise = totalRise / (totalTreads + 3);
@@ -355,7 +329,6 @@
       }
 
       isUpdating = false;
-      validateInputs();
     }
 
     // Update Header to Wall when upper treads change
@@ -375,7 +348,6 @@
       }
 
       isUpdating = false;
-      validateInputs();
     }
 
     // Update Wall to Wall when middle treads change
@@ -384,68 +356,72 @@
       isUpdating = true;
 
       const numTreadsMiddle = parseInt(numTreadsMiddleInput.value) || 0;
-      const treadWidthUpper = parseFloat(treadWidthUpperInput.value) || 36;
       const treadRun = parseFloat(treadRunInput.value) || 11;
 
       if (numTreadsMiddle > 0) {
         // wall_to_wall = lower_landing_width + upper_landing_depth + (middle_treads * tread_run)
-        const wallToWall = lowerLandingWidth + treadWidthUpper + (numTreadsMiddle * treadRun);
+        const wallToWall = lowerLandingWidth + upperLandingDepth + (numTreadsMiddle * treadRun);
         wallToWallInput.value = wallToWall.toFixed(2);
       }
 
       isUpdating = false;
+    }
+
+    // Call update sequence of functions
+    function updateStairsAndLandings() {
+      calculateUpperTreads();
+      calculateMiddleTreads();
+      calculateLowerTreads();
+      calculateStairRise();
       validateInputs();
     }
 
     // Add event listeners
+    // Tread size changes update tread counts and rise
     treadWidthLowerInput.addEventListener('input', function() {
-      calculateLandingDimensions();
-      calculateMiddleTreads();
+      updateStairsAndLandings();
     });
 
     treadWidthMiddleInput.addEventListener('input', function() {
-      calculateLandingDimensions();
-      calculateUpperTreads();
+      updateStairsAndLandings();
     });
 
     treadWidthUpperInput.addEventListener('input', function() {
-      calculateLandingDimensions()
-      calculateMiddleTreads();
-      updateHeaderToWall();
-      updateWallToWall();
-    });
-
-    wallToWallInput.addEventListener('input', function() {
-      calculateLandingDimensions();
-      calculateMiddleTreads();
-
-    });
-
-    headerToWallInput.addEventListener('input', function() {
-      calculateLandingDimensions()
-      calculateUpperTreads();
+      updateStairsAndLandings();
     });
 
     treadRunInput.addEventListener('input', function() {
-      calculateMiddleTreads();
-      calculateUpperTreads();
-      updateHeaderToWall();
-      updateWallToWall();
+      updateStairsAndLandings();
+    });
+
+    // Dimension changes recalculate everything
+    wallToWallInput.addEventListener('input', function() {
+      updateStairsAndLandings();
+    });
+
+    headerToWallInput.addEventListener('input', function() {
+      updateStairsAndLandings();
     });
 
     totalRiseInput.addEventListener('input', function() {
-      calculateLowerTreads();
-      calculateStairRise();
+      updateStairsAndLandings();
     });
-
-    numTreadsLowerInput.addEventListener('input', function() {
-      calculateStairRise();
+    
+    // Changing tread counts directly affect overall dimensions, excluding lower treads
+    numTreadsUpperInput.addEventListener('input', function() {
+      updateHeaderToWall();
+      updateStairsAndLandings();
       validateInputs();
     });
 
-    numTreadsUpperInput.addEventListener('input', function() {
-      calculateStairRise();
-      updateHeaderToWall();
+    numTreadsMiddleInput.addEventListener('input', function() {
+      updateWallToWall();
+      updateStairsAndLandings();            
+      validateInputs();
+    });
+    
+    numTreadsLowerInput.addEventListener('input', function() {
+      updateStairsAndLandings();
       validateInputs();
     });
 
@@ -477,12 +453,6 @@
       if (numTreadsUpper < 1 || numTreadsUpper > 22) {
         document.getElementById('treads-upper-error').textContent = 'Must be between 1 and 22';
         document.getElementById('treads-upper-error').style.display = 'block';
-        isValid = false;
-      }
-
-      if (totalTreads > 40) {
-        document.getElementById('treads-lower-error').textContent = 'Total treads cannot exceed 40';
-        document.getElementById('treads-lower-error').style.display = 'block';
         isValid = false;
       }
 
@@ -583,8 +553,7 @@
     }
 
     // Initial calculations
-    calculateLandingDimensions();
-    calculateMiddleTreads();
+    updateStairsAndLandings();
     
     // Auto-resize dialog to fit content
     window.addEventListener('load', function() {
