@@ -244,7 +244,7 @@
         const upperTreads = Math.floor(availableRun / treadRun);
         
         // Ensure it's within valid range
-        const validUpperTreads = Math.max(1, Math.min(22, upperTreads));
+        const validUpperTreads = Math.max(1, Math.min(12, upperTreads));
         numTreadsUpperInput.value = validUpperTreads;
         
         // After calculating upper treads, calculate lower treads
@@ -275,7 +275,7 @@
         // If rise is outside 6-9" range, adjust lower treads
         if (calculatedRise > 9) {
           // Rise too high, need more treads
-          while (numTreadsLower < 22) {
+          while (numTreadsLower < 14) {
             numTreadsLower++;
             const newTotalTreads = numTreadsLower + numTreadsUpper;
             const newRise = totalRise / (newTotalTreads + 2);

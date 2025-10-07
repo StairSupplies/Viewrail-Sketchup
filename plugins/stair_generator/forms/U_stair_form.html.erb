@@ -258,7 +258,7 @@
         const upperTreads = Math.floor(availableRun / treadRun);
         
         // Ensure it's within valid range
-        const validUpperTreads = Math.max(1, Math.min(11, upperTreads));
+        const validUpperTreads = Math.max(1, Math.min(12, upperTreads));
         numTreadsUpperInput.value = validUpperTreads;
         
         // Grow the upperLandingWidth to fill the remaining space
@@ -280,7 +280,7 @@
         const middleTreads = Math.floor(availableRun / treadRun);
         
         // Ensure it's within valid range
-        const validMiddleTreads = Math.max(1, Math.min(22, middleTreads));
+        const validMiddleTreads = Math.max(1, Math.min(9, middleTreads));
         numTreadsMiddleInput.value = validMiddleTreads;
 
         //Grow the lowerLandingWidth and upperLandingDepth equally to fill the remaining space
@@ -316,7 +316,7 @@
         
         // Adjust if rise is out of range
         if (calculatedRise > 9) {
-          while (numTreadsLower < 15) {
+          while (numTreadsLower < 14) {
             numTreadsLower++;
             const newTotalTreads = numTreadsLower + numTreadsMiddle + numTreadsUpper;
             const newRise = totalRise / (newTotalTreads + 3);
