@@ -383,10 +383,11 @@ module Viewrail
         glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
         glass_thickness = 0.5
         glass_inset = 1.0
-        glass_height = 36.0
+        glass_height = 42.0
         corner_gap = 1.0
         max_panel_width = 48.0
         panel_gap = 1.0
+        stair_overlap = 5.0
 
         # Determine which edges get railings
         edges_to_rail = []
@@ -395,32 +396,32 @@ module Viewrail
           when "Inner"
             # do nothing for now
           when "Outer", "Both"
-            edges_to_rail = ["front", "right"]
+            edges_to_rail = ["back", "right"]
           end
         else # Right turn
           case glass_railing
           when "Inner"
             # do nothing for now
           when "Outer", "Both"
-            edges_to_rail = ["back", "right"]
+            edges_to_rail = ["back", "left"]
           end
         end
 
         # Create glass panels for specified edges with splits if needed
         edges_to_rail.each do |edge|
           case edge
-          when "front", "back"
+          when "left", "right"
             # Calculate panel length (accounting for corner gaps)
-            panel_length = depth - (2 * corner_gap)
-            y_pos = edge == "front" ? glass_inset : width - glass_inset - glass_thickness
+            panel_length = depth - corner_gap - stair_overlap
+            y_pos = edge == "right" ? glass_inset : width - glass_inset - glass_thickness
             
             if panel_length <= max_panel_width
               # Single panel
               glass_points = [
-                [corner_gap, y_pos, glass_height],
-                [depth - corner_gap, y_pos, glass_height],
-                [depth - corner_gap, y_pos, 0],
-                [corner_gap, y_pos, 0]
+                [stair_overlap + panel_gap, y_pos, glass_height],
+                [stair_overlap + panel_length, y_pos, glass_height],
+                [stair_overlap + panel_length, y_pos, 0],
+                [stair_overlap + panel_gap, y_pos, 0]
               ]
               
               face = entities.add_face(glass_points)
@@ -454,50 +455,50 @@ module Viewrail
               end
             end
             
-          when "left", "right"
-            # Calculate panel length (accounting for corner gaps)
-            panel_length = width - (2 * corner_gap)
-            x_pos = edge == "left" ? glass_inset : depth - glass_inset - glass_thickness
+          when "front", "back"
+            # # Calculate panel length (accounting for corner gaps)
+            # panel_length = width - corner_gap - stair_overlap
+            # x_pos = edge == "left" ? glass_inset : depth - glass_inset - glass_thickness
             
-            if panel_length <= max_panel_width
-              # Single panel
-              glass_points = [
-                [x_pos, corner_gap, glass_height],
-                [x_pos, width - corner_gap, glass_height],
-                [x_pos, width - corner_gap, 0],
-                [x_pos, corner_gap, 0]
-              ]
+            # if panel_length <= max_panel_width
+            #   # Single panel
+            #   glass_points = [
+            #     [x_pos, stair_overlap, glass_height],
+            #     [x_pos, panel_length + stair_overlap, glass_height],
+            #     [x_pos, panel_length + stair_overlap, 0],
+            #     [x_pos, stair_overlap, 0]
+            #   ]
               
-              face = entities.add_face(glass_points)
-              if face
-                face.pushpull(glass_thickness)
-                face.material = glass_material
-                face.back_material = glass_material
-              end
-            else
-              # Multiple panels - split symmetrically
-              num_panels = (panel_length / max_panel_width).ceil
-              actual_panel_width = (panel_length - (num_panels - 1) * panel_gap) / num_panels
+            #   face = entities.add_face(glass_points)
+            #   if face
+            #     face.pushpull(glass_thickness)
+            #     face.material = glass_material
+            #     face.back_material = glass_material
+            #   end
+            # else
+            #   # Multiple panels - split symmetrically
+            #   num_panels = (panel_length / max_panel_width).ceil
+            #   actual_panel_width = (panel_length - (num_panels - 1) * panel_gap) / num_panels
               
-              num_panels.times do |i|
-                start_y = corner_gap + i * (actual_panel_width + panel_gap)
-                end_y = start_y + actual_panel_width
+            #   num_panels.times do |i|
+            #     start_y = corner_gap + i * (actual_panel_width + panel_gap)
+            #     end_y = start_y + actual_panel_width
                 
-                glass_points = [
-                  [x_pos, start_y, glass_height],
-                  [x_pos, end_y, glass_height],
-                  [x_pos, end_y, 0],
-                  [x_pos, start_y, 0]
-                ]
+            #     glass_points = [
+            #       [x_pos, start_y, glass_height],
+            #       [x_pos, end_y, glass_height],
+            #       [x_pos, end_y, 0],
+            #       [x_pos, start_y, 0]
+            #     ]
                 
-                face = entities.add_face(glass_points)
-                if face
-                  face.pushpull(glass_thickness)
-                  face.material = glass_material
-                  face.back_material = glass_material
-                end
-              end
-            end
+            #     face = entities.add_face(glass_points)
+            #     if face
+            #       face.pushpull(glass_thickness)
+            #       face.material = glass_material
+            #       face.back_material = glass_material
+            #     end
+            #   end
+            # end
           end
         end
         
