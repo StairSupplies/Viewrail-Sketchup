@@ -55,6 +55,7 @@ module Viewrail
               :num_treads_lower => 6,
               :num_treads_upper => 6,
               :header_to_wall => 144.0,
+              :wall_to_wall => 72.0,
               :tread_width_lower => 36.0,
               :tread_width_upper => 36.0,
               :landing_width => 72.0,
@@ -162,10 +163,12 @@ module Viewrail
 
       # Create landing (modular method)
       def create_landing(params, position = [0, 0, 0])
+
         model = Sketchup.active_model
         entities = model.active_entities
 
-        width = params["width"] + 5  # Add overhang
+        stack_overhang = 5
+        width = params["width"] + stack_overhang # Add overhang
         depth = params["depth"]
         thickness = params["thickness"]
         glass_railing = params["glass_railing"] || "None"
@@ -224,7 +227,72 @@ module Viewrail
         landing_group.set_attribute("stair_generator", "segment_type", "landing")
 
         return landing_group
-      end
+      end # create_landing
+
+      # Create stack landing (modular method)
+      def create_wide_landing(params, position = [0, 0, 0])
+
+        model = Sketchup.active_model
+        entities = model.active_entities
+
+        width = params["width"]
+        depth = params["depth"]
+        thickness = params["thickness"]
+        glass_railing = params["glass_railing"] || "None"
+        turn_direction = params["turn_direction"] || "Left"
+
+        # Create a group for the landing
+        landing_group = entities.add_group
+        landing_entities = landing_group.entities
+
+        # Create landing platform
+        landing_points = [
+          [0, 0, 0],
+          [depth, 0, 0],
+          [depth, width, 0],
+          [0, width, 0]
+        ]
+
+        # Create riser
+          nosing_value = 0.75
+          reveal = 1
+          riser_thickness = 1.0
+          riser_points = [
+            [nosing_value, nosing_value, -(thickness+reveal)],
+            [5, nosing_value, -(thickness+reveal)],
+            [5, width - nosing_value, -(thickness+reveal)],
+            [nosing_value, width - nosing_value, -(thickness+reveal)]
+          ]
+
+
+        landing_face = landing_entities.add_face(landing_points)
+        landing_face.pushpull(thickness) if landing_face
+
+        riser_face = landing_entities.add_face(riser_points)
+        riser_face.pushpull(riser_thickness) if riser_face
+
+        # Add glass railings to landing if specified
+        if glass_railing != "None"
+          add_glass_railings_to_landing(landing_entities, width, depth, thickness,
+                                       glass_railing, turn_direction)
+        end
+
+        # Apply position transformation
+        transform = Geom::Transformation.new(position)
+        landing_group.transform!(transform)
+
+        # Name the group
+        landing_group.name = "Landing - #{width.round}\" x #{depth.round}\""
+
+        # Store parameters as attributes
+        landing_group.set_attribute("stair_generator", "width", width)
+        landing_group.set_attribute("stair_generator", "depth", depth)
+        landing_group.set_attribute("stair_generator", "thickness", thickness)
+        landing_group.set_attribute("stair_generator", "glass_railing", glass_railing)
+        landing_group.set_attribute("stair_generator", "segment_type", "landing")
+
+        return landing_group
+      end # create_wide_landing
 
       # Helper method to add glass railings to a stair segment
       def add_glass_railings_to_segment(entities, num_treads, tread_run, tread_width, stair_rise, glass_railing, glass_thickness, glass_inset, glass_height)

@@ -51,6 +51,7 @@ module Viewrail
             last_values[:num_treads_lower] = values["num_treads_lower"]
             last_values[:num_treads_upper] = values["num_treads_upper"]
             last_values[:header_to_wall] = values["header_to_wall"]
+            last_values[:wall_to_wall] = values["wall_to_wall"]
             last_values[:tread_width_lower] = values["tread_width_lower"]
             last_values[:tread_width_upper] = values["tread_width_upper"]
             last_values[:landing_width] = values["landing_width"]
@@ -127,10 +128,15 @@ module Viewrail
             # Calculate landing position (at the end of lower stairs)
             landing_x = params["num_treads_lower"] * params["tread_run"]
             landing_y = 0
+            if params["turn_direction"] == "Right"
+              landing_y = -params["tread_width_lower"]
+            end
             landing_z = landing_height
 
+            # UI::messagebox([landing_x, landing_y, landing_z])
+
             # Create landing
-            landing = Viewrail::StairGenerator.create_landing(
+            landing = Viewrail::StairGenerator.create_wide_landing(
               {
                 "width" => params["landing_width"],
                 "depth" => params["landing_depth"],
@@ -141,21 +147,21 @@ module Viewrail
               [landing_x, landing_y, landing_z]
               )
 
-            # Calculate upper stairs position based on turn direction
+              # Calculate upper stairs position based on turn direction
+            stack_overhang = 5
             if params["turn_direction"] == "Left"
               # Left turn: upper stairs go in positive Y direction
-              stack_overhang = 5
               upper_start = [
                 landing_x + stack_overhang,
-                landing_y + params["landing_width"],
+                landing_y + params["tread_width_upper"],
                 landing_z
               ]
               upper_rotation = 180.degrees
             else
               # Right turn: upper stairs go in opposite direction
               upper_start = [
-                landing_x,
-                landing_y,
+                landing_x + stack_overhang,
+                landing_y + params["tread_width_upper"],
                 landing_z
               ]
               upper_rotation = -180.degrees
@@ -196,7 +202,6 @@ module Viewrail
 
             upper_stairs = Viewrail::StairGenerator.create_stair_segment(upper_params, upper_start)
 
-            # Rotate upper stairs for L-shape
             if upper_stairs
               rotation_point = Geom::Point3d.new(upper_start)
               rotation_axis = Geom::Vector3d.new(0, 0, 1)

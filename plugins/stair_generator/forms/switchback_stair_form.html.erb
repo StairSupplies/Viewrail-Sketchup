@@ -136,6 +136,11 @@
         <div class="error" id="header-to-wall-error"></div>
       </div>
       <div class="form-group">
+        <label for="wall_to_wall">Wall to Wall (inches):</label>
+        <input type="number" id="wall_to_wall" value="<%= @last_values[:wall_to_wall] %>" min="24" max="240" step="0.25">
+        <div class="error" id="wall-to-wall-error"></div>
+      </div>
+      <div class="form-group">
         <label for="tread_run">Tread Run (inches):</label>
         <input type="number" id="tread_run" value="<%= @last_values[:tread_run] %>" min="11" max="13" step="0.25">
         <div class="error" id="tread-run-error"></div>
@@ -223,6 +228,7 @@
     const numTreadsLowerInput = document.getElementById('num_treads_lower');
     const numTreadsUpperInput = document.getElementById('num_treads_upper');
     const headerToWallInput = document.getElementById('header_to_wall');
+    const wallToWallInput = document.getElementById('wall_to_wall');
     const treadWidthLowerInput = document.getElementById('tread_width_lower');
     const treadWidthUpperInput = document.getElementById('tread_width_upper');
     const landingWidthInput = document.getElementById('landing_width');
@@ -431,6 +437,14 @@
         isValid = false;
       }
 
+      // Validate Wall to Wall
+      const wallToWall = parseFloat(wallToWallInput.value);
+      if (wallToWall < 48 || wallToWall > 120){
+        document.getElementById('wall-to-wall-error').textContent = 'Must be between 48" and 120"';
+        document.getElementById('wall-to-wall-error').style.display = 'block';
+        isValue = false
+      }
+
       // Validate widths
       const treadWidthLower = parseFloat(treadWidthLowerInput.value);
       const treadWidthUpper = parseFloat(treadWidthUpperInput.value);
@@ -499,6 +513,7 @@
         num_treads_lower: parseInt(numTreadsLowerInput.value),
         num_treads_upper: parseInt(numTreadsUpperInput.value),
         header_to_wall: parseFloat(headerToWallInput.value),
+        wall_to_wall: parseFloat(wallToWallInput.value),
         tread_width_lower: parseFloat(treadWidthLowerInput.value),
         tread_width_upper: parseFloat(treadWidthUpperInput.value),
         landing_width: parseFloat(landingWidthInput.value),
