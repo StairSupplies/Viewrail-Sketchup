@@ -232,10 +232,8 @@
       const treadRun = parseFloat(treadRunInput.value) || 11;      
       
       if (headerToWall > 0 && upperLandingWidth > 0 && treadRun > 0) {
-        // Reset to minimum
-        const minUpperLandingWidth = parseFloat(treadWidthMiddleInput.value) || 36;
-        
         // Calculate available run using MINIMUM landing size
+        const minUpperLandingWidth = parseFloat(treadWidthMiddleInput.value) || 27;
         const availableRun = headerToWall - minUpperLandingWidth;
         const upperTreads = Math.floor(availableRun / treadRun);
         

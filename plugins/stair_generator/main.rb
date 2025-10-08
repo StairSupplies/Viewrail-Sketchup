@@ -87,7 +87,7 @@ module Viewrail
       end
 
       # Create a single stair segment (modular method)
-      def create_stair_segment(params, start_point = [0, 0, 0])
+      def create_stair_segment(params, start_point = [0, 0, 0], lastStair = false)
         model = Sketchup.active_model
         entities = model.active_entities
 
@@ -123,6 +123,12 @@ module Viewrail
 
           # Create tread
           stack_overhang = 5
+          
+          # set the overhand to 0 for the last tread
+          if lastStair and i == num_treads
+            stack_overhang = 0
+          end
+          
           tread_points = [
             [x_position, 0, z_position],
             [x_position + tread_run + stack_overhang, 0, z_position],

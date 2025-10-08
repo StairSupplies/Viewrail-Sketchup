@@ -237,8 +237,9 @@ module Viewrail
             if params["glass_railing"] != "None"
               upper_params["glass_railing"] = railing_side
             end
-
-            upper_stairs = Viewrail::StairGenerator.create_stair_segment(upper_params, upper_start)
+            
+            last_stair = true
+            upper_stairs = Viewrail::StairGenerator.create_stair_segment(upper_params, upper_start, last_stair)
 
             # Rotate upper stairs (180 degrees total from lower stairs)
             if upper_stairs
