@@ -428,14 +428,8 @@ module Viewrail
                 [stair_overlap + panel_length, y_pos, glass_height],
                 [stair_overlap + panel_length, y_pos, 0],
                 [stair_overlap + panel_gap, y_pos, 0]
-              ]
-              
-              face = entities.add_face(glass_points)
-              if face
-                face.pushpull(glass_thickness)
-                face.material = glass_material
-                face.back_material = glass_material
-              end
+              ]              
+              create_glass_panel(entities, glass_points, glass_thickness, glass_material)
             else
               # Multiple panels - split symmetrically
               num_panels = (panel_length / max_panel_width).ceil
@@ -451,13 +445,7 @@ module Viewrail
                   [end_x, y_pos, 0],
                   [start_x, y_pos, 0]
                 ]
-                
-                face = entities.add_face(glass_points)
-                if face
-                  face.pushpull(glass_thickness)
-                  face.material = glass_material
-                  face.back_material = glass_material
-                end
+                create_glass_panel(entities, glass_points, glass_thickness, glass_material)
               end
             end
             
@@ -475,13 +463,7 @@ module Viewrail
                 [x_pos, y_pos + panel_length, 0],
                 [x_pos, y_pos, 0]
               ]
-              
-              face = entities.add_face(glass_points)
-              if face
-                face.pushpull(glass_thickness)
-                face.material = glass_material
-                face.back_material = glass_material
-              end
+              create_glass_panel(entities, glass_points, glass_thickness, glass_material)
             else
               # Multiple panels - split symmetrically
               num_panels = (panel_length / max_panel_width).ceil
@@ -497,24 +479,21 @@ module Viewrail
                   [x_pos, end_y, 0],
                   [x_pos, start_y, 0]
                 ]
-                
-                face = entities.add_face(glass_points)
-                if face
-                  face.pushpull(glass_thickness)
-                  face.material = glass_material
-                  face.back_material = glass_material
-                end
+                create_glass_panel(entities, glass_points, glass_thickness, glass_material)
               end
             end
           end
         end
-        
-        # Apply material to all glass faces
-        entities.grep(Sketchup::Face).each do |f|
-          bbox = f.bounds
-          if bbox.min.z >= -0.01 && bbox.max.z <= glass_height + 0.01
-            f.material = glass_material if f.material != glass_material
-            f.back_material = glass_material if f.back_material != glass_material
+      end
+
+      def create_glass_panel(entities, points, thickness, material)
+        group = entities.add_group
+        face = group.entities.add_face(points)
+        if face
+          face.pushpull(thickness)
+          group.entities.grep(Sketchup::Face).each do |f|
+            f.material = material
+            f.back_material = material
           end
         end
       end
