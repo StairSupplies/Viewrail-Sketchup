@@ -127,6 +127,9 @@ module Viewrail
             # Calculate landing position (at the end of lower stairs)
             landing_x = params["num_treads_lower"] * params["tread_run"]
             landing_y = 0
+            if params["turn_direction"] == "Right"
+              landing_y -= (params["landing_width"].to_f - params["tread_width_lower"].to_f)
+            end
             landing_z = landing_height
 
             # Create landing
@@ -193,7 +196,8 @@ module Viewrail
               end
             end
 
-            upper_stairs = Viewrail::StairGenerator.create_stair_segment(upper_params, upper_start)
+            last_stair = true
+            upper_stairs = Viewrail::StairGenerator.create_stair_segment(upper_params, upper_start, last_stair)
 
             # Rotate upper stairs for L-shape
             if upper_stairs
@@ -222,7 +226,7 @@ module Viewrail
 
           rescue => e
             model.abort_operation
-            UI.messagebox("Error creating landing stairs: #{e.message}")
+            UI.messagebox("Error creating 90° stairs: #{e.message}")
           end
         end # create_90_geometry
       end # class NinetyStairMenu
