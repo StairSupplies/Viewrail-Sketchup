@@ -233,6 +233,9 @@
     const turnDirectionSelect = document.getElementById('turn_direction');
     const glassRailingSelect = document.getElementById('glass_railing');
 
+    const maxTreadsUpperHS = 12; 
+    const maxTreadsLowerHS = 14;
+
     // Calculate Number of Treads Upper from Header to Wall
     function calculateUpperTreads() {
       const headerToWall = parseFloat(headerToWallInput.value) || 0;
@@ -240,15 +243,19 @@
       const treadRun = parseFloat(treadRunInput.value) || 11;
       
       if (headerToWall > 0 && landingWidth > 0 && treadRun > 0) {
-        const availableRun = headerToWall - landingWidth;
+        // Calculate available run using MINIMUM landing width
+        const minLandingWidth = parseFloat(treadWidthLowerInput.value) || 27;
+        const availableRun = headerToWall - minLandingWidth;
         const upperTreads = Math.floor(availableRun / treadRun);
         
         // Ensure it's within valid range
-        const validUpperTreads = Math.max(1, Math.min(12, upperTreads));
+        const validUpperTreads = Math.max(1, Math.min(maxTreadsUpperHS, upperTreads));
         numTreadsUpperInput.value = validUpperTreads;
-        
-        // After calculating upper treads, calculate lower treads
-        calculateLowerTreads();
+        calculateStairRise(); // Recalculate stair rise if upper treads changed
+
+        // Grow the upperLandingWidth to fill the remaining space
+        const usedRun = (validUpperTreads * treadRun);
+        landingWidthInput.value = headerToWall - usedRun;
       }
     }
 
@@ -256,47 +263,34 @@
     function calculateLowerTreads() {
       const totalRise = parseFloat(totalRiseInput.value) || 0;
       const numTreadsUpper = parseInt(numTreadsUpperInput.value) || 0;
-      
-      if (totalRise > 0 && numTreadsUpper >= 0) {
-        // Target rise is 7 inches
-        const targetRise = 7.0;
-        
-        // Calculate total risers needed (treads + landing + top finish floor)
-        const totalRisesNeeded = Math.round(totalRise / targetRise);
-        const totalTreadsNeeded = totalRisesNeeded - 2; // subtract for landing and final rise to floor
-        let numTreadsLower = Math.max(totalTreadsNeeded - numTreadsUpper, 1);     
-        
-        // Calculate what the actual rise would be
+      let numTreadsLower = parseInt(numTreadsLowerInput.value) || 0;
+
+      if (totalRise > 0) {
+        // Calculate actual rise
         const totalTreads = numTreadsLower + numTreadsUpper;
         const calculatedRise = totalRise / (totalTreads + 2);
-        //define a flag to track if we need to update the number of treads
-        let updateNumTreads = false;
         
-        // If rise is outside 6-9" range, adjust lower treads
+        // Adjust if rise is out of range
         if (calculatedRise > 9) {
-          // Rise too high, need more treads
-          while (numTreadsLower < 14) {
+          while (numTreadsLower < maxTreadsLowerHS) {
             numTreadsLower++;
             const newTotalTreads = numTreadsLower + numTreadsUpper;
             const newRise = totalRise / (newTotalTreads + 2);
             if (newRise <= 9) break;
-            updateNumTreads = true
           }
         } else if (calculatedRise < 6) {
-          // Rise too low, need fewer treads
           while (numTreadsLower > 1) {
             numTreadsLower--;
             const newTotalTreads = numTreadsLower + numTreadsUpper;
             const newRise = totalRise / (newTotalTreads + 2);
             if (newRise >= 6) break;
-            updateNumTreads = true;
           }
         }
 
-        if (updateNumTreads) numTreadsLowerInput.value = numTreadsLower;
-
-        // Trigger rise calculation
-        calculateStairRise();
+        if (numTreadsLower !== parseInt(numTreadsLowerInput.value)) {
+          numTreadsLowerInput.value = numTreadsLower;
+          calculateStairRise(); // Recalculate stair rise if lower treads changed
+        }
       }
     }
 
@@ -318,13 +312,6 @@
       }
     }
 
-    // Mark fields as user-modified when changed
-    landingWidthInput.addEventListener('input', function() {
-      this.dataset.userModified = 'true';
-    });
-    landingDepthInput.addEventListener('input', function() {
-      this.dataset.userModified = 'true';
-    });
 
     // Calculate Stair Rise from Total Rise and Total Number of Treads
     function calculateStairRise() {
@@ -364,19 +351,33 @@
     }
 
     // Add event listeners
-    headerToWallInput.addEventListener('input', calculateUpperTreads);
+    headerToWallInput.addEventListener('input', function() {
+      calculateUpperTreads();
+      calculateLowerTreads(); // Recalculate upper treads when header to wall changes
+    });
+
     landingWidthInput.addEventListener('input', function() {
-      this.dataset.userModified = 'true';
-      calculateUpperTreads(); // Recalculate upper treads when landing width changes
+      calculateUpperTreads();
+      calculateLowerTreads(); // Recalculate upper treads when landing width changes
     });
+
     landingDepthInput.addEventListener('input', function() {
-      this.dataset.userModified = 'true';
+      checkLandingSize();
     });
-    treadWidthLowerInput.addEventListener('input', checkLandingSize);
+    
+    treadWidthLowerInput.addEventListener('input', function() {
+      checkLandingSize();
+      calculateUpperTreads(); // Recalculate upper treads when tread width changes
+      calculateLowerTreads(); // Recalculate lower treads when tread width changes
+    });
+
     treadWidthUpperInput.addEventListener('input', checkLandingSize);
+    
     treadRunInput.addEventListener('input', function() {
       calculateUpperTreads(); // Recalculate upper treads when tread run changes
+      calculateLowerTreads(); // Recalculate lower treads when tread run changes
     });
+    
     totalRiseInput.addEventListener('input', function() {
       calculateLowerTreads(); // Calculate lower treads when total rise changes
       calculateStairRise();

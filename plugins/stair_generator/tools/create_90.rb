@@ -127,6 +127,9 @@ module Viewrail
             # Calculate landing position (at the end of lower stairs)
             landing_x = params["num_treads_lower"] * params["tread_run"]
             landing_y = 0
+            if params["turn_direction"] == "Right"
+              landing_y -= (params["landing_width"].to_f - params["tread_width_lower"].to_f)
+            end
             landing_z = landing_height
 
             # Create landing

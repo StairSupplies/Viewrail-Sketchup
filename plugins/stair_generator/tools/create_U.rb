@@ -117,6 +117,9 @@ module Viewrail
             # === LOWER LANDING ===
             lower_landing_x = params["num_treads_lower"] * params["tread_run"]
             lower_landing_y = 0
+            if params["turn_direction"] == "Right"
+              lower_landing_y -= (params["lower_landing_width"] - params["tread_width_lower"].to_f)
+            end
             lower_landing_z = lower_landing_height
 
             lower_landing = Viewrail::StairGenerator.create_landing(
@@ -181,7 +184,7 @@ module Viewrail
               upper_landing_y = lower_landing_y + params["lower_landing_width"] + (params["num_treads_middle"] * params["tread_run"])
               upper_landing_z = upper_landing_height
             else # Right turn
-              upper_landing_x = lower_landing_x
+              upper_landing_x = lower_landing_x - (params["upper_landing_width"].to_f - params["tread_width_upper"].to_f)
               upper_landing_y = lower_landing_y - (params["num_treads_middle"] * params["tread_run"])
               upper_landing_z = upper_landing_height
             end

@@ -220,15 +220,19 @@
     const turnDirectionSelect = document.getElementById('turn_direction');
     const glassRailingSelect = document.getElementById('glass_railing');
 
+    const maxTreadsUpperHS = 12; 
+    const maxTreadsLowerHS = 14;
+    const maxTreadsZStringer = 9;
+
     // Hidden variables for landing dimensions (calculated in background)
-    let lowerLandingWidth = 36;
-    let lowerLandingDepth = 36;
-    let upperLandingDepth = 36;
-    let upperLandingWidth = 36;
+    let lowerLandingWidth = 36.0;
+    let lowerLandingDepth = 36.0;
+    let upperLandingDepth = 36.0;
+    let upperLandingWidth = 36.0;
 
     // Calculate Number of Treads Upper from Header to Wall
     function calculateUpperTreads() {
-      const headerToWall = parseFloat(headerToWallInput.value) || 0;
+      const headerToWall = parseFloat(headerToWallInput.value);
       const treadRun = parseFloat(treadRunInput.value) || 11;      
       
       if (headerToWall > 0 && upperLandingWidth > 0 && treadRun > 0) {
@@ -238,7 +242,7 @@
         const upperTreads = Math.floor(availableRun / treadRun);
         
         // Ensure it's within valid range
-        const validUpperTreads = Math.max(1, Math.min(12, upperTreads));
+        const validUpperTreads = Math.max(1, Math.min(maxTreadsUpperHS, upperTreads));
         numTreadsUpperInput.value = validUpperTreads;
         
         // Grow the upperLandingWidth to fill the remaining space
@@ -262,7 +266,7 @@
         const middleTreads = Math.floor(availableRun / treadRun);
         
         // Ensure it's within valid range
-        const validMiddleTreads = Math.max(1, Math.min(9, middleTreads));
+        const validMiddleTreads = Math.max(1, Math.min(maxTreadsZStringer, middleTreads));
         numTreadsMiddleInput.value = validMiddleTreads;
 
         // NOW grow the landings to fill the remaining space
@@ -284,16 +288,14 @@
         // Calculate actual rise
         const totalTreads = numTreadsLower + numTreadsMiddle + numTreadsUpper;
         const calculatedRise = totalRise / (totalTreads + 3);
-        let updateNumTreads = false;
         
         // Adjust if rise is out of range
         if (calculatedRise > 9) {
-          while (numTreadsLower < 14) {
+          while (numTreadsLower < maxTreadsLowerHS) {
             numTreadsLower++;
             const newTotalTreads = numTreadsLower + numTreadsMiddle + numTreadsUpper;
             const newRise = totalRise / (newTotalTreads + 3);
             if (newRise <= 9) break;
-            updateNumTreads = true;
           }
         } else if (calculatedRise < 6) {
           while (numTreadsLower > 1) {
@@ -301,12 +303,12 @@
             const newTotalTreads = numTreadsLower + numTreadsMiddle + numTreadsUpper;
             const newRise = totalRise / (newTotalTreads + 3);
             if (newRise >= 6) break;
-            updateNumTreads = true;
           }
         }
 
-        if (updateNumTreads) numTreadsLowerInput.value = numTreadsLower;
-        calculateStairRise();
+        if (numTreadsLower !== parseInt(numTreadsLowerInput.value)) {
+          numTreadsLowerInput.value = numTreadsLower;
+        }
       }
     }
 
