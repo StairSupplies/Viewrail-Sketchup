@@ -29,7 +29,7 @@ module Viewrail
             show_straight_modify_form(params)
           when :landing_90
             show_landing_modify_form(params)
-          when :landing_U
+          when :landing_u
             show_u_modify_form(params)
           else
             UI.messagebox("Unknown stair type", MB_OK, "Error")
@@ -235,7 +235,7 @@ module Viewrail
 
           begin
             renderer = Viewrail::SharedUtilities::FormRenderer.new(existing_params)
-            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/U_stair_form.html.erb")
+            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/u_stair_form.html.erb")
             dialog.set_html(html_content)
           rescue => e
             UI.messagebox("Error loading U stair form template: #{e.message}")
@@ -271,7 +271,7 @@ module Viewrail
                 @selected_stair.erase!
                 
                 # Create new 90-degree stairs at origin first
-                new_stair = Viewrail::StairGenerator::Tools::UStairMenu.create_U_geometry(values, [0, 0, 0])
+                new_stair = Viewrail::StairGenerator::Tools::UStairMenu.create_u_geometry(values, [0, 0, 0])
                 
                 # Apply the original transformation (position and rotation)
                 if new_stair

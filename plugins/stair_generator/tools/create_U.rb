@@ -9,7 +9,7 @@ module Viewrail
         
         def self.show
           # Get persistent values from the main module
-          last_values = Viewrail::StairGenerator.last_form_values(:landing_U)
+          last_values = Viewrail::StairGenerator.last_form_values(:landing_u)
 
           # Create the HTML dialog for U-shaped stairs
           dialog = UI::HtmlDialog.new(
@@ -33,7 +33,7 @@ module Viewrail
           # Render the HTML content from ERB template
           begin
             renderer = Viewrail::SharedUtilities::FormRenderer.new(last_values)
-            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/U_stair_form.html.erb")
+            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/u_stair_form.html.erb")
             dialog.set_html(html_content)
           rescue => e
             UI.messagebox("Error loading U-shaped stair form template: #{e.message}\n\nPlease check that the template file exists.")
@@ -71,10 +71,10 @@ module Viewrail
             dialog.close
 
             # Create the U-shaped stairs and get the group
-            stair_group = self.create_U_geometry(values)
+            stair_group = self.create_u_geometry(values)
             
             # Store ALL parameters for future modification
-            Viewrail::StairGenerator.store_stair_parameters(stair_group, values, :landing_U)
+            Viewrail::StairGenerator.store_stair_parameters(stair_group, values, :landing_u)
           end
 
           dialog.add_action_callback("cancel") do |action_context|
@@ -85,7 +85,7 @@ module Viewrail
         end # show
 
         # Create U-shaped stairs (orchestrator method)
-        def self.create_U_geometry(params, start_point = [0, 0, 0])
+        def self.create_u_geometry(params, start_point = [0, 0, 0])
           model = Sketchup.active_model
 
           # Start operation for undo functionality
@@ -276,7 +276,7 @@ module Viewrail
             model.abort_operation
             UI.messagebox("Error creating U-shaped stairs: #{e.message}")
           end
-        end # create_U_geometry
+        end # create_u_geometry
 
         def self.get_railing_side(turn_direction, railing_type)
           case turn_direction

@@ -1,6 +1,6 @@
 require 'erb'
 require_relative '../viewrail_shared/utilities'
-require_relative 'tools/create_U'
+require_relative 'tools/create_u'
 require_relative 'tools/create_90'
 require_relative 'tools/create_straight'
 require_relative 'tools/modify_stair'
@@ -46,7 +46,7 @@ module Viewrail
               :turn_direction => "Left",
               :glass_railing => "None"
             }
-          when :landing_U
+          when :landing_u
             {
               :num_treads_lower => 4,
               :num_treads_middle => 4,
@@ -571,7 +571,7 @@ module Viewrail
               
               params[:type] = :landing_90
             
-            when "landing_U"
+            when "landing_u"
               # Retrieve U-shaped stair parameters
               params[:num_treads_lower] = dict["num_treads_lower"]
               params[:num_treads_middle] = dict["num_treads_middle"]
@@ -591,7 +591,7 @@ module Viewrail
               params[:turn_direction] = dict["turn_direction"]
               params[:glass_railing] = dict["glass_railing"]
               
-              params[:type] = :landing_U
+              params[:type] = :landing_u
               
             when "landing"
               # This is just a landing component, not a full stair system
@@ -667,8 +667,8 @@ module Viewrail
             group.set_attribute("stair_generator", "total_rise", params["total_rise"])
             group.set_attribute("stair_generator", "turn_direction", params["turn_direction"])
             group.set_attribute("stair_generator", "glass_railing", params["glass_railing"])
-          when :landing_U
-            group.set_attribute("stair_generator", "segment_type", "landing_U")
+          when :landing_u
+            group.set_attribute("stair_generator", "segment_type", "landing_u")
             group.set_attribute("stair_generator", "num_treads_lower", params["num_treads_lower"])
             group.set_attribute("stair_generator", "num_treads_middle", params["num_treads_middle"])
             group.set_attribute("stair_generator", "num_treads_upper", params["num_treads_upper"])
