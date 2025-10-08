@@ -29,6 +29,8 @@ module Viewrail
             show_straight_modify_form(params)
           when :landing_90
             show_landing_modify_form(params)
+          when :landing_u
+            show_u_modify_form(params)
           else
             UI.messagebox("Unknown stair type", MB_OK, "Error")
           end
@@ -209,7 +211,96 @@ module Viewrail
           end
           
           dialog.show
-        end
+        end # def self.show_landing_modify_form(existing_params)
+
+        def self.show_u_modify_form(existing_params)
+          # Create the HTML dialog for modifying U-shaped stairs
+          dialog = UI::HtmlDialog.new(
+            {
+              :dialog_title => "Modify U-Shaped Stairs",
+              :preferences_key => "com.viewrail.u_stair_generator.modify",
+              :scrollable => true,
+              :resizable => true,
+              :width => 650,
+              :height => 800,
+              :left => 100,
+              :top => 50,
+              :min_width => 625,
+              :min_height => 700,
+              :max_width => 750,
+              :max_height => 1100,
+              :style => UI::HtmlDialog::STYLE_DIALOG
+            }
+          )
+
+          begin
+            renderer = Viewrail::SharedUtilities::FormRenderer.new(existing_params)
+            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/u_stair_form.html.erb")
+            dialog.set_html(html_content)
+          rescue => e
+            UI.messagebox("Error loading U stair form template: #{e.message}")
+            return
+          end
+
+          # Add resize callback
+          dialog.add_action_callback("resize_dialog") do |action_context, params|
+            dimensions = JSON.parse(params)
+            dialog.set_size(dimensions["width"], dimensions["height"])
+          end
+          
+          # Add callback for updating the 90-degree stairs
+          dialog.add_action_callback("create_u_stairs") do |action_context, params|
+            values = JSON.parse(params)
+            
+            # Store the values for next time
+            Viewrail::StairGenerator.last_form_values(:landing_u).merge!(values.transform_keys(&:to_sym))
+            
+            dialog.close
+            
+            # Replace the existing stair
+            if @selected_stair && @selected_stair.valid?
+              model = Sketchup.active_model
+              
+              model.start_operation("Modify U Stairs", true)
+              
+              begin
+                # Get the transformation of the existing stair
+                transformation = @selected_stair.transformation
+                
+                # Delete the old stair
+                @selected_stair.erase!
+                
+                # Create new 90-degree stairs at origin first
+                new_stair = Viewrail::StairGenerator::Tools::UStairMenu.create_u_geometry(values, [0, 0, 0])
+                
+                # Apply the original transformation (position and rotation)
+                if new_stair
+                  new_stair.transformation = transformation
+                  Viewrail::StairGenerator.store_stair_parameters(new_stair, values, :landing_u)
+                  
+                  # Select the new stair
+                  model.selection.clear
+                  model.selection.add(new_stair)
+                end
+                
+                model.commit_operation
+                
+              rescue => e
+                model.abort_operation
+                UI.messagebox("Error modifying U stairs: #{e.message}")
+              end
+            end
+            
+            @selected_stair = nil
+          end
+          
+          dialog.add_action_callback("cancel") do |action_context|
+            dialog.close
+            @selected_stair = nil
+          end
+          
+          dialog.show
+        end # def self.show_u_modify_form(existing_params)
         
       end # class ModifyStairTool
     end # module Tools
