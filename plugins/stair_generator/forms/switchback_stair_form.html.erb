@@ -141,6 +141,10 @@
         <div class="error" id="wall-to-wall-error"></div>
       </div>
       <div class="form-group">
+        <label for="maximize_tread_width">Maximize Tread Width:</label>
+        <input type="checkbox" id="maximize_tread_width" value="max_them"></label>
+      </div>
+      <div class="form-group">
         <label for="tread_run">Tread Run (inches):</label>
         <input type="number" id="tread_run" value="<%= @last_values[:tread_run] %>" min="11" max="13" step="0.25">
         <div class="error" id="tread-run-error"></div>
@@ -229,6 +233,7 @@
     const numTreadsUpperInput = document.getElementById('num_treads_upper');
     const headerToWallInput = document.getElementById('header_to_wall');
     const wallToWallInput = document.getElementById('wall_to_wall');
+    const maximizeTreadWidthInput = document.getElementById('maximize_Tread_Width');
     const treadWidthLowerInput = document.getElementById('tread_width_lower');
     const treadWidthUpperInput = document.getElementById('tread_width_upper');
     const landingWidthInput = document.getElementById('landing_width');
@@ -238,6 +243,8 @@
     const stairRiseInput = document.getElementById('stair_rise');
     const turnDirectionSelect = document.getElementById('turn_direction');
     const glassRailingSelect = document.getElementById('glass_railing');
+
+    document.getElementById('maximize_tread_width').checked = "<%= @last_values[:maximize_tread_width] %>";
 
     // Calculate Number of Treads Upper from Header to Wall
     function calculateUpperTreads() {
@@ -357,11 +364,11 @@
       isUpdating = true;
 
       const numTreadsUpper = parseInt(numTreadsUpperInput.value) || 0;
-      const landingWidth = parseFloat(landingWidthInput.value) || 36;
+      const landingDepth = parseFloat(landingDepthInput.value) || 72;
       const treadRun = parseFloat(treadRunInput.value) || 11;
 
-      if (numTreadsUpper > 0 && landingWidth > 0 && treadRun > 0) {
-        const headerToWall = landingWidth + (numTreadsUpper * treadRun);
+      if (numTreadsUpper > 0 && landingDepth > 0 && treadRun > 0) {
+        const headerToWall = landingDepth + (numTreadsUpper * treadRun);
         headerToWallInput.value = headerToWall.toFixed(2);
       }
 
@@ -514,6 +521,7 @@
         num_treads_upper: parseInt(numTreadsUpperInput.value),
         header_to_wall: parseFloat(headerToWallInput.value),
         wall_to_wall: parseFloat(wallToWallInput.value),
+        // maximize_tread_width: maximizeTreadWidthInput.value === "true",
         tread_width_lower: parseFloat(treadWidthLowerInput.value),
         tread_width_upper: parseFloat(treadWidthUpperInput.value),
         landing_width: parseFloat(landingWidthInput.value),

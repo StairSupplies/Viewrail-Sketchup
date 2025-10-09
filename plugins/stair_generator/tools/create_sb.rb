@@ -21,7 +21,7 @@ module Viewrail
               :left => 100,
               :top => 50,
               :min_width => 625,
-              :min_height => 650,
+              :min_height => 700,
               :max_width => 750,
               :max_height => 1000,
               :style => UI::HtmlDialog::STYLE_DIALOG
@@ -133,8 +133,6 @@ module Viewrail
             end
             landing_z = landing_height
 
-            # UI::messagebox([landing_x, landing_y, landing_z])
-
             # Create landing
             landing = Viewrail::StairGenerator.create_wide_landing(
               {
@@ -153,7 +151,7 @@ module Viewrail
               # Left turn: upper stairs go in positive Y direction
               upper_start = [
                 landing_x + stack_overhang,
-                landing_y + params["tread_width_upper"],
+                landing_y + params["landing_width"],
                 landing_z
               ]
               upper_rotation = 180.degrees

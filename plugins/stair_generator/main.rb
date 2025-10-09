@@ -71,9 +71,10 @@ module Viewrail
             # Future switchback defaults
             {
               :num_treads_lower => 6,
-              :num_treads_upper => 6,
-              :header_to_wall => 144.0,
+              :num_treads_upper => 7,
+              :header_to_wall => 149.0,
               :wall_to_wall => 72.0,
+              :maximize_tread_width => true,
               :tread_width_lower => 36.0,
               :tread_width_upper => 36.0,
               :landing_width => 72.0,
