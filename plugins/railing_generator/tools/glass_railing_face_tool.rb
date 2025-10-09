@@ -301,12 +301,22 @@ module Viewrail
 
         def onReturn(view)
           if @face_edges.length >= 1
-            convert_face_edges_to_points
-            create_glass_railings
-            @selected_faces.clear
-            @face_edges.clear
-            update_status_text
-            view.invalidate
+            # Group the current selection into adjacent face sets and process each set
+            groups = group_adjacent_face_sets(@face_edges, @selected_faces)
+            groups.each do |group|
+              # Load this set into the existing workflow
+              @face_edges = group[:edges]
+              @selected_faces = group[:faces]
+
+              convert_face_edges_to_points
+              create_glass_railings
+
+              # Reset between groups to preserve original behavior
+              @selected_faces.clear
+              @face_edges.clear
+              update_status_text
+              view.invalidate
+            end
           end
         end # onReturn
 
@@ -320,6 +330,66 @@ module Viewrail
         end # update_status_text
 
         private
+
+        # Group selected faces into collections where each group consists of
+        # faces whose extracted top-edge segments share endpoints (adjacent).
+        # Returns: [{ edges: [[p0,p1], ...], faces: [faceA, ...] }, ...]
+        def group_adjacent_face_sets(face_edges, selected_faces, tolerance = 0.001.inch)
+          return [] if face_edges.nil? || face_edges.empty? || selected_faces.nil? || selected_faces.empty?
+
+          n = face_edges.length
+          return [{ edges: face_edges.dup, faces: selected_faces.dup }] if n == 1
+
+          key_for = lambda do |pt|
+            [
+              (pt.x / tolerance).round,
+              (pt.y / tolerance).round,
+              (pt.z / tolerance).round
+            ]
+          end
+
+          # Precompute endpoint keys
+          endpoint_keys = face_edges.map { |a, b| [key_for.call(a), key_for.call(b)] }
+
+          # Build adjacency lists: segments are adjacent if any endpoints match (within tolerance)
+          adj = Array.new(n) { [] }
+          (0...n).each do |i|
+            ki0, ki1 = endpoint_keys[i]
+            (i + 1...n).each do |j|
+              kj0, kj1 = endpoint_keys[j]
+              if ki0 == kj0 || ki0 == kj1 || ki1 == kj0 || ki1 == kj1
+                adj[i] << j
+                adj[j] << i
+              end
+            end
+          end
+
+          # Connected components via BFS
+          visited = Array.new(n, false)
+          groups = []
+          (0...n).each do |i|
+            next if visited[i]
+            queue = [i]
+            visited[i] = true
+            comp = []
+            until queue.empty?
+              v = queue.shift
+              comp << v
+              adj[v].each do |w|
+                next if visited[w]
+                visited[w] = true
+                queue << w
+              end
+            end
+
+            groups << {
+              edges: comp.map { |idx| face_edges[idx] },
+              faces: comp.map { |idx| selected_faces[idx] }
+            }
+          end
+
+          groups
+        end
 
         def convert_face_edges_to_points
           # Sort the user selections into a continuous order before building
