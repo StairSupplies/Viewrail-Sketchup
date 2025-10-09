@@ -322,10 +322,12 @@ module Viewrail
         private
 
         def convert_face_edges_to_points
-          # Use the utility method to get face segments
+          # Sort the user selections into a continuous order before building
+          sorted_edges, sorted_faces = Viewrail::SharedUtilities.sort_face_edges_and_faces(@face_edges, @selected_faces)
+          # Use the existing utility method to get face segments from the sorted data
           @face_segments = Viewrail::SharedUtilities.create_offset_line_from_edges(
-            @face_edges,
-            @selected_faces,
+            sorted_edges,
+            sorted_faces,
             @offset_distance
           )
         end # convert_face_edges_to_points
@@ -502,7 +504,9 @@ module Viewrail
 
           # Use offset distance to create segments, then convert them to a path
           baserail_center_offset = @offset_distance - (@glass_thickness / 2.0)
-          path_edges = Viewrail::SharedUtilities.create_offset_path(@face_edges, @selected_faces, base_group, baserail_center_offset)
+          # Sort selections to build a continuous path for Follow Me
+          sorted_edges, sorted_faces = Viewrail::SharedUtilities.sort_face_edges_and_faces(@face_edges, @selected_faces)
+          path_edges = Viewrail::SharedUtilities.create_offset_path(sorted_edges, sorted_faces, base_group, baserail_center_offset)
           
           # Get starting point and direction for profile orientation
           first_edge = path_edges.first
@@ -536,7 +540,9 @@ module Viewrail
           
           # Use offset distance to create segments, then convert them to a path
           handrail_center_offset = @offset_distance - (@glass_thickness / 2.0)          
-          path_edges = Viewrail::SharedUtilities.create_offset_path(@face_edges, @selected_faces, handrail_group, handrail_center_offset)
+          # Sort selections to build a continuous path for Follow Me
+          sorted_edges, sorted_faces = Viewrail::SharedUtilities.sort_face_edges_and_faces(@face_edges, @selected_faces)
+          path_edges = Viewrail::SharedUtilities.create_offset_path(sorted_edges, sorted_faces, handrail_group, handrail_center_offset)
          
           # Get starting point and direction for profile orientation
           first_edge = path_edges.first

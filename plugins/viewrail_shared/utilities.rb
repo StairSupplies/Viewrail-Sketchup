@@ -185,7 +185,7 @@ module Viewrail
       #================ IN DEVELOPMENT================
 
       def build_path_from_edges(edges)
-        unless !edges.nil? && !edges.nil? 
+        unless !edges.nil? && !edges.nil?
           UI.messagebox("No valid edges found for building path.")
           return []
         end
@@ -266,7 +266,7 @@ module Viewrail
         # If the edges are separate segments that don't connect into a continuous path,
         # just extract all unique points in order
         points = []
-        
+
         edge_point_pairs.each do |edge_points|
           if points.nil?
             points << edge_points[0]
@@ -282,7 +282,7 @@ module Viewrail
             points << edge_points[1] unless points.include?(edge_points[1])
           end
         end
-        
+
         points
       end
 
@@ -297,12 +297,12 @@ module Viewrail
           # It's Edge objects
           points = build_path_from_edges(edges_or_points)
         end
-        
+
         return [] if points.length < 2
-        
+
         # Create offset points on XY plane
         offset_points = []
-        
+
         points.each_with_index do |point, index|
           if index == 0
             edge_vector = get_vector_from_face(faces[index]) # Use first face normal for start
@@ -318,9 +318,9 @@ module Viewrail
 
           offset_points << offset_point
         end
-        
+
         offset_segments = convert_points_to_segments(offset_points)
-        
+
         return offset_segments
       end
 
@@ -334,6 +334,81 @@ module Viewrail
         return segments
 
       end #convert_points_to_segments
+
+      # ===== Sorting helpers (pre-process only, do not alter existing core methods) =====
+      # Sort face edge point pairs and corresponding faces into a continuous chain.
+      # Returns [sorted_pairs, sorted_faces]
+      def sort_face_edges_and_faces(face_edges, selected_faces, tolerance = 0.001.inch)
+        return [face_edges, selected_faces] if face_edges.nil? || face_edges.empty? || selected_faces.nil? || selected_faces.empty?
+
+        key_for = lambda do |pt|
+          [
+            (pt.x / tolerance).round,
+            (pt.y / tolerance).round,
+            (pt.z / tolerance).round
+          ]
+        end
+
+        # Build adjacency from endpoints to edge indices
+        endpoints = face_edges.map { |a,b| [a,b] }
+        adjacency = Hash.new { |h,k| h[k] = [] }
+        endpoints.each_with_index do |(a,b), idx|
+          adjacency[key_for.call(a)] << [idx, 0]
+          adjacency[key_for.call(b)] << [idx, 1]
+        end
+
+        # Find a start at a degree-1 endpoint if possible
+        start_idx = nil
+        start_ep = 0
+        endpoints.each_with_index do |(a,b), idx|
+          ka = key_for.call(a)
+          kb = key_for.call(b)
+          if adjacency[ka].length == 1 || adjacency[kb].length == 1
+            start_idx = idx
+            start_ep = adjacency[ka].length == 1 ? 0 : 1
+            break
+          end
+        end
+        start_idx ||= 0
+
+        used = Array.new(face_edges.length, false)
+        order = []
+
+        # Walk through connected edges while collecting ordered points
+        a, b = endpoints[start_idx]
+        start_point = (start_ep == 0 ? a : b)
+        other_point = (start_ep == 0 ? b : a)
+        points_chain = [start_point, other_point]
+        used[start_idx] = true
+        order << [start_idx, start_ep]
+
+        curr_key = key_for.call(other_point)
+        loop do
+          candidates = adjacency[curr_key].select { |edge_idx, _| !used[edge_idx] }
+          break if candidates.empty?
+          edge_idx, hit_ep = candidates.first
+          a2, b2 = endpoints[edge_idx]
+          # If we arrived at endpoint 0, the next point is b2; otherwise a2
+          next_point = (hit_ep == 0 ? b2 : a2)
+          points_chain << next_point
+          used[edge_idx] = true
+          order << [edge_idx, hit_ep]
+          curr_key = key_for.call(next_point)
+        end
+
+        # Build sorted arrays using the order and oriented by the points chain
+        sorted_pairs = []
+        sorted_faces = []
+        (0..points_chain.length - 2).each_with_index do |i, seg_idx|
+          sorted_pairs << [points_chain[i], points_chain[i + 1]]
+          # faces mapped by traversal order
+          if seg_idx < order.length
+            sorted_faces << selected_faces[order[seg_idx][0]]
+          end
+        end
+
+        [sorted_pairs, sorted_faces]
+      end
 
       def get_vector_from_face(face)
         offset_vector = face.normal
