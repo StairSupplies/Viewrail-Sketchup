@@ -233,7 +233,7 @@
     const numTreadsUpperInput = document.getElementById('num_treads_upper');
     const headerToWallInput = document.getElementById('header_to_wall');
     const wallToWallInput = document.getElementById('wall_to_wall');
-    const maximizeTreadWidthInput = document.getElementById('maximize_Tread_Width');
+    const maximizeTreadWidthInput = document.getElementById('maximize_tread_width');
     const treadWidthLowerInput = document.getElementById('tread_width_lower');
     const treadWidthUpperInput = document.getElementById('tread_width_upper');
     const landingWidthInput = document.getElementById('landing_width');
@@ -521,7 +521,7 @@
         num_treads_upper: parseInt(numTreadsUpperInput.value),
         header_to_wall: parseFloat(headerToWallInput.value),
         wall_to_wall: parseFloat(wallToWallInput.value),
-        // maximize_tread_width: maximizeTreadWidthInput.value === "true",
+        maximize_tread_width: maximizeTreadWidthInput.value === "true",
         tread_width_lower: parseFloat(treadWidthLowerInput.value),
         tread_width_upper: parseFloat(treadWidthUpperInput.value),
         landing_width: parseFloat(landingWidthInput.value),
