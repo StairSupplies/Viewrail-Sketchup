@@ -25,7 +25,7 @@ module Viewrail
 
           begin
             renderer = Viewrail::SharedUtilities::FormRenderer.new(last_values)
-            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/railing_generator/forms/glass_railing_form.html.erb")
+            html_content = renderer.render(File.join(File.dirname(__FILE__), "..", "forms", "glass_railing_form.html.erb"))
             dialog.set_html(html_content)
           rescue => e
             UI.messagebox("Error loading form template: #{e.message}\n\nPlease check that the template file exists.")
