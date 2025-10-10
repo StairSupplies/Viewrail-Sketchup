@@ -701,8 +701,8 @@ module Viewrail
       cmd_stairs = UI::Command.new("Create Straight Stairs") {
         self.add_stair_menu
       }
-      cmd_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_straight.svg"
-      cmd_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_straight.svg"
+      cmd_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_straight.svg")
+      cmd_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_straight.svg")
       cmd_stairs.tooltip = "Create Straight Stairs"
       cmd_stairs.status_bar_text = "Create parametric straight stairs with customizable dimensions"
       cmd_stairs.menu_text = "Create Straight Stairs"
@@ -711,8 +711,8 @@ module Viewrail
       cmd_landing_stairs = UI::Command.new("Create 90") {
         self.add_landing_stair_menu
       }
-      cmd_landing_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_90.svg"
-      cmd_landing_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_90.svg"
+      cmd_landing_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_90.svg")
+      cmd_landing_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_90.svg")
       cmd_landing_stairs.tooltip = "Create 90 Stairs"
       cmd_landing_stairs.status_bar_text = "Create L-shaped stairs with landing platform"
       cmd_landing_stairs.menu_text = "Create 90 System Stairs"
@@ -721,8 +721,8 @@ module Viewrail
       cmd_u_stairs = UI::Command.new("Create U-Shaped Stairs") {
         self.add_u_stair_menu
       }
-      cmd_u_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_u.svg"
-      cmd_u_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_u.svg"
+      cmd_u_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_u.svg")
+      cmd_u_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_u.svg")
       cmd_u_stairs.tooltip = "Create U-Shaped Stairs"
       cmd_u_stairs.status_bar_text = "Create U-shaped stairs with two landings"
       cmd_u_stairs.menu_text = "Create U-Shaped Stairs"
@@ -731,8 +731,8 @@ module Viewrail
       cmd_modify = UI::Command.new("Modify Stairs") {
         Viewrail::StairGenerator::Tools::ModifyStairTool.activate
       }
-      cmd_modify.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/modify.svg"
-      cmd_modify.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/modify.svg"
+      cmd_modify.small_icon = File.join(File.dirname(__FILE__), "icons", "modify.svg")
+      cmd_modify.large_icon = File.join(File.dirname(__FILE__), "icons", "modify.svg")
       cmd_modify.tooltip = "Modify Existing Stairs"
       cmd_modify.status_bar_text = "Modify parameters of selected stairs"
       cmd_modify.menu_text = "Modify Stairs"
@@ -750,8 +750,8 @@ module Viewrail
       cmd_about = UI::Command.new("About") {
         self.show_about
       }
-      cmd_about.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/logo-black.svg"
-      cmd_about.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/logo-black.svg"
+      cmd_about.small_icon = File.join(File.dirname(__FILE__), "icons", "logo-black.svg")
+      cmd_about.large_icon = File.join(File.dirname(__FILE__), "icons", "logo-black.svg")
       cmd_about.tooltip = "About Stair Generator"
       cmd_about.status_bar_text = "About Stair Generator Extension"
       cmd_about.menu_text = "About"

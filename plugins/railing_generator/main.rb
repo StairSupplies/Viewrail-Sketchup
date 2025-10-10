@@ -29,8 +29,9 @@ module Viewrail
       cmd_glass_railing = UI::Command.new("Glass Railing") {
         Viewrail::RailingGenerator::Tools::GlassRailingTool.show
       }
-      cmd_glass_railing.small_icon = "C:/Viewrail-Sketchup/plugins/railing_generator/icons/add_glass_railing.svg"
-      cmd_glass_railing.large_icon = "C:/Viewrail-Sketchup/plugins/railing_generator/icons/add_glass_railing.svg"
+      
+      cmd_glass_railing.small_icon = File.join(File.dirname(__FILE__), "icons", "add_glass_railing.svg")
+      cmd_glass_railing.large_icon = File.join(File.dirname(__FILE__), "icons", "add_glass_railing.svg")
       cmd_glass_railing.tooltip = "Create Glass Railing"
       cmd_glass_railing.status_bar_text = "Draw a path to create glass railings"
       cmd_glass_railing.menu_text = "Glass Railing"
@@ -49,8 +50,8 @@ module Viewrail
       cmd_about = UI::Command.new("About") {
         show_about
       }
-      cmd_about.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/logo-black.svg"
-      cmd_about.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/logo-black.svg"
+     cmd_about.small_icon = File.join(File.dirname(__FILE__), "..", "stair_generator", "icons", "logo-black.svg")
+      cmd_about.large_icon = File.join(File.dirname(__FILE__), "..", "stair_generator", "icons", "logo-black.svg")
       cmd_about.tooltip = "About Railing Generator"
       cmd_about.status_bar_text = "About Railing Generator Extension"
       cmd_about.menu_text = "About"

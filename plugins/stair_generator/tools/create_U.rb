@@ -33,7 +33,7 @@ module Viewrail
           # Render the HTML content from ERB template
           begin
             renderer = Viewrail::SharedUtilities::FormRenderer.new(last_values)
-            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/u_stair_form.html.erb")
+            html_content = renderer.render(File.join(File.dirname(__FILE__), "..", "forms", "u_stair_form.html.erb"))
             dialog.set_html(html_content)
           rescue => e
             UI.messagebox("Error loading U-shaped stair form template: #{e.message}\n\nPlease check that the template file exists.")

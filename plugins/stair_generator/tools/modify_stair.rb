@@ -62,7 +62,7 @@ module Viewrail
           # Render the HTML content with existing values
           begin
             renderer = Viewrail::SharedUtilities::FormRenderer.new(existing_params)
-            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/stair_form.html.erb")
+            html_content = renderer.render(File.join(File.dirname(__FILE__), "..", "forms", "stair_form.html.erb"))
             dialog.set_html(html_content)
           rescue => e
             UI.messagebox("Error loading form template: #{e.message}")
@@ -146,7 +146,7 @@ module Viewrail
           # Render the HTML content with existing values
           begin
             renderer = Viewrail::SharedUtilities::FormRenderer.new(existing_params)
-            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/90_stair_form.html.erb")
+            html_content = renderer.render(File.join(File.dirname(__FILE__), "..", "forms", "90_stair_form.html.erb"))
             dialog.set_html(html_content)
           rescue => e
             UI.messagebox("Error loading landing form template: #{e.message}")
@@ -235,7 +235,7 @@ module Viewrail
 
           begin
             renderer = Viewrail::SharedUtilities::FormRenderer.new(existing_params)
-            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/u_stair_form.html.erb")
+            html_content = renderer.render(File.join(File.dirname(__FILE__), "..", "forms", "u_stair_form.html.erb"))
             dialog.set_html(html_content)
           rescue => e
             UI.messagebox("Error loading U stair form template: #{e.message}")
