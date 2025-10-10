@@ -537,7 +537,7 @@ module Viewrail
               # Retrieve 90-degree stair parameters
               params[:num_treads_lower] = dict["num_treads_lower"]
               params[:num_treads_upper] = dict["num_treads_upper"]
-              params[:header_to_wall] = dict["header_to_wall"]
+              params[:header_to_wall] = dict["header_to_wall"].to_f
               params[:tread_width_lower] = dict["tread_width_lower"]
               params[:tread_width_upper] = dict["tread_width_upper"]
               params[:landing_width] = dict["landing_width"]
@@ -555,8 +555,8 @@ module Viewrail
               params[:num_treads_lower] = dict["num_treads_lower"]
               params[:num_treads_middle] = dict["num_treads_middle"]
               params[:num_treads_upper] = dict["num_treads_upper"]
-              params[:header_to_wall] = dict["header_to_wall"]
-              params[:wall_to_wall] = dict["wall_to_wall"]
+              params[:header_to_wall] = dict["header_to_wall"].to_f
+              params[:wall_to_wall] = dict["wall_to_wall"].to_f
               params[:tread_width_lower] = dict["tread_width_lower"]
               params[:tread_width_middle] = dict["tread_width_middle"]
               params[:tread_width_upper] = dict["tread_width_upper"]
