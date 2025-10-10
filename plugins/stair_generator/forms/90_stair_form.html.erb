@@ -8,7 +8,7 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
-      padding-bottom: 20px; /* Extra padding at the bottom */
+      padding-bottom: 20px;
       background-color: #f5f5f5;
     }
     .container {
@@ -29,7 +29,7 @@
       margin-bottom: 15px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 5px;
     }
     label {
       flex: 0 0 auto;
@@ -40,22 +40,95 @@
       text-align: left;
       padding-right: 10px;
     }
-    input[type="number"], select {
-      width: 90px;
+    
+    /* Input wrapper for lock icon positioned inside input */
+    .input-wrapper {
+      position: relative;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+    
+    .input-wrapper input[type="number"] {
+      width: 100px;
+      padding: 8px;
+      padding-right: 32px; /* Make room for lock icon next to spinner */
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    
+    input[type="number"]:not(.input-wrapper input[type="number"]), 
+    select {
+      width: 100px;
       padding: 8px;
       border: 1px solid #ccc;
       border-radius: 4px;
       box-sizing: border-box;
       font-size: 14px;
     }
+    
     input[type="number"]:focus, select:focus {
       outline: none;
       border-color: #0078D7;
       box-shadow: 0 0 5px rgba(0, 120, 215, 0.3);
     }
+    
     input[readonly] {
       background-color: #e9e9e9;
     }
+    
+    /* Lock button positioned inside input, left of spinner */
+    .lock-toggle {
+      position: absolute;
+      right: 10px; /* Position just left of the spinner buttons */
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      padding: 2px;
+      margin: 0;
+      width: 16px;
+      height: 16px;
+      min-width: 16px;
+      min-height: 16px;
+      box-sizing: border-box;
+      cursor: pointer;
+      opacity: 0.4;
+      transition: opacity 0.2s;
+      z-index: 1;
+    }
+    
+    .lock-toggle:hover {
+      opacity: 0.8;
+    }
+    
+    .lock-toggle:focus-visible {
+      outline: 2px solid #0078D7;
+      outline-offset: 0;
+      border-radius: 2px;
+    }
+    
+    .lock-toggle img {
+      width: 12px;
+      height: 12px;
+      display: block;
+    }
+    
+    /* When locked, make the icon more prominent */
+    .lock-toggle.locked {
+      opacity: 0.7;
+    }
+    
+    .lock-toggle.locked:hover {
+      opacity: 1;
+    }
+    
+    input.locked {
+      border-color: #d39e00;
+      background-color: #fff8e1;
+    }
+    
     .button-container {
       margin-top: 30px;
       text-align: center;
@@ -99,26 +172,6 @@
       font-size: 12px;
       color: #555;
     }
-    .full-width-section {
-      clear: both;
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid #ddd;
-    }
-    .subsection {
-      background-color: #f9f9f9;
-      padding: 15px;
-      margin-bottom: 15px;
-      border-radius: 4px;
-      border: 1px solid #e0e0e0;
-    }
-    h4 {
-      margin-top: 0;
-      margin-bottom: 15px;
-      color: #555;
-      font-size: 14px;
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
@@ -132,7 +185,12 @@
       </div>
       <div class="form-group">
         <label for="header_to_wall">Header to Wall (inches):</label>
-        <input type="number" id="header_to_wall" value="<%= @last_values[:header_to_wall] %>" min="24" max="240" step="0.25">
+        <div class="input-wrapper">
+          <input type="number" id="header_to_wall" value="<%= @last_values[:header_to_wall] %>" min="24" max="240" step="0.25">
+          <button type="button" class="lock-toggle" data-target="header_to_wall" aria-pressed="false" title="Lock field">
+            <img id="lock-icon-header_to_wall" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+          </button>
+        </div>
         <div class="error" id="header-to-wall-error"></div>
       </div>
       <div class="form-group">
@@ -168,36 +226,66 @@
       <h3>Lower Stairs</h3>
       <div class="form-group">
         <label for="num_treads_lower">Number of Treads (Lower):</label>
-        <input type="number" id="num_treads_lower" value="<%= @last_values[:num_treads_lower] %>" min="1" max="22" step="1">
+        <div class="input-wrapper">
+          <input type="number" id="num_treads_lower" value="<%= @last_values[:num_treads_lower] %>" min="1" max="22" step="1">
+          <button type="button" class="lock-toggle" data-target="num_treads_lower" aria-pressed="false" title="Lock field">
+            <img id="lock-icon-num_treads_lower" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+          </button>
+        </div>
         <div class="error" id="treads-lower-error"></div>
       </div>
       <div class="form-group">
         <label for="tread_width_lower">Tread Width (Lower) (inches):</label>
-        <input type="number" id="tread_width_lower" value="<%= @last_values[:tread_width_lower] %>" min="24" max="60" step="1">
+        <div class="input-wrapper">
+          <input type="number" id="tread_width_lower" value="<%= @last_values[:tread_width_lower] %>" min="24" max="60" step="1">
+          <button type="button" class="lock-toggle" data-target="tread_width_lower" aria-pressed="false" title="Lock field">
+            <img id="lock-icon-tread_width_lower" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+          </button>
+        </div>
         <div class="error" id="width-lower-error"></div>
       </div>
 
       <h3 style="margin-top: 30px;">Upper Stairs</h3>
       <div class="form-group">
         <label for="num_treads_upper">Number of Treads (Upper):</label>
-        <input type="number" id="num_treads_upper" value="<%= @last_values[:num_treads_upper] %>" min="1" max="22" step="1">
+        <div class="input-wrapper">
+          <input type="number" id="num_treads_upper" value="<%= @last_values[:num_treads_upper] %>" min="1" max="22" step="1">
+          <button type="button" class="lock-toggle" data-target="num_treads_upper" aria-pressed="false" title="Lock field">
+            <img id="lock-icon-num_treads_upper" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+          </button>
+        </div>
         <div class="error" id="treads-upper-error"></div>
       </div>
       <div class="form-group">
         <label for="tread_width_upper">Tread Width (Upper) (inches):</label>
-        <input type="number" id="tread_width_upper" value="<%= @last_values[:tread_width_upper] %>" min="24" max="60" step="1">
+        <div class="input-wrapper">
+          <input type="number" id="tread_width_upper" value="<%= @last_values[:tread_width_upper] %>" min="24" max="60" step="1">
+          <button type="button" class="lock-toggle" data-target="tread_width_upper" aria-pressed="false" title="Lock field">
+            <img id="lock-icon-tread_width_upper" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+          </button>
+        </div>
         <div class="error" id="width-upper-error"></div>
       </div>
 
       <h3 style="margin-top: 30px;">Landing</h3>
       <div class="form-group">
         <label for="landing_width">Landing Width (inches):</label>
-        <input type="number" id="landing_width" value="<%= @last_values[:landing_width] %>" min="24" max="120" step="1">
+        <div class="input-wrapper">
+          <input type="number" id="landing_width" value="<%= @last_values[:landing_width] %>" min="24" max="120" step="1">
+          <button type="button" class="lock-toggle" data-target="landing_width" aria-pressed="false" title="Lock field">
+            <img id="lock-icon-landing_width" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+          </button>
+        </div>
         <div class="error" id="landing-width-error"></div>
       </div>
       <div class="form-group">
         <label for="landing_depth">Landing Depth (inches):</label>
-        <input type="number" id="landing_depth" value="<%= @last_values[:landing_depth] %>" min="24" max="120" step="1">
+        <div class="input-wrapper">
+          <input type="number" id="landing_depth" value="<%= @last_values[:landing_depth] %>" min="24" max="120" step="1">
+          <button type="button" class="lock-toggle" data-target="landing_depth" aria-pressed="false" title="Lock field">
+            <img id="lock-icon-landing_depth" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+          </button>
+        </div>
         <div class="error" id="landing-depth-error"></div>
       </div>
       <div class="form-group">
@@ -235,6 +323,9 @@
 
     const maxTreadsUpperHS = 12; 
     const maxTreadsLowerHS = 14;
+
+    // Lock state tracking (UI only; logic does not honor locks yet)
+    const lockedFields = {};
 
     // Calculate Number of Treads Upper from Header to Wall
     function calculateUpperTreads() {
@@ -311,7 +402,6 @@
         landingDepthInput.value = upperWidth;
       }
     }
-
 
     // Calculate Stair Rise from Total Rise and Total Number of Treads
     function calculateStairRise() {
@@ -392,6 +482,32 @@
       calculateStairRise();
       updateHeaderToWall();
       validateInputs();
+    });
+
+    // Lock toggle behavior with improved styling
+    document.querySelectorAll('.lock-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const input = document.getElementById(targetId);
+        const icon = document.getElementById('lock-icon-' + targetId);
+        const isLocked = !!lockedFields[targetId];
+        const nextLocked = !isLocked;
+        lockedFields[targetId] = nextLocked;
+
+        // Update button state and icon
+        btn.setAttribute('aria-pressed', String(nextLocked));
+        if (nextLocked) {
+          input.classList.add('locked');
+          btn.classList.add('locked');
+          icon.src = 'C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_locked.svg';
+          btn.title = 'Unlock field';
+        } else {
+          input.classList.remove('locked');
+          btn.classList.remove('locked');
+          icon.src = 'C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg';
+          btn.title = 'Lock field';
+        }
+      });
     });
 
     // Validation function
