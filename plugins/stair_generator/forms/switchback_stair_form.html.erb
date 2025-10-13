@@ -227,13 +227,14 @@
 
   <script>
     let isUpdating = false;
+    document.getElementById('maximize_tread_width').checked = "<%= @last_values[:maximize_tread_width] %>";
 
     // Get input elements
     const numTreadsLowerInput = document.getElementById('num_treads_lower');
     const numTreadsUpperInput = document.getElementById('num_treads_upper');
     const headerToWallInput = document.getElementById('header_to_wall');
     const wallToWallInput = document.getElementById('wall_to_wall');
-    const maximizeTreadWidthInput = document.getElementById('maximize_tread_width');
+    const maximizeTreadWidthInput = document.querySelector('#maximize_tread_width').checked;
     const treadWidthLowerInput = document.getElementById('tread_width_lower');
     const treadWidthUpperInput = document.getElementById('tread_width_upper');
     const landingWidthInput = document.getElementById('landing_width');
@@ -244,16 +245,21 @@
     const turnDirectionSelect = document.getElementById('turn_direction');
     const glassRailingSelect = document.getElementById('glass_railing');
 
-    document.getElementById('maximize_tread_width').checked = "<%= @last_values[:maximize_tread_width] %>";
+    function calculateTreadWidth() {
+      if (document.querySelector('#maximize_tread_width').checked) {
+        treadWidthLowerInput.value = landingWidthInput.value / 2;
+        treadWidthUpperInput.value = landingWidthInput.value / 2;
+      }
+    }
 
     // Calculate Number of Treads Upper from Header to Wall
     function calculateUpperTreads() {
       const headerToWall = parseFloat(headerToWallInput.value) || 0;
-      const landingWidth = parseFloat(landingWidthInput.value) || 36;
+      const landingDepth = parseFloat(landingDepthInput.value) || 36;
       const treadRun = parseFloat(treadRunInput.value) || 11;
 
-      if (headerToWall > 0 && landingWidth > 0 && treadRun > 0) {
-        const availableRun = headerToWall - landingWidth;
+      if (headerToWall > 0 && landingDepth > 0 && treadRun > 0) {
+        const availableRun = headerToWall - landingDepth;
         const upperTreads = Math.floor(availableRun / treadRun);
 
         // Ensure it's within valid range
@@ -320,15 +326,9 @@
       const landingWidth = parseFloat(landingWidthInput.value) || 36;
       const landingDepth = parseFloat(landingDepthInput.value) || 36;
 
-      // Make Sure landing width is equal to or greater than lowerWidth and that landing depth is equal to or greater than upperWidth
-      if (landingWidth < lowerWidth) {
-        landingWidthInput.value = lowerWidth;
-        calculateUpperTreads(); // Recalculate upper treads when landing width changes
-        calculateLowerTreads(); // Recalculate lower treads when landing width changes
-      }
-      if (landingDepth < upperWidth) {
-        landingDepthInput.value = upperWidth;
-      }
+      calculateUpperTreads();
+      calculateLowerTreads();
+      calculateTreadWidth();
     }
 
     // Mark fields as user-modified when changed
@@ -378,12 +378,13 @@
 
     // Add event listeners
     headerToWallInput.addEventListener('input', calculateUpperTreads);
-    landingWidthInput.addEventListener('input', function() {
+    landingDepthInput.addEventListener('input', function() {
       this.dataset.userModified = 'true';
       calculateUpperTreads(); // Recalculate upper treads when landing width changes
     });
-    landingDepthInput.addEventListener('input', function() {
+    landingWidthInput.addEventListener('input', function() {
       this.dataset.userModified = 'true';
+      checkLandingSize();
     });
     treadWidthLowerInput.addEventListener('input', checkLandingSize);
     treadWidthUpperInput.addEventListener('input', checkLandingSize);
@@ -404,6 +405,12 @@
       calculateStairRise();
       updateHeaderToWall();
       validateInputs();
+    });
+
+    document.getElementById("maximize_tread_width").addEventListener('change', function() {
+      if (this.checked) {
+        calculateTreadWidth();
+      }
     });
 
     // Validation function
@@ -521,7 +528,7 @@
         num_treads_upper: parseInt(numTreadsUpperInput.value),
         header_to_wall: parseFloat(headerToWallInput.value),
         wall_to_wall: parseFloat(wallToWallInput.value),
-        maximize_tread_width: maximizeTreadWidthInput.value === "true",
+        maximize_tread_width: document.querySelector('#maximize_tread_width').checked,
         tread_width_lower: parseFloat(treadWidthLowerInput.value),
         tread_width_upper: parseFloat(treadWidthUpperInput.value),
         landing_width: parseFloat(landingWidthInput.value),
