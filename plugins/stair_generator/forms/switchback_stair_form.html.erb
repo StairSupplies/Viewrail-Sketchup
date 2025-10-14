@@ -329,7 +329,7 @@
       const landingDepth = parseFloat(landingDepthInput.value) || 36;
 
       calculateUpperTreads();
-      calculateLowerTreads();
+      // calculateLowerTreads(); redundant
       calculateTreadWidth();
     }
 
@@ -375,10 +375,11 @@
     landingDepthInput.addEventListener('input', function() {
       this.dataset.userModified = 'true';
       checkLandingSize();
-      calculateUpperTreads(); // Recalculate upper treads when landing width changes
+      // calculateUpperTreads(); // Recalculate upper treads when landing width changes
     });
     landingWidthInput.addEventListener('input', function() {
       this.dataset.userModified = 'true';
+      wallToWallInput.value = landingWidthInput.value
       checkLandingSize();
     });
     treadWidthLowerInput.addEventListener('input', checkLandingSize);
@@ -389,6 +390,11 @@
     totalRiseInput.addEventListener('input', function() {
       calculateLowerTreads(); // Calculate lower treads when total rise changes
       calculateStairRise();
+    });
+
+    wallToWallInput.addEventListener('input', function() {
+      landingWidthInput.value = wallToWallInput.value;
+      checkLandingSize();
     });
 
     numTreadsLowerInput.addEventListener('input', function() {
