@@ -331,14 +331,6 @@
       calculateTreadWidth();
     }
 
-    // Mark fields as user-modified when changed
-    landingWidthInput.addEventListener('input', function() {
-      this.dataset.userModified = 'true';
-    });
-    landingDepthInput.addEventListener('input', function() {
-      this.dataset.userModified = 'true';
-    });
-
     // Calculate Stair Rise from Total Rise and Total Number of Treads
     function calculateStairRise() {
       if (isUpdating) return;
