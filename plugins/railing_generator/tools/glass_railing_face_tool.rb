@@ -73,9 +73,9 @@ module Viewrail
 
           case @railing_type
           when "Hidden"
-            @offset_distance = -0.5  # Negative offset for outside mounting
+            @offset_distance = 0  # Negative offset for outside mounting
           when "Baserail"
-            @offset_distance = 2.0
+            @offset_distance = 2.125
           else
             @offset_distance = -1.0
           end
@@ -549,9 +549,8 @@ module Viewrail
                 if extrude_direction == face.normal
                   face.pushpull(@glass_thickness)
                 else
-                  face.pushpull(-@glass_thickness)                  
+                  face.pushpull(-@glass_thickness)
                 end
-                face.pushpull(@glass_thickness)
 
                 glass_group.entities.grep(Sketchup::Face).each do |f|
                   f.material = glass_material
