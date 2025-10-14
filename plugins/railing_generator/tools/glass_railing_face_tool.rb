@@ -25,7 +25,7 @@ module Viewrail
 
           begin
             renderer = Viewrail::SharedUtilities::FormRenderer.new(last_values)
-            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/railing_generator/forms/glass_railing_form.html.erb")
+            html_content = renderer.render(File.join(File.dirname(__FILE__), "..", "forms", "glass_railing_form.html.erb"))
             dialog.set_html(html_content)
           rescue => e
             UI.messagebox("Error loading form template: #{e.message}\n\nPlease check that the template file exists.")
@@ -301,12 +301,22 @@ module Viewrail
 
         def onReturn(view)
           if @face_edges.length >= 1
-            convert_face_edges_to_points
-            create_glass_railings
-            @selected_faces.clear
-            @face_edges.clear
-            update_status_text
-            view.invalidate
+            # Group the current selection into adjacent face sets and process each set
+            groups = group_adjacent_face_sets(@face_edges, @selected_faces)
+            groups.each do |group|
+              # Load this set into the existing workflow
+              @face_edges = group[:edges]
+              @selected_faces = group[:faces]
+
+              convert_face_edges_to_points
+              create_glass_railings
+
+              # Reset between groups to preserve original behavior
+              @selected_faces.clear
+              @face_edges.clear
+              update_status_text
+              view.invalidate
+            end
           end
         end # onReturn
 
@@ -321,11 +331,73 @@ module Viewrail
 
         private
 
+        # Group selected faces into collections where each group consists of
+        # faces whose extracted top-edge segments share endpoints (adjacent).
+        # Returns: [{ edges: [[p0,p1], ...], faces: [faceA, ...] }, ...]
+        def group_adjacent_face_sets(face_edges, selected_faces, tolerance = 0.001.inch)
+          return [] if face_edges.nil? || face_edges.empty? || selected_faces.nil? || selected_faces.empty?
+
+          n = face_edges.length
+          return [{ edges: face_edges.dup, faces: selected_faces.dup }] if n == 1
+
+          key_for = lambda do |pt|
+            [
+              (pt.x / tolerance).round,
+              (pt.y / tolerance).round,
+              (pt.z / tolerance).round
+            ]
+          end
+
+          # Precompute endpoint keys
+          endpoint_keys = face_edges.map { |a, b| [key_for.call(a), key_for.call(b)] }
+
+          # Build adjacency lists: segments are adjacent if any endpoints match (within tolerance)
+          adj = Array.new(n) { [] }
+          (0...n).each do |i|
+            ki0, ki1 = endpoint_keys[i]
+            (i + 1...n).each do |j|
+              kj0, kj1 = endpoint_keys[j]
+              if ki0 == kj0 || ki0 == kj1 || ki1 == kj0 || ki1 == kj1
+                adj[i] << j
+                adj[j] << i
+              end
+            end
+          end
+
+          # Connected components via BFS
+          visited = Array.new(n, false)
+          groups = []
+          (0...n).each do |i|
+            next if visited[i]
+            queue = [i]
+            visited[i] = true
+            comp = []
+            until queue.empty?
+              v = queue.shift
+              comp << v
+              adj[v].each do |w|
+                next if visited[w]
+                visited[w] = true
+                queue << w
+              end
+            end
+
+            groups << {
+              edges: comp.map { |idx| face_edges[idx] },
+              faces: comp.map { |idx| selected_faces[idx] }
+            }
+          end
+
+          groups
+        end
+
         def convert_face_edges_to_points
-          # Use the utility method to get face segments
+          # Sort the user selections into a continuous order before building
+          sorted_edges, sorted_faces = Viewrail::SharedUtilities.sort_face_edges_and_faces(@face_edges, @selected_faces)
+          # Use the existing utility method to get face segments from the sorted data
           @face_segments = Viewrail::SharedUtilities.create_offset_line_from_edges(
-            @face_edges,
-            @selected_faces,
+            sorted_edges,
+            sorted_faces,
             @offset_distance
           )
         end # convert_face_edges_to_points
@@ -502,7 +574,9 @@ module Viewrail
 
           # Use offset distance to create segments, then convert them to a path
           baserail_center_offset = @offset_distance - (@glass_thickness / 2.0)
-          path_edges = Viewrail::SharedUtilities.create_offset_path(@face_edges, @selected_faces, base_group, baserail_center_offset)
+          # Sort selections to build a continuous path for Follow Me
+          sorted_edges, sorted_faces = Viewrail::SharedUtilities.sort_face_edges_and_faces(@face_edges, @selected_faces)
+          path_edges = Viewrail::SharedUtilities.create_offset_path(sorted_edges, sorted_faces, base_group, baserail_center_offset)
           
           # Get starting point and direction for profile orientation
           first_edge = path_edges.first
@@ -536,7 +610,9 @@ module Viewrail
           
           # Use offset distance to create segments, then convert them to a path
           handrail_center_offset = @offset_distance - (@glass_thickness / 2.0)          
-          path_edges = Viewrail::SharedUtilities.create_offset_path(@face_edges, @selected_faces, handrail_group, handrail_center_offset)
+          # Sort selections to build a continuous path for Follow Me
+          sorted_edges, sorted_faces = Viewrail::SharedUtilities.sort_face_edges_and_faces(@face_edges, @selected_faces)
+          path_edges = Viewrail::SharedUtilities.create_offset_path(sorted_edges, sorted_faces, handrail_group, handrail_center_offset)
          
           # Get starting point and direction for profile orientation
           first_edge = path_edges.first

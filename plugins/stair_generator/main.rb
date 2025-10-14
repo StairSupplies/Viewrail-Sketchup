@@ -515,13 +515,7 @@ module Viewrail
                 [stair_overlap + panel_length, y_pos, 0],
                 [stair_overlap + panel_gap, y_pos, 0]
               ]
-
-              face = entities.add_face(glass_points)
-              if face
-                face.pushpull(glass_thickness)
-                face.material = glass_material
-                face.back_material = glass_material
-              end
+              create_glass_panel(entities, glass_points, glass_thickness, glass_material)
             else
               # Multiple panels - split symmetrically
               num_panels = (panel_length / max_panel_width).ceil
@@ -537,13 +531,7 @@ module Viewrail
                   [end_x, y_pos, 0],
                   [start_x, y_pos, 0]
                 ]
-
-                face = entities.add_face(glass_points)
-                if face
-                  face.pushpull(glass_thickness)
-                  face.material = glass_material
-                  face.back_material = glass_material
-                end
+                create_glass_panel(entities, glass_points, glass_thickness, glass_material)
               end
             end
 
@@ -561,13 +549,7 @@ module Viewrail
                 [x_pos, y_pos + panel_length, 0],
                 [x_pos, y_pos, 0]
               ]
-
-              face = entities.add_face(glass_points)
-              if face
-                face.pushpull(glass_thickness)
-                face.material = glass_material
-                face.back_material = glass_material
-              end
+              create_glass_panel(entities, glass_points, glass_thickness, glass_material)
             else
               # Multiple panels - split symmetrically
               num_panels = (panel_length / max_panel_width).ceil
@@ -583,24 +565,21 @@ module Viewrail
                   [x_pos, end_y, 0],
                   [x_pos, start_y, 0]
                 ]
-
-                face = entities.add_face(glass_points)
-                if face
-                  face.pushpull(glass_thickness)
-                  face.material = glass_material
-                  face.back_material = glass_material
-                end
+                create_glass_panel(entities, glass_points, glass_thickness, glass_material)
               end
             end
           end
         end
+      end
 
-        # Apply material to all glass faces
-        entities.grep(Sketchup::Face).each do |f|
-          bbox = f.bounds
-          if bbox.min.z >= -0.01 && bbox.max.z <= glass_height + 0.01
-            f.material = glass_material if f.material != glass_material
-            f.back_material = glass_material if f.back_material != glass_material
+      def create_glass_panel(entities, points, thickness, material)
+        group = entities.add_group
+        face = group.entities.add_face(points)
+        if face
+          face.pushpull(thickness)
+          group.entities.grep(Sketchup::Face).each do |f|
+            f.material = material
+            f.back_material = material
           end
         end
       end
@@ -644,7 +623,7 @@ module Viewrail
               # Retrieve 90-degree stair parameters
               params[:num_treads_lower] = dict["num_treads_lower"]
               params[:num_treads_upper] = dict["num_treads_upper"]
-              params[:header_to_wall] = dict["header_to_wall"]
+              params[:header_to_wall] = dict["header_to_wall"].to_f
               params[:tread_width_lower] = dict["tread_width_lower"]
               params[:tread_width_upper] = dict["tread_width_upper"]
               params[:landing_width] = dict["landing_width"]
@@ -662,8 +641,8 @@ module Viewrail
               params[:num_treads_lower] = dict["num_treads_lower"]
               params[:num_treads_middle] = dict["num_treads_middle"]
               params[:num_treads_upper] = dict["num_treads_upper"]
-              params[:header_to_wall] = dict["header_to_wall"]
-              params[:wall_to_wall] = dict["wall_to_wall"]
+              params[:header_to_wall] = dict["header_to_wall"].to_f
+              params[:wall_to_wall] = dict["wall_to_wall"].to_f
               params[:tread_width_lower] = dict["tread_width_lower"]
               params[:tread_width_middle] = dict["tread_width_middle"]
               params[:tread_width_upper] = dict["tread_width_upper"]
@@ -808,8 +787,8 @@ module Viewrail
       cmd_stairs = UI::Command.new("Create Straight Stairs") {
         self.add_stair_menu
       }
-      cmd_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_straight.svg"
-      cmd_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_straight.svg"
+      cmd_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_straight.svg")
+      cmd_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_straight.svg")
       cmd_stairs.tooltip = "Create Straight Stairs"
       cmd_stairs.status_bar_text = "Create parametric straight stairs with customizable dimensions"
       cmd_stairs.menu_text = "Create Straight Stairs"
@@ -818,8 +797,8 @@ module Viewrail
       cmd_landing_stairs = UI::Command.new("Create 90") {
         self.add_landing_stair_menu
       }
-      cmd_landing_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_90.svg"
-      cmd_landing_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_90.svg"
+      cmd_landing_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_90.svg")
+      cmd_landing_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_90.svg")
       cmd_landing_stairs.tooltip = "Create 90 Stairs"
       cmd_landing_stairs.status_bar_text = "Create L-shaped stairs with landing platform"
       cmd_landing_stairs.menu_text = "Create 90 System Stairs"
@@ -838,8 +817,8 @@ module Viewrail
       cmd_u_stairs = UI::Command.new("Create U-Shaped Stairs") {
         self.add_u_stair_menu
       }
-      cmd_u_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_u.svg"
-      cmd_u_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_u.svg"
+      cmd_u_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_u.svg")
+      cmd_u_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_u.svg")
       cmd_u_stairs.tooltip = "Create U-Shaped Stairs"
       cmd_u_stairs.status_bar_text = "Create U-shaped stairs with two landings"
       cmd_u_stairs.menu_text = "Create U-Shaped Stairs"
@@ -848,8 +827,8 @@ module Viewrail
       cmd_modify = UI::Command.new("Modify Stairs") {
         Viewrail::StairGenerator::Tools::ModifyStairTool.activate
       }
-      cmd_modify.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/modify.svg"
-      cmd_modify.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/modify.svg"
+      cmd_modify.small_icon = File.join(File.dirname(__FILE__), "icons", "modify.svg")
+      cmd_modify.large_icon = File.join(File.dirname(__FILE__), "icons", "modify.svg")
       cmd_modify.tooltip = "Modify Existing Stairs"
       cmd_modify.status_bar_text = "Modify parameters of selected stairs"
       cmd_modify.menu_text = "Modify Stairs"
@@ -867,8 +846,8 @@ module Viewrail
       cmd_about = UI::Command.new("About") {
         self.show_about
       }
-      cmd_about.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/logo-black.svg"
-      cmd_about.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/logo-black.svg"
+      cmd_about.small_icon = File.join(File.dirname(__FILE__), "icons", "logo-black.svg")
+      cmd_about.large_icon = File.join(File.dirname(__FILE__), "icons", "logo-black.svg")
       cmd_about.tooltip = "About Stair Generator"
       cmd_about.status_bar_text = "About Stair Generator Extension"
       cmd_about.menu_text = "About"
