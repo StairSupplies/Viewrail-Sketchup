@@ -1,5 +1,6 @@
 # viewrail_shared/utilities.rb
 require_relative 'form_renderer'
+require_relative 'viewport'
 
 module Viewrail
 
@@ -256,8 +257,6 @@ module Viewrail
         
         face_segments
       end
-
-      #================ IN DEVELOPMENT================
 
       def build_path_from_edges(edges)
         unless !edges.nil? && !edges.nil?

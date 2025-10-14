@@ -6,6 +6,8 @@ module Viewrail
 
       class GlassRailingTool
 
+        Viewport = Viewrail::SharedUtilities::Viewport
+
         def self.show
           last_values = {}
 
@@ -51,67 +53,34 @@ module Viewrail
           dialog.show
         end # self.show
 
-        def configure_from_dialog(params)
-          @railing_type = params[:railing_type] || "Hidden"
-          @total_height = params[:railing_height] || 42.0
-          @include_handrail = params[:include_caprail] || false
-          @handrail_material = params[:caprail_material] || "Aluminum"
-
-          @include_base_channel = (@railing_type == "Baserail")
-          @include_floor_cover = (@railing_type == "Hidden")
-
-          # For Hidden type, glass extends 6" below floor level
-          if @railing_type == "Hidden"
-            @glass_height = @total_height + 6.0
-            @glass_below_floor = 6.0
-          else
-            @glass_height = @include_handrail ?
-              @total_height - @handrail_height + @glass_recess :
-              @total_height
-            @glass_below_floor = 0
-          end
-
-          case @railing_type
-          when "Hidden"
-            @offset_distance = 0  # Negative offset for outside mounting
-          when "Baserail"
-            @offset_distance = 2.125
-          else
-            @offset_distance = -1.0
-          end
-
-        end # configure_from_dialog
-
         def initialize
-
           @selected_faces = []
           @face_edges = []
           @hover_face = nil
           @hover_edge = nil
 
           @total_height = 42.0
-          @glass_thickness = 0.5
-          @max_panel_width = 48.0
-          @panel_gap = 1.0
+          @glass_thickness = Viewrail::ProductData.glass_thickness
+          @max_panel_width = Viewrail::ProductData.max_panel_width
+          @panel_gap = Viewrail::ProductData.default_panel_gap
           @offset_distance = 2.0
 
           @include_handrail = true
-          @handrail_width = 1.69
-          @handrail_height = 1.35
-          @glass_recess = 0.851
-          @corner_radius = 0.160
+          @handrail_width = Viewrail::ProductData.handrail_width
+          @handrail_height = Viewrail::ProductData.handrail_height
+          @glass_recess = Viewrail::ProductData.glass_recess
+          @corner_radius = Viewrail::ProductData.handrail_corner_radius
           @handrail_material = "Aluminum"
 
           @include_base_channel = true
-          @base_channel_width = 2.5
-          @base_channel_height = 4.188
-          @glass_bottom_offset = 1.188
-          @base_corner_radius = 0.0625
+          @base_channel_width = Viewrail::ProductData.base_channel_width
+          @base_channel_height = Viewrail::ProductData.base_channel_height
+          @glass_bottom_offset = Viewrail::ProductData.glass_bottom_offset
+          @base_corner_radius = Viewrail::ProductData.base_corner_radius
 
-          # Floor cover dimensions for Hidden type
           @include_floor_cover = false
-          @floor_cover_width = 1.625
-          @floor_cover_height = 7.5
+          @floor_cover_width = Viewrail::ProductData.floor_cover_width
+          @floor_cover_height = Viewrail::ProductData.floor_cover_height
           @glass_below_floor = 0
 
           @glass_height = @include_handrail ?
@@ -120,7 +89,6 @@ module Viewrail
         end # initialize
 
         def onLButtonDown(flags, x, y, view)
-
           ph = view.pick_helper
           ph.do_pick(x, y)
           face = ph.best_picked
@@ -147,131 +115,138 @@ module Viewrail
         end # onLButtonDown
 
         def draw(view)
-            draw_face_selection_mode(view)
+          # The draw method call is built into SketchUp, you won't find it called in our code.
+          draw_face_selection_interface(view)
         end # draw
 
-        def draw_face_selection_mode(view)
-          @selected_faces.each_with_index do |face, index|
-            view.drawing_color = [100, 200, 100, 128]  # Green semi-transparent
+        #================ End of native methods =================
 
-            mesh = face.mesh
-            mesh.polygons.each do |polygon|
-              points = []
-              polygon.each do |vertex_index|
-                points << mesh.point_at(vertex_index.abs)
-              end
+        def configure_from_dialog(params)
+          @railing_type = params[:railing_type] || "Hidden"
+          @total_height = params[:railing_height] || 42.0
+          @include_handrail = params[:include_caprail] || false
+          @handrail_material = params[:caprail_material] || "Aluminum"
 
-              # Draw filled polygon
-              view.draw(GL_POLYGON, points)
-            end
+          @include_base_channel = (@railing_type == "Baserail")
+          @include_floor_cover = (@railing_type == "Hidden")
 
-            view.drawing_color = [50, 150, 50, 200]  # Darker green for edges
-            view.line_width = 2
-            face.edges.each do |edge|
-              view.draw_line(edge.vertices[0].position, edge.vertices[1].position)
-            end
+          # Use ProductData calculation methods
+          @glass_height = Viewrail::ProductData.calculate_glass_height(
+            @total_height, 
+            @include_handrail, 
+            @railing_type
+          )
+          
+          @glass_below_floor = (@railing_type == "Hidden") ? 
+            Viewrail::ProductData.glass_below_floor : 0
 
-            if @face_edges[index]
-              view.drawing_color = "blue"
-              view.line_width = 4
-              edge_points = @face_edges[index]
-              view.draw_line(edge_points[0], edge_points[1])
+          @offset_distance = Viewrail::ProductData.offset_for_railing_type(@railing_type)
+        end # configure_from_dialog
 
-              view.drawing_color = "red"
-              view.draw_points(edge_points[0], 8)
-              view.draw_points(edge_points[1], 8)
-            end
-          end
-
+        def draw_face_selection_interface(view)
+          Viewport.draw_selected_faces(view, @selected_faces, @face_edges)
           if @hover_face && !@selected_faces.include?(@hover_face)
-            view.drawing_color = [150, 150, 200, 64]  # Light blue semi-transparent
-
-            mesh = @hover_face.mesh
-            mesh.polygons.each do |polygon|
-              points = []
-              polygon.each do |vertex_index|
-                points << mesh.point_at(vertex_index.abs)
-              end
-
-              view.draw(GL_POLYGON, points)
-            end
-
-            view.drawing_color = [100, 100, 200, 128]  # Light blue edges
-            view.line_width = 1
-            @hover_face.edges.each do |edge|
-              view.draw_line(edge.vertices[0].position, edge.vertices[1].position)
-            end
-
-            if @hover_edge
-              view.drawing_color = [100, 100, 255, 200]
-              view.line_width = 3
-              view.line_stipple = "-"
-              view.draw_line(@hover_edge[0], @hover_edge[1])
-              view.line_stipple = ""
-            end
+            Viewport.draw_hover_face(view, @hover_face, @hover_edge)
           end
-
           draw_face_preview_panels(view)
-        end # draw_face_selection_mode
+        end        
 
         def draw_face_preview_panels(view)
           return if @face_edges.nil?
-
+          
+          view.drawing_color = [100, 150, 200, 128]  # Semi-transparent blue
+          view.line_width = 1
+          view.line_stipple = "-"
+          
           @face_edges.each_with_index do |edge_points, face_index|
             face = @selected_faces[face_index]
             next unless face && edge_points
-
-            face_normal = face.normal
-            offset_vector = face_normal.reverse
-            offset_vector.normalize!
-
-            start_pt = edge_points[0].offset(offset_vector, @offset_distance)
-            end_pt = edge_points[1].offset(offset_vector, @offset_distance)
-
-            # Adjust for glass below floor if Hidden type
-            if @include_floor_cover
-              start_pt.z -= @glass_below_floor
-              end_pt.z -= @glass_below_floor
-            end
-
-            segment_vector = end_pt - start_pt
-            segment_length = segment_vector.length
-            next if segment_length == 0
-            segment_vector.normalize!
-
-            view.drawing_color = [100, 150, 200, 128]  # Semi-transparent blue
-            view.line_width = 1
-            view.line_stipple = "-"
-
-            available_length = segment_length - @panel_gap
-            num_panels = calculate_panel_count(available_length)
-
-            if num_panels > 0
-              total_gaps = (num_panels - 1) * @panel_gap
-              panel_width = (available_length - total_gaps) / num_panels
-
-              (0...num_panels).each do |j|
-                panel_start_distance = j * (panel_width + @panel_gap)
-                panel_end_distance = panel_start_distance + panel_width
-
-                panel_start = start_pt.offset(segment_vector, panel_start_distance)
-                panel_end = start_pt.offset(segment_vector, panel_end_distance)
-
-                bottom_start = panel_start
-                bottom_end = panel_end
-                top_start = Geom::Point3d.new(panel_start.x, panel_start.y, panel_start.z + @glass_height)
-                top_end = Geom::Point3d.new(panel_end.x, panel_end.y, panel_end.z + @glass_height)
-
-                view.draw_line(bottom_start, bottom_end)
-                view.draw_line(bottom_end, top_end)
-                view.draw_line(top_end, top_start)
-                view.draw_line(top_start, bottom_start)
-              end
-            end
-
-            view.line_stipple = ""
+            
+            draw_panels_for_edge(view, edge_points, face)
           end
-        end # draw_face_preview_panels
+          
+          view.line_stipple = ""
+        end
+
+        def draw_panels_for_edge(view, edge_points, face)
+          start_pt, end_pt = calculate_panel_positions(edge_points, face)
+          
+          layout = calculate_panel_layout(start_pt, end_pt)
+          return unless layout
+          
+          layout[:panels].each do |panel|
+            draw_panel_outline(view, panel)
+          end
+        end
+        
+        # Calculate adjusted panel positions based on face normal and offset
+        def calculate_panel_positions(edge_points, face)
+          face_normal = face.normal
+          offset_vector = face_normal.reverse
+          offset_vector.normalize!
+          
+          start_pt = edge_points[0].offset(offset_vector, @offset_distance)
+          end_pt = edge_points[1].offset(offset_vector, @offset_distance)
+          
+          # Adjust for glass below floor if Hidden type
+          if @include_floor_cover
+            start_pt.z -= @glass_below_floor
+            end_pt.z -= @glass_below_floor
+          end
+          
+          [start_pt, end_pt]
+        end
+        
+        # Calculate complete panel layout including positions for all panels
+        def calculate_panel_layout(start_pt, end_pt, glass_height = @glass_height)
+          segment_vector = end_pt - start_pt
+          segment_length = segment_vector.length
+          
+          return nil if segment_length == 0
+          
+          segment_vector.normalize!
+          
+          available_length = segment_length - @panel_gap
+          num_panels = calculate_panel_count(available_length)
+          
+          return nil unless num_panels > 0
+          
+          total_gaps = (num_panels - 1) * @panel_gap
+          panel_width = (available_length - total_gaps) / num_panels
+          
+          panels = []
+          
+          (0...num_panels).each do |i|
+            panel_start_distance = i * (panel_width + @panel_gap)
+            panel_end_distance = panel_start_distance + panel_width
+            
+            panel_start = start_pt.offset(segment_vector, panel_start_distance)
+            panel_end = start_pt.offset(segment_vector, panel_end_distance)
+            
+            panels << {
+              start: panel_start,
+              end: panel_end,
+              bottom_start: panel_start,
+              bottom_end: panel_end,
+              top_start: Geom::Point3d.new(panel_start.x, panel_start.y, panel_start.z + glass_height),
+              top_end: Geom::Point3d.new(panel_end.x, panel_end.y, panel_end.z + glass_height)
+            }
+          end
+          
+          {
+            num_panels: num_panels,
+            panel_width: panel_width,
+            panels: panels
+          }
+        end
+        
+        # Draw outline of a single panel
+        def draw_panel_outline(view, panel)
+          view.draw_line(panel[:bottom_start], panel[:bottom_end])
+          view.draw_line(panel[:bottom_end], panel[:top_end])
+          view.draw_line(panel[:top_end], panel[:top_start])
+          view.draw_line(panel[:top_start], panel[:bottom_start])
+        end
 
         def onMouseMove(flags, x, y, view)
           ph = view.pick_helper
@@ -329,8 +304,8 @@ module Viewrail
               @face_edges = group[:edges]
               @selected_faces = group[:faces]
 
-              convert_face_edges_to_points
-              create_glass_railings
+              prepare_face_segments_for_extrusion
+              initiate_railing_creation
 
               # Reset between groups to preserve original behavior
               @selected_faces.clear
@@ -352,9 +327,6 @@ module Viewrail
 
         private
 
-        # Group selected faces into collections where each group consists of
-        # faces whose extracted top-edge segments share endpoints (adjacent).
-        # Returns: [{ edges: [[p0,p1], ...], faces: [faceA, ...] }, ...]
         def group_adjacent_face_sets(face_edges, selected_faces, tolerance = 0.001.inch)
           return [] if face_edges.nil? || face_edges.empty? || selected_faces.nil? || selected_faces.empty?
 
@@ -412,7 +384,7 @@ module Viewrail
           groups
         end
 
-        def convert_face_edges_to_points
+        def prepare_face_segments_for_extrusion
           # Sort the user selections into a continuous order before building
           sorted_edges, sorted_faces = Viewrail::SharedUtilities.sort_face_edges_and_faces(@face_edges, @selected_faces)
           # Use the existing utility method to get face segments from the sorted data
@@ -421,16 +393,16 @@ module Viewrail
             sorted_faces,
             @offset_distance
           )
-        end # convert_face_edges_to_points
+        end # prepare_face_segments_for_extrusion
 
-        def create_glass_railings
+        def initiate_railing_creation
           if defined?(@face_segments) && !@face_segments.nil? 
             if !@face_segments.nil?
               create_glass_railings_from_face_segments
               return
             end
           end
-        end # create_glass_railings
+        end # initiate_railing_creation
 
         def create_glass_railings_from_face_segments
           return if @face_segments.nil?
@@ -446,45 +418,40 @@ module Viewrail
             # Get materials
             glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
             aluminum_material = Viewrail::SharedUtilities.get_or_add_material(:aluminum)
-            wood_material = get_or_add_wood_material()
+            wood_material = Viewrail::SharedUtilities.get_or_add_material(:wood)
 
             # Process each face segment separately
             @face_segments.each_with_index do |segment_points, index|
               segment_group = main_group.entities.add_group
               segment_group.name = "Glass Railing Face #{index + 1}"
-              # Create glass panels for this segment
-              # extrude direction is the face normal, handed to create_glass_panels
               
               extrude_direction = @selected_faces[index].normal
               create_glass_panel_group_for_segment(segment_group, glass_material, segment_points, extrude_direction)
-              puts "-- Created glass panels for segment #{index + 1}"
             end
 
             if @include_base_channel
-              create_continuous_base_channel(main_group, aluminum_material)
-              puts "-- Created continuous base channel"
+              baserail_group = create_continuous_base_channel(main_group)
+              apply_material_with_softening(baserail_group, aluminum_material)
             end
 
             if @include_floor_cover
-              create_continuous_floor_cover(main_group, wood_material)
-              puts "-- Created continuous floor cover"
+              cover_group = create_continuous_floor_cover(main_group)
+              apply_material_with_softening(cover_group, wood_material)
             end
 
             if @include_handrail
               # Determine handrail material
               handrail_mat = (@handrail_material == "Wood") ? wood_material : aluminum_material
               
-              if @include_floor_cover
-                # For Hidden type, adjust handrail position to account for glass below floor
-                z_adjust = @total_height - (@glass_recess - @handrail_height/2.0)
-              else
-                z_adjust = @glass_height - (@glass_recess - @handrail_height/2.0)
-              end
+              z_adjust = Viewrail::ProductData.calculate_handrail_z_adjustment(
+                @total_height,
+                @include_floor_cover,
+                @glass_height
+              )
               
-              create_continuous_handrail(main_group, handrail_mat, [0,0,z_adjust])
-              puts "-- Created continuous handrail"
+              handrail_group = create_continuous_handrail(main_group, [0, 0, z_adjust])
+              apply_material_with_softening(handrail_group, handrail_mat)
             end
-
 
             model.commit_operation
             Sketchup.active_model.select_tool(nil)
@@ -511,104 +478,34 @@ module Viewrail
         end # create_glass_panel_group_for_segment
 
         def create_glass_panels(group, glass_material, start_pt, end_pt, segmented=false, extrude_direction=nil)
-          glass_group = nil
-          if segmented
-            glass_group = group
-          else
-            glass_group = group.entities.add_group
-          end
-
-          segment_vector = end_pt - start_pt
-          segment_length = segment_vector.length
-          return if segment_length == 0
-          segment_vector.normalize!
-
-          available_length = segment_length - @panel_gap
-          num_panels = calculate_panel_count(available_length)
-
-          if num_panels > 0
-            total_gaps = (num_panels - 1) * @panel_gap
-            panel_width = (available_length - total_gaps) / num_panels
-
-            (0...num_panels).each do |j|
-              panel_start_distance = j * (panel_width + @panel_gap)
-              panel_end_distance = panel_start_distance + panel_width
-
-              panel_start = start_pt.offset(segment_vector, panel_start_distance)
-              panel_end = start_pt.offset(segment_vector, panel_end_distance)
-
-              glass_points = [
-                panel_start,
-                panel_end,
-                [panel_end.x, panel_end.y, panel_end.z + @glass_height],
-                [panel_start.x, panel_start.y, panel_start.z + @glass_height]
-              ]
-
-              face = glass_group.entities.add_face(glass_points)
-              if face
-                if extrude_direction == face.normal
-                  face.pushpull(@glass_thickness)
-                else
-                  face.pushpull(-@glass_thickness)
-                end
-
-                glass_group.entities.grep(Sketchup::Face).each do |f|
-                  f.material = glass_material
-                  f.back_material = glass_material
-                end
+          glass_group = segmented ? group : group.entities.add_group
+          
+          layout = calculate_panel_layout(start_pt, end_pt)
+          return unless layout
+          
+          layout[:panels].each do |panel|
+            glass_points = [
+              panel[:bottom_start],
+              panel[:bottom_end],
+              panel[:top_end],
+              panel[:top_start]
+            ]
+            
+            face = glass_group.entities.add_face(glass_points)
+            if face
+              if extrude_direction == face.normal
+                face.pushpull(@glass_thickness)
+              else
+                face.pushpull(-@glass_thickness)
+              end
+              
+              glass_group.entities.grep(Sketchup::Face).each do |f|
+                f.material = glass_material
+                f.back_material = glass_material
               end
             end
           end
         end # create_glass_panels
-
-        def create_handrail_profile
-          profile = []
-          half_width = @handrail_width / 2.0
-          half_height = @handrail_height / 2.0
-
-          # Bottom left (with rounding)
-          profile << [-half_width + @corner_radius, -half_height]
-          profile << [-half_width, -half_height + @corner_radius]
-
-          # Top left (with rounding)
-          profile << [-half_width, half_height - @corner_radius]
-          profile << [-half_width + @corner_radius, half_height]
-
-          # Top right (with rounding)
-          profile << [half_width - @corner_radius, half_height]
-          profile << [half_width, half_height - @corner_radius]
-
-          # Bottom right (with rounding)
-          profile << [half_width, -half_height + @corner_radius]
-          profile << [half_width - @corner_radius, -half_height]
-
-          profile
-        end # create_handrail_profile
-
-        def create_base_channel_profile
-          half_width = @base_channel_width / 2.0
-          
-          profile = []
-          profile << [-half_width, 0]
-          profile << [-half_width, @base_channel_height]
-          profile << [half_width, @base_channel_height]
-          profile << [half_width, 0]
-          
-          profile
-        end
-
-        def create_floor_cover_profile
-          half_width = @floor_cover_width / 2.0
-          
-          # Profile starts at floor level and goes down
-          profile = []
-          profile << [-half_width, 0]           # Top left at floor level
-          profile << [-half_width, -@floor_cover_height]  # Bottom left
-          profile << [half_width, -@floor_cover_height]   # Bottom right
-          profile << [half_width, 0]            # Top right at floor level
-          
-          profile
-        end
 
         def calculate_panel_count(length)
           return 0 if length <= 0
@@ -631,114 +528,85 @@ module Viewrail
           return panels
         end # calculate_panel_count
 
-        def create_continuous_base_channel(main_group, aluminum_material, adjust_position = [0,0,0])
-          base_group = main_group.entities.add_group
-          base_group.name = "Base Channel"
+        def create_continuous_feature(main_group, config)
+          feature_group = main_group.entities.add_group
+          feature_group.name = config[:name]
+          center_offset = config[:offset]
 
-          # Use offset distance to create segments, then convert them to a path
-          baserail_center_offset = @offset_distance - (@glass_thickness / 2.0)
-          # Sort selections to build a continuous path for Follow Me
+          puts "---- sorting user selections for #{config[:name]}"
+
           sorted_edges, sorted_faces = Viewrail::SharedUtilities.sort_face_edges_and_faces(@face_edges, @selected_faces)
-          path_edges = Viewrail::SharedUtilities.create_offset_path(sorted_edges, sorted_faces, base_group, baserail_center_offset)
-          
-          # Get starting point and direction for profile orientation
+          path_edges = Viewrail::SharedUtilities.create_offset_path(sorted_edges, sorted_faces, feature_group, center_offset)
+
+          puts "---- creating path for #{config[:name]}"
+
           first_edge = path_edges.first
           first_segment = [first_edge.start.position, first_edge.end.position]
           start_pt = first_segment[0]
           perp_vec = calculate_path_vectors(first_segment)
-          
-          # Adjust position based on user input
-          start_pt.x += adjust_position[0]
-          start_pt.y += adjust_position[1]
-          start_pt.z += adjust_position[2]
 
-          # Create base channel profile at the start of the path
-          profile = create_base_channel_profile
+          # if adjust_position is provided, apply it
+          if config[:adjust_position]
+            start_pt.x += config[:adjust_position][0]
+            start_pt.y += config[:adjust_position][1]
+            start_pt.z += config[:adjust_position][2]
+          end
+
+          puts "---- transforming profile for #{config[:name]}"
+
+          profile = config[:profile]
           profile_points = profile.map do |p|
             transformed_pt = start_pt.offset(perp_vec, p[0])
             transformed_pt.offset([0,0,1], p[1])
           end
 
-          # Create extrusion along path & apply material
-          Viewrail::SharedUtilities.extrude_profile_along_path(base_group, profile_points, path_edges)
-          apply_material_with_softening(base_group, aluminum_material)
-          
-          return base_group
+          puts "---- extruding profile along path for #{config[:name]}"
 
-        end #create_continuous_base_channel
+          Viewrail::SharedUtilities.extrude_profile_along_path(feature_group, profile_points, path_edges)
+          
+          return feature_group
+        end
 
-        def create_continuous_floor_cover(main_group, wood_material, adjust_position = [0,0,0])
-          cover_group = main_group.entities.add_group
-          cover_group.name = "Floor Cover"
-          
-          # For Hidden type, the cover is on the inside of the floor edge
-          # The glass is on the outside (negative offset), so cover needs positive offset
-          cover_center_offset = -@floor_cover_width / 2.0
-          
-          # Sort selections to build a continuous path for Follow Me
-          sorted_edges, sorted_faces = Viewrail::SharedUtilities.sort_face_edges_and_faces(@face_edges, @selected_faces)
-          path_edges = Viewrail::SharedUtilities.create_offset_path(sorted_edges, sorted_faces, cover_group, cover_center_offset)
-          
-          # Get starting point and direction for profile orientation
-          first_edge = path_edges.first
-          first_segment = [first_edge.start.position, first_edge.end.position]
-          start_pt = first_segment[0]
-          perp_vec = calculate_path_vectors(first_segment)
-          
-          # Adjust position based on user input
-          start_pt.x += adjust_position[0]
-          start_pt.y += adjust_position[1]
-          start_pt.z += adjust_position[2]
-          
-          # Create floor cover profile at the start of the path
-          profile = create_floor_cover_profile
-          profile_points = profile.map do |p|
-            transformed_pt = start_pt.offset(perp_vec, p[0])
-            transformed_pt.offset([0,0,1], p[1])
-          end
-          
-          # Create extrusion along path & apply material
-          Viewrail::SharedUtilities.extrude_profile_along_path(cover_group, profile_points, path_edges)
-          apply_material_with_softening(cover_group, wood_material)
-          
-          return cover_group
+        def create_continuous_base_channel(main_group, adjust_position = [0,0,0])
+          return create_continuous_feature(main_group, {
+            name: "Base Channel",
+            profile: Viewrail::ProductData.create_profile(:base_channel),
+            offset: calculate_base_channel_offset,
+            adjust_position: adjust_position
+          })
+        end # create_continuous_base_channel
+
+        def create_continuous_floor_cover(main_group, adjust_position = [0,0,0])
+          return create_continuous_feature(main_group, {
+            name: "Floor Cover",
+            profile: Viewrail::ProductData.create_profile(:floor_cover),
+            offset: calculate_floor_cover_offset,
+            adjust_position: adjust_position
+          })
         end # create_continuous_floor_cover
 
-        def create_continuous_handrail(main_group, material, adjust_position = [0,0,0])
-          handrail_group = main_group.entities.add_group
-          handrail_group.name = "Handrail"
-          
-          # Use offset distance to create segments, then convert them to a path
-          handrail_center_offset = @offset_distance - (@glass_thickness / 2.0)          
-          # Sort selections to build a continuous path for Follow Me
-          sorted_edges, sorted_faces = Viewrail::SharedUtilities.sort_face_edges_and_faces(@face_edges, @selected_faces)
-          path_edges = Viewrail::SharedUtilities.create_offset_path(sorted_edges, sorted_faces, handrail_group, handrail_center_offset)
-         
-          # Get starting point and direction for profile orientation
-          first_edge = path_edges.first
-          first_segment = [first_edge.start.position, first_edge.end.position]
-          start_pt = first_segment[0]
-          perp_vec = calculate_path_vectors(first_segment)
+        def create_continuous_handrail(main_group, adjust_position = [0,0,0])
+          return create_continuous_feature(main_group, {
+            name: "Handrail",
+            profile: Viewrail::ProductData.create_profile(:handrail),
+            offset: calculate_handrail_offset,
+            adjust_position: adjust_position
+          })
+        end # create_continuous_handrail
 
-          # Adjust position based on user input
-          start_pt.x += adjust_position[0]
-          start_pt.y += adjust_position[1]
-          start_pt.z += adjust_position[2]
-          
-          # Create handrail profile
-          profile = create_handrail_profile
-          profile_points = profile.map do |p|
-            transformed_pt = start_pt.offset(perp_vec, p[0])
-            transformed_pt.offset([0,0,1], p[1])
-          end
+        # Centralized offset calculations - prepped for making configurable later
+        #   i.e. if user has entered a custom value to override the default, then use it
+        def calculate_base_channel_offset
+          @offset_distance - (@glass_thickness / 2.0)
+        end
 
-          # Create extrusion along path & apply material
-          Viewrail::SharedUtilities.extrude_profile_along_path(handrail_group, profile_points, path_edges)
-          apply_material_with_softening(handrail_group, material)
+        def calculate_handrail_offset
+          @offset_distance - (@glass_thickness / 2.0)
+        end
 
-          return handrail_group
-
-        end #create_continuous_handrail
+        def calculate_floor_cover_offset
+          -@floor_cover_width / 2.0
+        end
 
         def apply_material_with_softening(group, material)
           # Apply material to all faces
@@ -758,11 +626,6 @@ module Viewrail
           end
         end # apply_material_with_softening
 
-        # Deprecated - use apply_material_with_softening instead
-        def apply_aluminum_finish(group, material)
-          apply_material_with_softening(group, material)
-        end # apply_aluminum_finish
-
         def calculate_path_vectors(segment)
           start_pt = segment[0]
           end_pt = segment[1]
@@ -777,32 +640,6 @@ module Viewrail
           
           return perp_vec
         end # calculate_path_vectors
-
-        def get_or_add_wood_material
-          # Check if SharedUtilities has a method for wood material
-          if Viewrail::SharedUtilities.respond_to?(:get_or_add_material)
-            # Try to get wood material using the shared utility
-            begin
-              return Viewrail::SharedUtilities.get_or_add_material(:wood)
-            rescue
-              # If :wood isn't supported, create it locally
-            end
-          end
-          
-          # Fallback: create wood material locally
-          model = Sketchup.active_model
-          materials = model.materials
-          material_name = "Wood"
-          
-          material = materials[material_name]
-          unless material
-            material = materials.add(material_name)
-            # Set a wood-like color (medium brown)
-            material.color = Sketchup::Color.new(139, 90, 43)
-          end
-          
-          return material
-        end # get_or_add_wood_material
 
       end # class GlassRailingTool
 
