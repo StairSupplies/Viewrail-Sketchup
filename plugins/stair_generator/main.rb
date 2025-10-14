@@ -68,11 +68,10 @@ module Viewrail
               :glass_railing => "None"
             }
           when :switchback
-            # Future switchback defaults
             {
-              :num_treads_lower => 6,
-              :num_treads_upper => 7,
-              :header_to_wall => 149.0,
+              :num_treads_lower => 7,
+              :num_treads_upper => 6,
+              :header_to_wall => 102.0,
               :wall_to_wall => 72.0,
               :maximize_tread_width => true,
               :tread_width_lower => 36.0,
@@ -80,8 +79,8 @@ module Viewrail
               :landing_width => 72.0,
               :landing_depth => 36.0,
               :tread_run => 11.0,
-              :stair_rise => 7.5,
-              :total_rise => 91.0,
+              :stair_rise => 7.0,
+              :total_rise => 105.0,
               :turn_direction => "Left",
               :glass_railing => "None"
             }
