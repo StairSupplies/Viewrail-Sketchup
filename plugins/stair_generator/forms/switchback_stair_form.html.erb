@@ -255,7 +255,7 @@
     // Calculate Number of Treads Upper from Header to Wall
     function calculateUpperTreads() {
       const headerToWall = parseFloat(headerToWallInput.value) || 0;
-      const landingDepth = parseFloat(landingDepthInput.value) || 36;
+      const landingDepth = 36;
       const treadRun = parseFloat(treadRunInput.value) || 11;
 
       if (headerToWall > 0 && landingDepth > 0 && treadRun > 0) {
@@ -265,6 +265,8 @@
         // Ensure it's within valid range
         const validUpperTreads = Math.max(1, Math.min(22, upperTreads));
         numTreadsUpperInput.value = validUpperTreads;
+
+        landingDepthInput.value = headerToWall - (upperTreads * treadRun);
 
         // After calculating upper treads, calculate lower treads
         calculateLowerTreads();
@@ -372,6 +374,7 @@
     headerToWallInput.addEventListener('input', calculateUpperTreads);
     landingDepthInput.addEventListener('input', function() {
       this.dataset.userModified = 'true';
+      checkLandingSize();
       calculateUpperTreads(); // Recalculate upper treads when landing width changes
     });
     landingWidthInput.addEventListener('input', function() {
