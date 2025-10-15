@@ -234,8 +234,34 @@ module Viewrail
 
         # Add glass railings to landing if specified
         if glass_railing != "None"
-          add_glass_railings_to_landing(landing_entities, width, depth, thickness,
-                                       glass_railing, turn_direction)
+          edges_to_rail = []
+          if turn_direction == "Left"
+            case glass_railing
+            when "Inner"
+              # do nothing for now
+            when "Outer", "Both"
+              edges_to_rail = ["back", "right"]
+            end
+          else # Right turn
+            case glass_railing
+            when "Inner"
+              # do nothing for now
+            when "Outer", "Both"
+              edges_to_rail = ["back", "left"]
+            end
+          end
+
+          add_glass_railings_to_landing(
+            landing_entities,
+            {
+              width: width,
+              depth: depth,
+              thickness: thickness,
+              glass_railing: glass_railing,
+              turn_direction: turn_direction
+            },
+            edges_to_rail
+            )
         end
 
         # Apply position transformation
@@ -301,8 +327,26 @@ module Viewrail
 
         # Add glass railings to landing if specified
         if glass_railing != "None"
-          add_glass_railings_to_landing(landing_entities, width, depth, thickness,
-                                       glass_railing, turn_direction)
+          edges_to_rail = []
+
+          case glass_railing
+          when "Inner", "None"
+            # do nothing
+          when "Outer", "Both"
+            edges_to_rail = ["left", "back", "right"]
+          end # case
+
+          add_glass_railings_to_landing(
+            landing_entities,
+            {
+              width: width,
+              depth: depth,
+              thickness: thickness,
+              glass_railing: glass_railing,
+              turn_direction: turn_direction
+            },
+            edges_to_rail
+          )
         end
 
         # Apply position transformation
@@ -471,7 +515,7 @@ module Viewrail
         end
       end
 
-      def add_glass_railings_to_landing(entities, width, depth, thickness, glass_railing, turn_direction)
+      def add_glass_railings_to_landing(entities, landing_hash, edges_to_rail)
         glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
         glass_thickness = 0.5
         glass_inset = 1.0
@@ -481,25 +525,13 @@ module Viewrail
         panel_gap = 1.0
         stair_overlap = 5.0
 
-        # Determine which edges get railings
-        edges_to_rail = []
-        if turn_direction == "Left"
-          case glass_railing
-          when "Inner"
-            # do nothing for now
-          when "Outer", "Both"
-            edges_to_rail = ["back", "right"]
-          end
-        else # Right turn
-          case glass_railing
-          when "Inner"
-            # do nothing for now
-          when "Outer", "Both"
-            edges_to_rail = ["back", "left"]
-          end
-        end
+        width = landing_hash[:width]
+        depth = landing_hash[:depth]
+        thickness = landing_hash[:thickness]
+        glass_railing = landing_hash[:glass_railing]
+        turn_direction = landing_hash[:turn_direction]
 
-        # Create glass panels for specified edges with splits if needed
+       # Create glass panels for specified edges with splits if needed
         edges_to_rail.each do |edge|
           case edge
           when "left", "right"
@@ -570,7 +602,7 @@ module Viewrail
             end
           end
         end
-      end
+      end #add_glass_railings_to_landing
 
       def create_glass_panel(entities, points, thickness, material)
         group = entities.add_group
