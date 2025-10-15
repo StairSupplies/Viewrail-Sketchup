@@ -227,7 +227,7 @@
 
   <script>
     let isUpdating = false;
-    document.getElementById('maximize_tread_width').checked = "<%= @last_values[:maximize_tread_width] %>";
+    document.querySelector('#maximize_tread_width').checked = <%= @last_values[:maximize_tread_width] %>;
 
     // Get input elements
     const numTreadsLowerInput = document.getElementById('num_treads_lower');
