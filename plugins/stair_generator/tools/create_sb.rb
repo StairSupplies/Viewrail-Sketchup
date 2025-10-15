@@ -52,6 +52,7 @@ module Viewrail
             last_values[:num_treads_upper] = values["num_treads_upper"]
             last_values[:header_to_wall] = values["header_to_wall"]
             last_values[:wall_to_wall] = values["wall_to_wall"]
+            last_values[:maximize_tread_width] = values["maximize_tread_width"]
             last_values[:tread_width_lower] = values["tread_width_lower"]
             last_values[:tread_width_upper] = values["tread_width_upper"]
             last_values[:landing_width] = values["landing_width"]
@@ -129,7 +130,8 @@ module Viewrail
             landing_x = params["num_treads_lower"] * params["tread_run"]
             landing_y = 0
             if params["turn_direction"] == "Right"
-              landing_y = -params["tread_width_lower"]
+              width_delta = params["landing_width"] - (params["tread_width_upper"] + params["tread_width_lower"])
+              landing_y = -params["tread_width_lower"] - width_delta
             end
             landing_z = landing_height
 
