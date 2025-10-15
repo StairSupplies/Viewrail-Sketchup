@@ -130,7 +130,6 @@ module Viewrail
           @include_base_channel = (@railing_type == "Baserail")
           @include_floor_cover = (@railing_type == "Hidden")
 
-          # Use ProductData calculation methods
           @glass_height = Viewrail::ProductData.calculate_glass_height(
             @total_height, 
             @include_handrail, 
