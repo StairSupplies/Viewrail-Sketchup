@@ -690,6 +690,24 @@ module Viewrail
 
               params[:type] = :landing_u
 
+            when "switchback"
+              params[:num_treads_lower] = dict["num_treads_lower"]
+              params[:num_treads_upper] = dict["num_treads_upper"]
+              params[:header_to_wall] = dict["header_to_wall"].to_f
+              params[:wall_to_wall] = dict["wall_to_wall"].to_f
+              params[:maximize_tread_width] = dict["maximize_tread_width"]
+              params[:tread_width_lower] = dict["tread_width_lower"]
+              params[:tread_width_upper] = dict["tread_width_upper"]
+              params[:landing_width] = dict["landing_width"]
+              params[:landing_depth] = dict["landing_depth"]
+              params[:tread_run] = dict["tread_run"]
+              params[:stair_rise] = dict["stair_rise"]
+              params[:total_rise] = dict["total_rise"]
+              params[:turn_direction] = dict["turn_direction"]
+              params[:glass_railing] = dict["glass_railing"]
+
+              params[:type] = :switchback
+
             when "landing"
               # This is just a landing component, not a full stair system
               return nil
@@ -778,6 +796,22 @@ module Viewrail
             group.set_attribute("stair_generator", "lower_landing_depth", params["lower_landing_depth"])
             group.set_attribute("stair_generator", "upper_landing_width", params["upper_landing_width"])
             group.set_attribute("stair_generator", "upper_landing_depth", params["upper_landing_depth"])
+            group.set_attribute("stair_generator", "tread_run", params["tread_run"])
+            group.set_attribute("stair_generator", "stair_rise", params["stair_rise"])
+            group.set_attribute("stair_generator", "total_rise", params["total_rise"])
+            group.set_attribute("stair_generator", "turn_direction", params["turn_direction"])
+            group.set_attribute("stair_generator", "glass_railing", params["glass_railing"])
+          when :switchback
+            group.set_attribute("stair_generator", "segment_type", "switchback")
+            group.set_attribute("stair_generator", "num_treads_lower", params["num_treads_lower"])
+            group.set_attribute("stair_generator", "num_treads_upper", params["num_treads_upper"])
+            group.set_attribute("stair_generator", "header_to_wall", params["header_to_wall"])
+            group.set_attribute("stair_generator", "wall_to_wall", params["wall_to_wall"])
+            group.set_attribute("stair_generator", "maximize_tread_width", params["maximize_tread_width"])
+            group.set_attribute("stair_generator", "tread_width_lower", params["tread_width_lower"])
+            group.set_attribute("stair_generator", "tread_width_upper", params["tread_width_upper"])
+            group.set_attribute("stair_generator", "landing_width", params["landing_width"])
+            group.set_attribute("stair_generator", "landing_depth", params["landing_depth"])
             group.set_attribute("stair_generator", "tread_run", params["tread_run"])
             group.set_attribute("stair_generator", "stair_rise", params["stair_rise"])
             group.set_attribute("stair_generator", "total_rise", params["total_rise"])

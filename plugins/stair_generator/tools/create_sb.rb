@@ -31,10 +31,10 @@ module Viewrail
           # Render the HTML content from ERB template
           begin
             renderer = Viewrail::SharedUtilities::FormRenderer.new(last_values)
-            html_content = renderer.render("C:/Viewrail-Sketchup/plugins/stair_generator/forms/switchback_stair_form.html.erb")
+            html_content = renderer.render(File.join(File.dirname(__FILE__), "..", "forms", "switchback_stair_form.html.erb"))
             dialog.set_html(html_content)
           rescue => e
-            UI.messagebox("Error loading landing form template: #{e.message}\n\nPlease check that the template file exists.")
+            UI.messagebox("Error loading switchback form template: #{e.message}")
             return
           end
 
@@ -44,7 +44,7 @@ module Viewrail
             dialog.set_size(dimensions["width"], dimensions["height"])
           end
 
-          dialog.add_action_callback("create_landing_stairs") do |action_context, params|
+          dialog.add_action_callback("create_switchback_stairs") do |action_context, params|
             values = JSON.parse(params)
 
             # Store the values for next time
