@@ -1,6 +1,7 @@
 # viewrail_shared/utilities.rb
 require_relative 'form_renderer'
 require_relative 'viewport'
+require_relative 'product_data'
 
 module Viewrail
 
