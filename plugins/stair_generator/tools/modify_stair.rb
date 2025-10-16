@@ -26,7 +26,6 @@ module Viewrail
           @selected_stair = model.selection.first
 
           # Open the appropriate form based on stair type
-          print params[:type]
           case params[:type]
           when :straight
             show_straight_modify_form(params)
