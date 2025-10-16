@@ -8,8 +8,9 @@ module Viewrail
     unless file_loaded?(__FILE__)
       ex = SketchupExtension.new('Stair Generator', 'stair_generator/main')
       ex.description = 'Tool to create Viewrail based stair runs.'
-      ex.version     = '1.0.0'
-      ex.creator     = 'D Mosher'
+      ex.version = '1.0.0'
+      ex.copyright = '© 2025 Viewrail'
+      ex.creator = 'Viewrail Development Team'
       Sketchup.register_extension(ex, true)
       file_loaded(__FILE__)
     end
