@@ -215,16 +215,15 @@ module Viewrail
         ]
 
         # Create riser
-          nosing_value = 0.75
-          reveal = 1
-          riser_thickness = 1.0
-          riser_points = [
-            [nosing_value, nosing_value, -(thickness+reveal)],
-            [5, nosing_value, -(thickness+reveal)],
-            [5, width - nosing_value, -(thickness+reveal)],
-            [nosing_value, width - nosing_value, -(thickness+reveal)]
-          ]
-
+        nosing_value = 0.75
+        reveal = 1
+        riser_thickness = 1.0
+        riser_points = [
+          [nosing_value, nosing_value, -(thickness+reveal)],
+          [depth-nosing_value, nosing_value, -(thickness+reveal)],
+          [depth-nosing_value, width - nosing_value, -(thickness+reveal)],
+          [nosing_value, width - nosing_value, -(thickness+reveal)]
+        ]
 
         landing_face = landing_entities.add_face(landing_points)
         landing_face.pushpull(thickness) if landing_face
@@ -313,8 +312,8 @@ module Viewrail
           riser_thickness = 1.0
           riser_points = [
             [nosing_value, nosing_value, -(thickness+reveal)],
-            [5, nosing_value, -(thickness+reveal)],
-            [5, width - nosing_value, -(thickness+reveal)],
+            [depth-nosing_value, nosing_value, -(thickness+reveal)],
+            [depth-nosing_value, width - nosing_value, -(thickness+reveal)],
             [nosing_value, width - nosing_value, -(thickness+reveal)]
           ]
 
