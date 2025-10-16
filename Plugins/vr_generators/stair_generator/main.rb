@@ -872,8 +872,8 @@ module Viewrail
       cmd_switchback_stairs = UI::Command.new("Create Switchback") {
         self.add_switchback_stair_menu
       }
-      cmd_switchback_stairs.small_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_switchback.svg"
-      cmd_switchback_stairs.large_icon = "C:/Viewrail-Sketchup/plugins/stair_generator/icons/add_switchback.svg"
+      cmd_switchback_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_switchback.svg")
+      cmd_switchback_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_switchback.svg")
       cmd_switchback_stairs.tooltip = "Create Switchback Stairs"
       cmd_switchback_stairs.status_bar_text = "Create U-shaped stairs with landing platform"
       cmd_switchback_stairs.menu_text = "Create Switchback System Stairs"
