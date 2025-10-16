@@ -1,9 +1,6 @@
 module Plugins
 
-  # Finds and returns the filename for each of the root .rb files in the
-  # examples folder.
-  #
-  # @yield [String] filename
+  # Finds and returns the filename for each of the .rb files in the subfolders
   #
   # @return [Array<String>] files
   def self.rb_files(include_subfolders = false)
@@ -21,7 +18,7 @@ module Plugins
     result = block.call
   ensure
     $VERBOSE = old_verbose
-    result
+    return result
   end
 
   # Utility method to quickly reload the tutorial files. Useful for development.
@@ -39,8 +36,7 @@ module Plugins
   end
 
   # This runs when this file is loaded and adds the location of each of the
-  # tutorials folders to the load path such that the tutorials can be loaded
-  # into SketchUp directly from the repository.
+  # tool folders to the load path
   self.rb_files { |filename|
     begin
       path = File.dirname(filename)
