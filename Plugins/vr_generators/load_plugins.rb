@@ -7,9 +7,8 @@ module Plugins
   #
   # @return [Array<String>] files
   def self.rb_files(include_subfolders = false)
-    plugins_path = File.join(__dir__, 'plugins')
     folders = include_subfolders ? '**' : '*'
-    plugins_pattern = File.join(plugins_path, folders, '*.rb')
+    plugins_pattern = File.join(__dir__, folders, '*.rb')
     Dir.glob(plugins_pattern).each { |filename|
       yield filename
     }
