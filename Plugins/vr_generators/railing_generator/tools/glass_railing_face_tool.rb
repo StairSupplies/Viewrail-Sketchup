@@ -67,7 +67,7 @@ module Viewrail
 
           @include_handrail = true
           @handrail_width = Viewrail::ProductData.handrail_width
-          @handrail_height = Viewrail::ProductData.handrail_height
+          @handrail_thickness = Viewrail::ProductData.handrail_thickness
           @glass_recess = Viewrail::ProductData.glass_recess
           @corner_radius = Viewrail::ProductData.handrail_corner_radius
           @handrail_material = "Aluminum"
@@ -84,7 +84,7 @@ module Viewrail
           @glass_below_floor = 0
 
           @glass_height = @include_handrail ?
-            @total_height - @handrail_height + @glass_recess :
+            @total_height - @handrail_thickness + @glass_recess :
             @total_height
         end # initialize
 
@@ -425,12 +425,7 @@ module Viewrail
             if @include_handrail
               handrail_mat = (@handrail_material == "Wood") ? wood_material : aluminum_material
 
-              z_adjust = Viewrail::ProductData.calculate_handrail_z_adjustment(
-                @total_height,
-                @include_floor_cover,
-                @glass_height
-              )
-
+              z_adjust = Viewrail::ProductData.calculate_handrail_z_adjustment(@total_height)
               handrail_group = create_continuous_handrail(main_group, [0, 0, z_adjust])
               apply_material_with_softening(handrail_group, handrail_mat)
             end

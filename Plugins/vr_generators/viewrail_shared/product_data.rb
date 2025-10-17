@@ -79,7 +79,7 @@ module Viewrail
         HANDRAIL_STANDARDS[:width]
       end
 
-      def handrail_height
+      def handrail_thickness
         HANDRAIL_STANDARDS[:height]
       end
 
@@ -137,21 +137,23 @@ module Viewrail
       end # update_standard
 
       def calculate_glass_height(total_height, include_handrail, railing_type)
+        
+        glass_height = total_height
+        
         if railing_type.to_s.downcase == "hidden"
-          total_height + glass_below_floor
-        elsif include_handrail
-          total_height - handrail_height + glass_recess
-        else
-          total_height
+          glass_height += glass_below_floor
         end
+
+        if include_handrail
+          glass_height = glass_height - handrail_thickness + glass_recess
+        end
+
+        return glass_height
+
       end # calculate_glass_height
 
-      def calculate_handrail_z_adjustment(total_height, include_floor_cover, glass_height)
-        if include_floor_cover
-          total_height - (glass_recess - handrail_height / 2.0)
-        else
-          glass_height - (glass_recess - handrail_height / 2.0)
-        end
+      def calculate_handrail_z_adjustment(total_height)
+          total_height - (handrail_thickness / 2.0)
       end # calculate_handrail_z_adjustment
 
       def base_channel_center_offset(glass_offset, glass_thickness)
@@ -199,18 +201,18 @@ module Viewrail
 
       def create_handrail_profile
         half_width = handrail_width / 2.0
-        half_height = handrail_height / 2.0
+        half_thickness = handrail_thickness / 2.0
         corner = handrail_corner_radius
 
         [
-          [-half_width + corner, -half_height],
-          [-half_width, -half_height + corner],
-          [-half_width, half_height - corner],
-          [-half_width + corner, half_height],
-          [half_width - corner, half_height],
-          [half_width, half_height - corner],
-          [half_width, -half_height + corner],
-          [half_width - corner, -half_height]
+          [-half_width + corner, -half_thickness],
+          [-half_width, -half_thickness + corner],
+          [-half_width, half_thickness - corner],
+          [-half_width + corner, half_thickness],
+          [half_width - corner, half_thickness],
+          [half_width, half_thickness - corner],
+          [half_width, -half_thickness + corner],
+          [half_width - corner, -half_thickness]
         ]
       end # create_handrail_profile
 
