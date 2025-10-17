@@ -85,7 +85,7 @@ module Viewrail
           else
             {}
         end
-      end
+      end # last_form_values
 
       def add_stair_menu
         Viewrail::StairGenerator::Tools::StraightStairMenu.show
@@ -173,7 +173,7 @@ module Viewrail
         stairs_group.set_attribute("stair_generator", "segment_type", "stairs")
 
         return stairs_group
-      end
+      end # create_stair_segment
 
       def create_landing(params, position = [0, 0, 0])
 
@@ -457,7 +457,7 @@ module Viewrail
             tread_start = tread_end
           end
         end
-      end
+      end # add_glass_railings_to_segment
 
       def add_glass_railings_to_landing(entities, landing_hash, edges_to_rail)
         glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
@@ -857,7 +857,7 @@ module Viewrail
       end
 
       file_loaded(__FILE__)
-    end
+    end # unless file loaded
 
   end # module StairGenerator
 

@@ -33,7 +33,7 @@ module Viewrail
           else
             UI.messagebox("Unknown stair type", MB_OK, "Error")
           end
-        end
+        end # activate
 
         def self.show_straight_modify_form(existing_params)
           existing_params[:tread_width] ||= 36.0
@@ -107,7 +107,7 @@ module Viewrail
           end
 
           dialog.show
-        end
+        end # show_straight_modify_form
 
         def self.show_landing_modify_form(existing_params)
           dialog = UI::HtmlDialog.new(

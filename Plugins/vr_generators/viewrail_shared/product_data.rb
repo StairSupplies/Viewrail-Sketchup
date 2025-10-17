@@ -121,7 +121,7 @@ module Viewrail
         else
           {}
         end
-      end
+      end # get_standards
 
       def update_standard(component_type, key, value)
         case component_type.to_sym
@@ -134,7 +134,7 @@ module Viewrail
         when :floor_cover
           FLOOR_COVER_STANDARDS[key] = value if FLOOR_COVER_STANDARDS.key?(key)
         end
-      end
+      end # update_standard
 
       def calculate_glass_height(total_height, include_handrail, railing_type)
         if railing_type.to_s.downcase == "hidden"
@@ -144,7 +144,7 @@ module Viewrail
         else
           total_height
         end
-      end
+      end # calculate_glass_height
 
       def calculate_handrail_z_adjustment(total_height, include_floor_cover, glass_height)
         if include_floor_cover
@@ -152,7 +152,7 @@ module Viewrail
         else
           glass_height - (glass_recess - handrail_height / 2.0)
         end
-      end
+      end # calculate_handrail_z_adjustment
 
       def base_channel_center_offset(glass_offset, glass_thickness)
         glass_offset - (glass_thickness / 2.0)
@@ -185,7 +185,7 @@ module Viewrail
         else
           []
         end
-      end
+      end # create_profile
 
       def default_center_offset(glass_offset, glass_thickness)
         glass_offset - (glass_thickness / 2.0)
@@ -212,7 +212,7 @@ module Viewrail
           [half_width, -half_height + corner],
           [half_width - corner, -half_height]
         ]
-      end
+      end # create_handrail_profile
 
       def create_base_channel_profile
         half_width = base_channel_width / 2.0
@@ -223,7 +223,7 @@ module Viewrail
           [half_width, base_channel_height],
           [half_width, 0]
         ]
-      end
+      end # create_base_channel_profile
 
       def create_floor_cover_profile
         half_width = floor_cover_width / 2.0
@@ -234,7 +234,7 @@ module Viewrail
           [half_width, -floor_cover_height],
           [half_width, 0]
         ]
-      end
+      end # create_floor_cover_profile
 
     end # class << self
 

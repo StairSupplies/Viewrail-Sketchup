@@ -82,7 +82,7 @@ module Viewrail
         end
 
         return material
-      end
+      end # get_or_add_material
 
       def load_builtin_material(material_name, model = nil)
         model ||= Sketchup.active_model
@@ -122,7 +122,7 @@ module Viewrail
           material.color = [139, 90, 43]  # Default wood color
           return material
         end
-      end
+      end # load_builtin_material
 
       def add_material_to_model(materials, material_def)
           material = materials.add(material_def[:name])
@@ -135,7 +135,7 @@ module Viewrail
           end
 
           return material
-      end
+      end # add_material_to_model
 
       def create_material_definition(key, name, color, alpha = 1.0, texture_path = nil, texture_size = nil)
         MATERIAL_DEFINITIONS[key] = {
@@ -148,7 +148,7 @@ module Viewrail
           MATERIAL_DEFINITIONS[key][:texture_path] = texture_path
           MATERIAL_DEFINITIONS[key][:texture_size] = texture_size if texture_size
         end
-      end
+      end # create_material_definition
 
       def available_material_types
         MATERIAL_DEFINITIONS.keys
@@ -180,7 +180,7 @@ module Viewrail
         end
 
         [v1, v2]
-      end
+      end # extract_top_edge_from_face
 
       def convert_face_edges_to_points
         @points.clear
@@ -200,7 +200,7 @@ module Viewrail
         end
 
         @selection_mode_backup = @selection_mode
-      end
+      end # convert_face_edges_to_points
 
       def convert_face_edges_to_segments(face_edges, selected_faces, offset_distance)
         face_segments = []
@@ -220,7 +220,7 @@ module Viewrail
         end
 
         face_segments
-      end
+      end # convert_face_edges_to_segments
 
       def build_path_from_edges(edges)
         unless !edges.nil? && !edges.nil?
@@ -286,7 +286,7 @@ module Viewrail
         end
 
         return points
-      end
+      end # build_path_from_edges
 
       def build_path_from_point_pairs(edge_point_pairs)
         points = []
@@ -306,7 +306,7 @@ module Viewrail
         end
 
         points
-      end
+      end # build_path_from_point_pairs
 
       def create_offset_line_from_edges(edges_or_points, faces, offset_distance)
         return [] if edges_or_points.nil? || faces.nil?
