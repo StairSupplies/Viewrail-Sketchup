@@ -107,12 +107,12 @@
       <h3>Overall System</h3>
       <div class="form-group">
         <label for="total_rise">Total Rise (inches):</label>
-        <input type="number" id="total_rise" value="<%= @last_values[:total_rise] %>" min="0" step="0.0625">
+        <input type="number" id="total_rise" value="<%= @last_values[:total_rise] || 108.0 %>" min="0" step="0.0625">
         <div class="error" id="total-rise-error"></div>
       </div>
       <div class="form-group">
         <label for="header_to_wall">Header to Wall (inches):</label>
-        <input type="number" id="header_to_wall" value="<%= @last_values[:header_to_wall] %>" min="24" max="240" step="0.25">
+        <input type="number" id="header_to_wall" value="<%= @last_values[:header_to_wall] || 96.0 %>" min="24" max="240" step="0.25">
         <div class="error" id="header-to-wall-error"></div>
       </div>
       <div class="form-group">
@@ -122,12 +122,12 @@
       </div>
       <div class="form-group">
         <label for="tread_run">Tread Run (inches):</label>
-        <input type="number" id="tread_run" value="<%= @last_values[:tread_run] %>" min="11" max="13" step="0.25">
+        <input type="number" id="tread_run" value="<%= @last_values[:tread_run] || 11.0 %>" min="11" max="13" step="0.25">
         <div class="error" id="tread-run-error"></div>
       </div>
       <div class="form-group">
         <label for="stair_rise">Stair Rise (inches):</label>
-        <input type="number" id="stair_rise" value="<%= @last_values[:stair_rise] %>" step="0.01" readonly>
+        <input type="number" id="stair_rise" value="<%= @last_values[:stair_rise] || 7.0 %>" step="0.01" readonly>
         <div class="error" id="rise-error"></div>
       </div>
       <div class="form-group">
@@ -239,9 +239,10 @@
 
         const validUpperTreads = Math.max(1, Math.min(maxTreadsUpperHS, upperTreads));
         numTreadsUpperInput.value = validUpperTreads;
-
+        console.log("Upper Treads: " + validUpperTreads);
         const usedRun = (validUpperTreads * treadRun);
         upperLandingWidth = headerToWall - usedRun;
+        console.log("Upper Landing Width: " + upperLandingWidth);
       }
     }
 
@@ -258,11 +259,12 @@
 
         const validMiddleTreads = Math.max(1, Math.min(maxTreadsZStringer, middleTreads));
         numTreadsMiddleInput.value = validMiddleTreads;
-
+        console.log("Middle Treads: " + validMiddleTreads);
         const usedRun = (validMiddleTreads * treadRun);
         const remainingRun = wallToWall - usedRun;
         const landingAdjustment = remainingRun - minLowerLandingWidth - minUpperLandingDepth;
         lowerLandingWidth = minLowerLandingWidth + landingAdjustment;
+        console.log("Lower Landing Width: " + lowerLandingWidth);
       }
     }
 
@@ -295,6 +297,7 @@
         if (numTreadsLower !== parseInt(numTreadsLowerInput.value)) {
           numTreadsLowerInput.value = numTreadsLower;
         }
+        console.log("Lower Treads: " + numTreadsLower);
       }
     }
 

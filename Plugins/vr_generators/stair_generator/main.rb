@@ -47,21 +47,21 @@ module Viewrail
             }
           when :landing_u
             {
-              :num_treads_lower => 4,
+              :num_treads_lower => 3,
               :num_treads_middle => 4,
-              :num_treads_upper => 4,
-              :header_to_wall => 180.0,
+              :num_treads_upper => 6,
+              :header_to_wall => 112.5,
               :wall_to_wall => 120.0,
               :tread_width_lower => 36.0,
               :tread_width_middle => 36.0,
               :tread_width_upper => 36.0,
-              :lower_landing_width => 36.0,
+              :lower_landing_width => 39.0,
               :lower_landing_depth => 36.0,
-              :upper_landing_width => 36.0,
+              :upper_landing_width => 45.0,
               :upper_landing_depth => 36.0,
-              :tread_run => 11.0,
-              :stair_rise => 7.5,
-              :total_rise => 105.0,
+              :tread_run => 11.25,
+              :stair_rise => 7.67,
+              :total_rise => 122.75,
               :turn_direction => "Left",
               :glass_railing => "None"
             }
@@ -471,8 +471,8 @@ module Viewrail
 
         width = landing_hash[:width]
         depth = landing_hash[:depth]
-        thickness = landing_hash[:thickness]
-        glass_railing = landing_hash[:glass_railing]
+        # thickness = landing_hash[:thickness]
+        # glass_railing = landing_hash[:glass_railing]
         turn_direction = landing_hash[:turn_direction]
 
         edges_to_rail.each do |edge|
