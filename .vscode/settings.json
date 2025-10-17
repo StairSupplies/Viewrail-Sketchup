@@ -1,0 +1,9 @@
+{
+    "rubyLsp.addonSettings": {
+
+    }
+    ,
+    "rubyLsp.rubyVersionManager": {
+    "identifier": "auto" // or "rbenv", "rvm", "chruby", "asdf", "mise", etc.
+    }
+}

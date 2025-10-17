@@ -124,7 +124,7 @@
 <body>
   <div class="container">
     <div class="column">
-      <h3>Overall System</h3>      
+      <h3>Overall System</h3>
       <div class="form-group">
         <label for="total_rise">Total Rise (inches):</label>
         <input type="number" id="total_rise" value="<%= @last_values[:total_rise] %>" min="0" step="0.0625">
@@ -134,6 +134,15 @@
         <label for="header_to_wall">Header to Wall (inches):</label>
         <input type="number" id="header_to_wall" value="<%= @last_values[:header_to_wall] %>" min="24" max="240" step="0.25">
         <div class="error" id="header-to-wall-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="wall_to_wall">Wall to Wall (inches):</label>
+        <input type="number" id="wall_to_wall" value="<%= @last_values[:wall_to_wall] %>" min="24" max="240" step="0.25">
+        <div class="error" id="wall-to-wall-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="maximize_tread_width">Maximize Tread Width:</label>
+        <input type="checkbox" id="maximize_tread_width" value="max_them"></label>
       </div>
       <div class="form-group">
         <label for="tread_run">Tread Run (inches):</label>
@@ -208,21 +217,23 @@
           <% end %>
         </select>
       </div>
-    </div>    
+    </div>
   </div>
 
   <div class="button-container">
-    <button class="btn-primary" onclick="createStairs()">Create 90</button>
+    <button class="btn-primary" onclick="createStairs()">Create Switchback</button>
     <button class="btn-secondary" onclick="cancel()">Cancel</button>
   </div>
 
   <script>
     let isUpdating = false;
+    document.querySelector('#maximize_tread_width').checked = <%= @last_values[:maximize_tread_width] %>;
 
-    // Get input elements
     const numTreadsLowerInput = document.getElementById('num_treads_lower');
     const numTreadsUpperInput = document.getElementById('num_treads_upper');
     const headerToWallInput = document.getElementById('header_to_wall');
+    const wallToWallInput = document.getElementById('wall_to_wall');
+    const maximizeTreadWidthInput = document.querySelector('#maximize_tread_width').checked;
     const treadWidthLowerInput = document.getElementById('tread_width_lower');
     const treadWidthUpperInput = document.getElementById('tread_width_upper');
     const landingWidthInput = document.getElementById('landing_width');
@@ -233,50 +244,53 @@
     const turnDirectionSelect = document.getElementById('turn_direction');
     const glassRailingSelect = document.getElementById('glass_railing');
 
-    const maxTreadsUpperHS = 12; 
-    const maxTreadsLowerHS = 14;
-
-    // Calculate Number of Treads Upper from Header to Wall
-    function calculateUpperTreads() {
-      const headerToWall = parseFloat(headerToWallInput.value) || 0;
-      const landingWidth = parseFloat(landingWidthInput.value) || 36;
-      const treadRun = parseFloat(treadRunInput.value) || 11;
-      
-      if (headerToWall > 0 && landingWidth > 0 && treadRun > 0) {
-        // Calculate available run using MINIMUM landing width
-        const minLandingWidth = parseFloat(treadWidthLowerInput.value) || 27;
-        const availableRun = headerToWall - minLandingWidth;
-        const upperTreads = Math.floor(availableRun / treadRun);
-        
-        // Ensure it's within valid range
-        const validUpperTreads = Math.max(1, Math.min(maxTreadsUpperHS, upperTreads));
-        numTreadsUpperInput.value = validUpperTreads;
-        calculateStairRise(); // Recalculate stair rise if upper treads changed
-
-        // Grow the upperLandingWidth to fill the remaining space
-        const usedRun = (validUpperTreads * treadRun);
-        landingWidthInput.value = headerToWall - usedRun;
+    function calculateTreadWidth() {
+      if (document.querySelector('#maximize_tread_width').checked) {
+        treadWidthLowerInput.value = landingWidthInput.value / 2;
+        treadWidthUpperInput.value = landingWidthInput.value / 2;
       }
     }
 
-    // Calculate Number of Treads Lower based on Total Rise and Upper Treads
+    function calculateUpperTreads() {
+      const headerToWall = parseFloat(headerToWallInput.value) || 0;
+      const landingDepth = 36;
+      const treadRun = parseFloat(treadRunInput.value) || 11;
+
+      if (headerToWall > 0 && landingDepth > 0 && treadRun > 0) {
+        const availableRun = headerToWall - landingDepth;
+        const upperTreads = Math.floor(availableRun / treadRun);
+
+        const validUpperTreads = Math.max(1, Math.min(22, upperTreads));
+        numTreadsUpperInput.value = validUpperTreads;
+
+        landingDepthInput.value = headerToWall - (upperTreads * treadRun);
+
+        calculateLowerTreads();
+      }
+    }
+
     function calculateLowerTreads() {
       const totalRise = parseFloat(totalRiseInput.value) || 0;
       const numTreadsUpper = parseInt(numTreadsUpperInput.value) || 0;
-      let numTreadsLower = parseInt(numTreadsLowerInput.value) || 0;
 
-      if (totalRise > 0) {
-        // Calculate actual rise
+      if (totalRise > 0 && numTreadsUpper >= 0) {
+        const targetRise = 7.0;
+
+        const totalRisesNeeded = Math.round(totalRise / targetRise);
+        const totalTreadsNeeded = totalRisesNeeded - 2;
+        let numTreadsLower = Math.max(totalTreadsNeeded - numTreadsUpper, 1);
+
         const totalTreads = numTreadsLower + numTreadsUpper;
         const calculatedRise = totalRise / (totalTreads + 2);
-        
-        // Adjust if rise is out of range
+        let updateNumTreads = false;
+
         if (calculatedRise > 9) {
-          while (numTreadsLower < maxTreadsLowerHS) {
+          while (numTreadsLower < 22) {
             numTreadsLower++;
             const newTotalTreads = numTreadsLower + numTreadsUpper;
             const newRise = totalRise / (newTotalTreads + 2);
             if (newRise <= 9) break;
+            updateNumTreads = true
           }
         } else if (calculatedRise < 6) {
           while (numTreadsLower > 1) {
@@ -284,36 +298,26 @@
             const newTotalTreads = numTreadsLower + numTreadsUpper;
             const newRise = totalRise / (newTotalTreads + 2);
             if (newRise >= 6) break;
+            updateNumTreads = true;
           }
         }
 
-        if (numTreadsLower !== parseInt(numTreadsLowerInput.value)) {
-          numTreadsLowerInput.value = numTreadsLower;
-          calculateStairRise(); // Recalculate stair rise if lower treads changed
-        }
+        if (updateNumTreads) numTreadsLowerInput.value = numTreadsLower;
+
+        calculateStairRise();
       }
     }
 
-    // Auto-update landing dimensions when tread widths change
     function checkLandingSize() {
       const lowerWidth = parseFloat(treadWidthLowerInput.value) || 36;
       const upperWidth = parseFloat(treadWidthUpperInput.value) || 36;
       const landingWidth = parseFloat(landingWidthInput.value) || 36;
       const landingDepth = parseFloat(landingDepthInput.value) || 36;
-      
-      // Make Sure landing width is equal to or greater than lowerWidth and that landing depth is equal to or greater than upperWidth
-      if (landingWidth < lowerWidth) {
-        landingWidthInput.value = lowerWidth;
-        calculateUpperTreads(); // Recalculate upper treads when landing width changes
-        calculateLowerTreads(); // Recalculate lower treads when landing width changes
-      }
-      if (landingDepth < upperWidth) {
-        landingDepthInput.value = upperWidth;
-      }
+
+      calculateUpperTreads();
+      calculateTreadWidth();
     }
 
-
-    // Calculate Stair Rise from Total Rise and Total Number of Treads
     function calculateStairRise() {
       if (isUpdating) return;
       isUpdating = true;
@@ -332,17 +336,16 @@
       validateInputs();
     }
 
-    // Update Header to Wall when Upper Treads change
     function updateHeaderToWall() {
       if (isUpdating) return;
       isUpdating = true;
 
       const numTreadsUpper = parseInt(numTreadsUpperInput.value) || 0;
-      const landingWidth = parseFloat(landingWidthInput.value) || 36;
+      const landingDepth = parseFloat(landingDepthInput.value) || 72;
       const treadRun = parseFloat(treadRunInput.value) || 11;
 
-      if (numTreadsUpper > 0 && landingWidth > 0 && treadRun > 0) {
-        const headerToWall = landingWidth + (numTreadsUpper * treadRun);
+      if (numTreadsUpper > 0 && landingDepth > 0 && treadRun > 0) {
+        const headerToWall = landingDepth + (numTreadsUpper * treadRun);
         headerToWallInput.value = headerToWall.toFixed(2);
       }
 
@@ -350,37 +353,29 @@
       validateInputs();
     }
 
-    // Add event listeners
-    headerToWallInput.addEventListener('input', function() {
-      calculateUpperTreads();
-      calculateLowerTreads(); // Recalculate upper treads when header to wall changes
-    });
-
-    landingWidthInput.addEventListener('input', function() {
-      calculateUpperTreads();
-      calculateLowerTreads(); // Recalculate upper treads when landing width changes
-    });
-
+    headerToWallInput.addEventListener('input', calculateUpperTreads);
     landingDepthInput.addEventListener('input', function() {
+      this.dataset.userModified = 'true';
       checkLandingSize();
     });
-    
-    treadWidthLowerInput.addEventListener('input', function() {
+    landingWidthInput.addEventListener('input', function() {
+      this.dataset.userModified = 'true';
+      wallToWallInput.value = landingWidthInput.value
       checkLandingSize();
-      calculateUpperTreads(); // Recalculate upper treads when tread width changes
-      calculateLowerTreads(); // Recalculate lower treads when tread width changes
+    });
+    treadWidthLowerInput.addEventListener('input', checkLandingSize);
+    treadWidthUpperInput.addEventListener('input', checkLandingSize);
+    treadRunInput.addEventListener('input', function() {
+      calculateUpperTreads();
+    });
+    totalRiseInput.addEventListener('input', function() {
+      calculateLowerTreads();
+      calculateStairRise();
     });
 
-    treadWidthUpperInput.addEventListener('input', checkLandingSize);
-    
-    treadRunInput.addEventListener('input', function() {
-      calculateUpperTreads(); // Recalculate upper treads when tread run changes
-      calculateLowerTreads(); // Recalculate lower treads when tread run changes
-    });
-    
-    totalRiseInput.addEventListener('input', function() {
-      calculateLowerTreads(); // Calculate lower treads when total rise changes
-      calculateStairRise();
+    wallToWallInput.addEventListener('input', function() {
+      landingWidthInput.value = wallToWallInput.value;
+      checkLandingSize();
     });
 
     numTreadsLowerInput.addEventListener('input', function() {
@@ -394,14 +389,17 @@
       validateInputs();
     });
 
-    // Validation function
+    document.getElementById("maximize_tread_width").addEventListener('change', function() {
+      if (this.checked) {
+        calculateTreadWidth();
+      }
+    });
+
     function validateInputs() {
       let isValid = true;
 
-      // Clear previous errors
       document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
 
-      // Validate tread numbers
       const numTreadsLower = parseInt(numTreadsLowerInput.value);
       const numTreadsUpper = parseInt(numTreadsUpperInput.value);
       const totalTreads = numTreadsLower + numTreadsUpper;
@@ -412,7 +410,6 @@
         isValid = false;
       }
 
-      // Validate Header to Wall
       const headerToWall = parseFloat(headerToWallInput.value);
       if (headerToWall < 24 || headerToWall > 240) {
         document.getElementById('header-to-wall-error').textContent = 'Must be between 24" and 240"';
@@ -432,7 +429,13 @@
         isValid = false;
       }
 
-      // Validate widths
+      const wallToWall = parseFloat(wallToWallInput.value);
+      if (wallToWall < 48 || wallToWall > 120){
+        document.getElementById('wall-to-wall-error').textContent = 'Must be between 48" and 120"';
+        document.getElementById('wall-to-wall-error').style.display = 'block';
+        isValue = false
+      }
+
       const treadWidthLower = parseFloat(treadWidthLowerInput.value);
       const treadWidthUpper = parseFloat(treadWidthUpperInput.value);
 
@@ -448,7 +451,6 @@
         isValid = false;
       }
 
-      // Validate tread run
       const treadRun = parseFloat(treadRunInput.value);
       if (treadRun < 11 || treadRun > 13) {
         document.getElementById('tread-run-error').textContent = 'Must be between 11" and 13"';
@@ -456,7 +458,6 @@
         isValid = false;
       }
 
-      // Validate rise parameters
       const stairRise = parseFloat(stairRiseInput.value);
       const totalRise = parseFloat(totalRiseInput.value);
 
@@ -472,7 +473,6 @@
         isValid = false;
       }
 
-      // Validate landing dimensions
       const landingWidth = parseFloat(landingWidthInput.value);
       const landingDepth = parseFloat(landingDepthInput.value);
 
@@ -500,6 +500,8 @@
         num_treads_lower: parseInt(numTreadsLowerInput.value),
         num_treads_upper: parseInt(numTreadsUpperInput.value),
         header_to_wall: parseFloat(headerToWallInput.value),
+        wall_to_wall: parseFloat(wallToWallInput.value),
+        maximize_tread_width: document.querySelector('#maximize_tread_width').checked,
         tread_width_lower: parseFloat(treadWidthLowerInput.value),
         tread_width_upper: parseFloat(treadWidthUpperInput.value),
         landing_width: parseFloat(landingWidthInput.value),
@@ -511,7 +513,7 @@
         glass_railing: glassRailingSelect.value
       };
 
-      window.location = 'skp:create_landing_stairs@' + JSON.stringify(values);
+      window.location = 'skp:create_switchback_stairs@' + JSON.stringify(values);
     }
 
     function cancel() {
@@ -520,16 +522,13 @@
 
     // Initial calculations
     checkLandingSize();
-    calculateUpperTreads(); // This will also trigger calculateLowerTreads()
-    
-    // Auto-resize dialog to fit content
+    calculateUpperTreads();
+
     window.addEventListener('load', function() {
-      // Small delay to ensure content is fully rendered
       setTimeout(function() {
         const bodyHeight = document.body.scrollHeight;
         const bodyWidth = document.body.scrollWidth;
-        
-        // Send resize request to SketchUp
+
         window.location = 'skp:resize_dialog@' + JSON.stringify({
           width: Math.max(600, bodyWidth),
           height: Math.max(600, bodyHeight)
