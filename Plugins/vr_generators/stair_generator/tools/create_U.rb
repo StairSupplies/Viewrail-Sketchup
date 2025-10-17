@@ -6,12 +6,10 @@ module Viewrail
     module Tools
       class UStairMenu
         @@stair_counter = 0
-        
+
         def self.show
-          # Get persistent values from the main module
           last_values = Viewrail::StairGenerator.last_form_values(:landing_u)
 
-          # Create the HTML dialog for U-shaped stairs
           dialog = UI::HtmlDialog.new(
             {
               :dialog_title => "Stair Form - U",
@@ -30,7 +28,6 @@ module Viewrail
             }
           )
 
-          # Render the HTML content from ERB template
           begin
             renderer = Viewrail::SharedUtilities::FormRenderer.new(last_values)
             html_content = renderer.render(File.join(File.dirname(__FILE__), "..", "forms", "u_stair_form.html.erb"))
@@ -40,7 +37,6 @@ module Viewrail
             return
           end
 
-          # Add callbacks
           dialog.add_action_callback("resize_dialog") do |action_context, params|
             dimensions = JSON.parse(params)
             dialog.set_size(dimensions["width"], dimensions["height"])
@@ -49,7 +45,6 @@ module Viewrail
           dialog.add_action_callback("create_u_stairs") do |action_context, params|
             values = JSON.parse(params)
 
-            # Store the values for next time
             last_values[:num_treads_lower] = values["num_treads_lower"]
             last_values[:num_treads_middle] = values["num_treads_middle"]
             last_values[:num_treads_upper] = values["num_treads_upper"]
@@ -70,10 +65,8 @@ module Viewrail
 
             dialog.close
 
-            # Create the U-shaped stairs and get the group
             stair_group = self.create_u_geometry(values)
-            
-            # Store ALL parameters for future modification
+
             Viewrail::StairGenerator.store_stair_parameters(stair_group, values, :landing_u)
           end
 
@@ -84,20 +77,16 @@ module Viewrail
           dialog.show
         end # show
 
-        # Create U-shaped stairs (orchestrator method)
         def self.create_u_geometry(params, start_point = [0, 0, 0])
           model = Sketchup.active_model
 
-          # Start operation for undo functionality
           model.start_operation('Create U-Shaped Stairs', true)
 
           begin
-            # Calculate landing heights
             lower_landing_height = (params["num_treads_lower"] + 1) * params["stair_rise"]
             upper_landing_height = (params["num_treads_lower"] + params["num_treads_middle"] + 2) * params["stair_rise"]
             railing_side = get_railing_side(params["turn_direction"], params["glass_railing"])
 
-            # === LOWER STAIRS SEGMENT ===
             lower_params = {
               "num_treads" => params["num_treads_lower"],
               "tread_run" => params["tread_run"],
@@ -107,14 +96,12 @@ module Viewrail
               "segment_name" => "Lower Stairs"
             }
 
-            # Determine glass railing for lower segment based on turn direction
-            if params["glass_railing"] != "None"              
+            if params["glass_railing"] != "None"
               lower_params["glass_railing"] = railing_side
             end
 
             lower_stairs = Viewrail::StairGenerator.create_stair_segment(lower_params, [0, 0, 0])
 
-            # === LOWER LANDING ===
             lower_landing_x = params["num_treads_lower"] * params["tread_run"]
             lower_landing_y = 0
             if params["turn_direction"] == "Right"
@@ -133,7 +120,6 @@ module Viewrail
               [lower_landing_x, lower_landing_y, lower_landing_z]
             )
 
-            # === MIDDLE STAIRS SEGMENT ===
             if params["turn_direction"] == "Left"
               middle_start = [
                 lower_landing_x + params["lower_landing_depth"],
@@ -159,14 +145,12 @@ module Viewrail
               "segment_name" => "Middle Stairs"
             }
 
-            # Determine glass railing for middle segment
             if params["glass_railing"] != "None"
               middle_params["glass_railing"] = railing_side
             end
 
             middle_stairs = Viewrail::StairGenerator.create_stair_segment(middle_params, middle_start)
 
-            # Rotate middle stairs
             if middle_stairs
               rotation_point = Geom::Point3d.new(middle_start)
               rotation_axis = Geom::Vector3d.new(0, 0, 1)
@@ -174,8 +158,6 @@ module Viewrail
               middle_stairs.transform!(rotation)
             end
 
-            # === UPPER LANDING ===
-            # Upper landing dimensions are determined by stair widths
             upper_landing_width = params["upper_landing_width"]
             upper_landing_depth = params["upper_landing_depth"]
 
@@ -200,7 +182,6 @@ module Viewrail
               [upper_landing_x, upper_landing_y, upper_landing_z]
             )
 
-            # Rotate upper landing
             if upper_landing
               rotation_point = Geom::Point3d.new([upper_landing_x, upper_landing_y, upper_landing_z])
               rotation_axis = Geom::Vector3d.new(0, 0, 1)
@@ -208,10 +189,8 @@ module Viewrail
               upper_landing.transform!(rotation)
             end
 
-            # === UPPER STAIRS SEGMENT ===
-            # Calculate the "outside" alignment
             outside_offset = params["lower_landing_width"] + upper_landing_depth + (params["num_treads_middle"] * params["tread_run"])
-            
+
             if params["turn_direction"] == "Left"
               upper_start = [
                 upper_landing_x - upper_landing_width,
@@ -236,15 +215,13 @@ module Viewrail
               "segment_name" => "Upper Stairs"
             }
 
-            # Determine glass railing for upper segment
             if params["glass_railing"] != "None"
               upper_params["glass_railing"] = railing_side
             end
-            
+
             last_stair = true
             upper_stairs = Viewrail::StairGenerator.create_stair_segment(upper_params, upper_start, last_stair)
 
-            # Rotate upper stairs (180 degrees total from lower stairs)
             if upper_stairs
               rotation_point = Geom::Point3d.new(upper_start)
               rotation_axis = Geom::Vector3d.new(0, 0, 1)
@@ -252,23 +229,19 @@ module Viewrail
               upper_stairs.transform!(rotation)
             end
 
-            # === CREATE MASTER GROUP ===
             @@stair_counter += 1
             total_treads = params["num_treads_lower"] + params["num_treads_middle"] + params["num_treads_upper"] + 2
-            
+
             stair_group = model.active_entities.add_group([lower_stairs, lower_landing, middle_stairs, upper_landing, upper_stairs])
             stair_group.name = "U Stairs - #{total_treads} treads - ##{@@stair_counter}"
 
-            # Apply starting transformation if provided
             if start_point != [0, 0, 0]
               transform = Geom::Transformation.new(start_point)
               stair_group.transform!(transform)
             end
-            
-            # Commit the operation
+
             model.commit_operation
 
-            # Zoom to fit
             Sketchup.active_model.active_view.zoom_extents
             return stair_group
 

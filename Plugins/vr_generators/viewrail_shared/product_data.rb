@@ -1,12 +1,9 @@
-# viewrail_shared/product_data.rb
-
 module Viewrail
 
   module ProductData
 
     class << self
 
-      # Glass Panel Standards
       GLASS_STANDARDS = {
         thickness: 0.5,
         max_panel_width: 48.0,
@@ -14,7 +11,6 @@ module Viewrail
         default_height: 42.0
       }
 
-      # Base Channel (Baserail) Standards
       BASE_CHANNEL_STANDARDS = {
         width: 2.5,
         height: 4.188,
@@ -22,7 +18,6 @@ module Viewrail
         corner_radius: 0.0625
       }
 
-      # Handrail Standards
       HANDRAIL_STANDARDS = {
         width: 1.69,
         height: 1.35,
@@ -30,28 +25,24 @@ module Viewrail
         corner_radius: 0.160
       }
 
-      # Floor Cover Standards (for Hidden type railings)
       FLOOR_COVER_STANDARDS = {
         width: 1.625,
         height: 7.5,
         glass_below_floor: 6.0
       }
 
-      # Railing Type Offset Standards
       RAILING_TYPE_OFFSETS = {
         hidden: 0.0,
         baserail: 2.125,
         fascia: -1.0
       }
 
-      # Material Type Options
       MATERIAL_TYPES = {
         aluminum: "Aluminum",
         wood: "Wood",
         steel: "Steel"
       }
 
-      # Accessor methods for glass standards
       def glass_thickness
         GLASS_STANDARDS[:thickness]
       end
@@ -68,7 +59,6 @@ module Viewrail
         GLASS_STANDARDS[:default_height]
       end
 
-      # Accessor methods for base channel standards
       def base_channel_width
         BASE_CHANNEL_STANDARDS[:width]
       end
@@ -85,7 +75,6 @@ module Viewrail
         BASE_CHANNEL_STANDARDS[:corner_radius]
       end
 
-      # Accessor methods for handrail standards
       def handrail_width
         HANDRAIL_STANDARDS[:width]
       end
@@ -102,7 +91,6 @@ module Viewrail
         HANDRAIL_STANDARDS[:corner_radius]
       end
 
-      # Accessor methods for floor cover standards
       def floor_cover_width
         FLOOR_COVER_STANDARDS[:width]
       end
@@ -115,13 +103,11 @@ module Viewrail
         FLOOR_COVER_STANDARDS[:glass_below_floor]
       end
 
-      # Get offset distance for railing type
       def offset_for_railing_type(type)
         type_sym = type.to_s.downcase.to_sym
         RAILING_TYPE_OFFSETS[type_sym] || 0.0
       end
 
-      # Get all standards for a component type
       def get_standards(component_type)
         case component_type.to_sym
         when :glass
@@ -137,7 +123,6 @@ module Viewrail
         end
       end
 
-      # Update a standard value (useful for project-specific overrides)
       def update_standard(component_type, key, value)
         case component_type.to_sym
         when :glass
@@ -151,7 +136,6 @@ module Viewrail
         end
       end
 
-      # Calculate glass height based on configuration
       def calculate_glass_height(total_height, include_handrail, railing_type)
         if railing_type.to_s.downcase == "hidden"
           total_height + glass_below_floor
@@ -162,7 +146,6 @@ module Viewrail
         end
       end
 
-      # Calculate handrail Z adjustment based on configuration
       def calculate_handrail_z_adjustment(total_height, include_floor_cover, glass_height)
         if include_floor_cover
           total_height - (glass_recess - handrail_height / 2.0)
@@ -171,32 +154,26 @@ module Viewrail
         end
       end
 
-      # Get center offset for base channel relative to glass
       def base_channel_center_offset(glass_offset, glass_thickness)
         glass_offset - (glass_thickness / 2.0)
       end
 
-      # Get center offset for handrail relative to glass
       def handrail_center_offset(glass_offset, glass_thickness)
         glass_offset - (glass_thickness / 2.0)
       end
 
-      # Validate if a panel width is within acceptable range
       def valid_panel_width?(width)
         width > 0 && width <= max_panel_width
       end
 
-      # Get available material types
       def available_materials
         MATERIAL_TYPES.values
       end
 
-      # Check if material type is valid
       def valid_material?(material)
         MATERIAL_TYPES.values.include?(material.to_s)
       end
 
-      # Create profile for a given component type
       def create_profile(component_type)
         case component_type.to_sym
         when :handrail, :caprail
@@ -210,7 +187,6 @@ module Viewrail
         end
       end
 
-      # Optional: Provide default offset helpers (not enforced)
       def default_center_offset(glass_offset, glass_thickness)
         glass_offset - (glass_thickness / 2.0)
       end
@@ -221,12 +197,11 @@ module Viewrail
 
       private
 
-      # Create handrail profile with rounded corners
       def create_handrail_profile
         half_width = handrail_width / 2.0
         half_height = handrail_height / 2.0
         corner = handrail_corner_radius
-        
+
         [
           [-half_width + corner, -half_height],
           [-half_width, -half_height + corner],
@@ -239,10 +214,9 @@ module Viewrail
         ]
       end
 
-      # Create base channel profile (U-channel)
       def create_base_channel_profile
         half_width = base_channel_width / 2.0
-        
+
         [
           [-half_width, 0],
           [-half_width, base_channel_height],
@@ -251,10 +225,9 @@ module Viewrail
         ]
       end
 
-      # Create floor cover profile (inverted channel below floor level)
       def create_floor_cover_profile
         half_width = floor_cover_width / 2.0
-        
+
         [
           [-half_width, 0],
           [-half_width, -floor_cover_height],
