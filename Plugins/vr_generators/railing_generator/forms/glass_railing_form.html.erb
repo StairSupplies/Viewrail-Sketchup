@@ -125,7 +125,7 @@
 <body>
   <div class="container">
     <h3>Glass Railing Configuration</h3>
-    
+
     <div class="form-group">
       <label for="railing_type">Mounting Type:</label>
       <select id="railing_type">
@@ -145,7 +145,7 @@
         <input type="checkbox" id="include_caprail" checked>
         <label for="include_caprail">Include Caprail</label>
       </div>
-      
+
       <div class="dependent-field" id="caprail_options">
         <label for="caprail_material">Caprail Material:</label>
         <select id="caprail_material">
@@ -171,7 +171,6 @@
   </div>
 
   <script>
-    // Get elements
     const typeSelect = document.getElementById('railing_type');
     const heightInput = document.getElementById('railing_height');
     const caprailCheckbox = document.getElementById('include_caprail');
@@ -179,7 +178,6 @@
     const caprailMaterialSelect = document.getElementById('caprail_material');
     const heightError = document.getElementById('height-error');
 
-    // Toggle caprail material dropdown enabled/disabled state
     caprailCheckbox.addEventListener('change', function() {
       if (this.checked) {
         caprailMaterialSelect.disabled = false;
@@ -188,25 +186,21 @@
       }
     });
 
-    // Validate height input
     function validateHeight() {
       const height = parseFloat(heightInput.value);
-      
-      // Clear previous error
       heightError.style.display = 'none';
-      
+
       if (isNaN(height) || height < 8 || height > 54) {
         heightError.textContent = 'Height must be between 8" and 54"';
         heightError.style.display = 'block';
         return false;
       }
-      
+
       return true;
     }
 
     heightInput.addEventListener('input', validateHeight);
 
-    // Create railing function
     function createGlassRailing() {
       if (!validateHeight()) {
         return;
@@ -219,22 +213,18 @@
         caprail_material: caprailCheckbox.checked ? caprailMaterialSelect.value : null
       };
 
-      // Send to SketchUp
       window.location = 'skp:create_glass_railing@' + JSON.stringify(values);
     }
 
-    // Cancel function
     function cancel() {
       window.location = 'skp:cancel';
     }
 
-    // Auto-resize dialog to fit content
     window.addEventListener('load', function() {
       setTimeout(function() {
         const bodyHeight = document.body.scrollHeight;
         const bodyWidth = document.body.scrollWidth;
-        
-        // Send resize request to SketchUp if needed
+
         window.location = 'skp:resize_dialog@' + JSON.stringify({
           width: Math.max(450, bodyWidth + 50),
           height: Math.max(450, bodyHeight + 50)

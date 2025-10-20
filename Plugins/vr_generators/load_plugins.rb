@@ -1,0 +1,52 @@
+module Plugins
+
+  # Finds and returns the filename for each of the .rb files in the subfolders
+  #
+  # @return [Array<String>] files
+  def self.rb_files(include_subfolders = false)
+    folders = include_subfolders ? '**' : '*'
+    plugins_pattern = File.join(__dir__, folders, '*.rb')
+    Dir.glob(plugins_pattern).each { |filename|
+      yield filename
+    }
+  end
+
+  # Utility method to mute Ruby warnings for whatever is executed by the block.
+  def self.mute_warnings(&block)
+    old_verbose = $VERBOSE
+    $VERBOSE = nil
+    result = block.call
+  ensure
+    $VERBOSE = old_verbose
+    return result
+  end
+
+  # Utility method to quickly reload the tutorial files. Useful for development.
+  #
+  # @return [Integer] Number of files reloaded.
+  def self.reload
+    self.mute_warnings do
+      load __FILE__
+      files = self.rb_files(true) { |filename|
+        load filename
+      }
+      puts "Reloaded #{files.size} files" if $VERBOSE
+      files.size + 1
+    end
+  end
+
+  # This runs when this file is loaded and adds the location of each of the
+  # tool folders to the load path
+  self.rb_files { |filename|
+    begin
+      path = File.dirname(filename)
+      $LOAD_PATH << path
+      require filename
+    rescue LoadError => error
+      warn "Failed to load: #{filename}"
+      warn error.inspect
+      warn error.description
+    end
+  }
+
+end # module Examples

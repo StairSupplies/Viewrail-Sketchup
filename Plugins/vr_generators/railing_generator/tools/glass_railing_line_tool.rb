@@ -6,9 +6,6 @@ module Viewrail
 
       class GlassRailingLineTool
 
-        #DISCLAIMER: Cleaned using AI, please verify accuracy and functionality. 
-        # (implemented new ProductData methods and removed old face tool references)
-
         def self.show
           last_values = {}
 
@@ -59,7 +56,6 @@ module Viewrail
           @current_point = nil
           @ip = Sketchup::InputPoint.new
 
-          # Pull defaults from ProductData
           @total_height = 42.0
           @glass_thickness = Viewrail::ProductData.glass_thickness
           @max_panel_width = Viewrail::ProductData.max_panel_width
@@ -68,7 +64,7 @@ module Viewrail
 
           @include_handrail = true
           @handrail_width = Viewrail::ProductData.handrail_width
-          @handrail_height = Viewrail::ProductData.handrail_height
+          @handrail_thickness = Viewrail::ProductData.handrail_thickness
           @glass_recess = Viewrail::ProductData.glass_recess
           @corner_radius = Viewrail::ProductData.handrail_corner_radius
           @handrail_material = "Aluminum"
@@ -79,9 +75,8 @@ module Viewrail
           @glass_bottom_offset = Viewrail::ProductData.glass_bottom_offset
           @base_corner_radius = Viewrail::ProductData.base_corner_radius
 
-          # Calculate glass height based on handrail
           @glass_height = @include_handrail ?
-            @total_height - @handrail_height + @glass_recess :
+            @total_height - @handrail_thickness + @glass_recess :
             @total_height
         end # initialize
 
@@ -93,10 +88,9 @@ module Viewrail
 
           @include_base_channel = (@railing_type == "Baserail")
 
-          # Use ProductData calculation methods
           @glass_height = Viewrail::ProductData.calculate_glass_height(
-            @total_height, 
-            @include_handrail, 
+            @total_height,
+            @include_handrail,
             @railing_type
           )
 
@@ -122,126 +116,6 @@ module Viewrail
         def draw(view)
           draw_path_mode(view)
         end # draw
-
-        def draw_path_mode(view)
-          if @points.length > 0
-            view.drawing_color = "blue"
-            view.line_width = 4
-
-            # Draw existing segments
-            (0...@points.length - 1).each do |i|
-              view.draw_line(@points[i], @points[i + 1])
-            end
-
-            # Draw preview line to current mouse position
-            if @current_point && @points.length > 0
-              view.drawing_color = [0, 128, 255]  # Light blue for preview
-              view.line_stipple = "_"
-              view.draw_line(@points.last, @current_point)
-              view.line_stipple = ""
-            end
-
-            # Draw points
-            view.drawing_color = "red"
-            @points.each { |pt| view.draw_points(pt, 6) }
-
-            # Draw preview glass panels
-            draw_preview_panels(view)
-          end
-        end # draw_path_mode
-
-        def draw_preview_panels(view)
-          # Create temporary points array including current mouse position
-          preview_points = @points.dup
-          preview_points << @current_point if @current_point && @points.length > 0
-
-          return if preview_points.length < 2
-
-          # Set preview drawing style
-          view.drawing_color = [100, 150, 200, 128]  # Semi-transparent blue
-          view.line_width = 1
-          view.line_stipple = "-"
-
-          # Draw preview panels for each segment
-          (0...preview_points.length - 1).each do |i|
-            start_pt = preview_points[i]
-            end_pt = preview_points[i + 1]
-
-            # Calculate segment properties
-            segment_vector = end_pt - start_pt
-            segment_length = segment_vector.length
-            next if segment_length == 0
-            segment_vector.normalize!
-
-            # Calculate perpendicular vector for offset
-            perp_vector = Geom::Vector3d.new(-segment_vector.y, segment_vector.x, 0)
-            perp_vector.normalize!
-
-            # Offset the start and end points
-            offset_start = start_pt.offset(perp_vector, @offset_distance)
-            offset_end = end_pt.offset(perp_vector, @offset_distance)
-
-            # Use calculate_panel_layout
-            layout = calculate_panel_layout(offset_start, offset_end)
-            next unless layout
-
-            layout[:panels].each do |panel|
-              draw_panel_outline(view, panel)
-            end
-          end
-
-          # Reset line stipple
-          view.line_stipple = ""
-        end # draw_preview_panels
-
-        def draw_panel_outline(view, panel)
-          view.draw_line(panel[:bottom_start], panel[:bottom_end])
-          view.draw_line(panel[:bottom_end], panel[:top_end])
-          view.draw_line(panel[:top_end], panel[:top_start])
-          view.draw_line(panel[:top_start], panel[:bottom_start])
-        end # draw_panel_outline
-
-        def calculate_panel_layout(start_pt, end_pt, glass_height = @glass_height)
-          segment_vector = end_pt - start_pt
-          segment_length = segment_vector.length
-          
-          return nil if segment_length == 0
-          
-          segment_vector.normalize!
-          
-          available_length = segment_length - @panel_gap
-          num_panels = calculate_panel_count(available_length)
-          
-          return nil unless num_panels > 0
-          
-          total_gaps = (num_panels - 1) * @panel_gap
-          panel_width = (available_length - total_gaps) / num_panels
-          
-          panels = []
-          
-          (0...num_panels).each do |i|
-            panel_start_distance = i * (panel_width + @panel_gap)
-            panel_end_distance = panel_start_distance + panel_width
-            
-            panel_start = start_pt.offset(segment_vector, panel_start_distance)
-            panel_end = start_pt.offset(segment_vector, panel_end_distance)
-            
-            panels << {
-              start: panel_start,
-              end: panel_end,
-              bottom_start: panel_start,
-              bottom_end: panel_end,
-              top_start: Geom::Point3d.new(panel_start.x, panel_start.y, panel_start.z + glass_height),
-              top_end: Geom::Point3d.new(panel_end.x, panel_end.y, panel_end.z + glass_height)
-            }
-          end
-          
-          {
-            num_panels: num_panels,
-            panel_width: panel_width,
-            panels: panels
-          }
-        end # calculate_panel_layout
 
         def onMouseMove(flags, x, y, view)
           if flags & CONSTRAIN_MODIFIER_MASK > 0  # Shift key pressed
@@ -300,6 +174,114 @@ module Viewrail
           end
         end # update_status_text
 
+        def draw_path_mode(view)
+          if @points.length > 0
+            view.drawing_color = "blue"
+            view.line_width = 4
+
+            (0...@points.length - 1).each do |i|
+              view.draw_line(@points[i], @points[i + 1])
+            end
+
+            if @current_point && @points.length > 0
+              view.drawing_color = [0, 128, 255]  # Light blue for preview
+              view.line_stipple = "_"
+              view.draw_line(@points.last, @current_point)
+              view.line_stipple = ""
+            end
+
+            view.drawing_color = "red"
+            @points.each { |pt| view.draw_points(pt, 6) }
+
+            draw_preview_panels(view)
+          end
+        end # draw_path_mode
+
+        def draw_preview_panels(view)
+          preview_points = @points.dup
+          preview_points << @current_point if @current_point && @points.length > 0
+
+          return if preview_points.length < 2
+
+          view.drawing_color = [100, 150, 200, 128]  # Semi-transparent blue
+          view.line_width = 1
+          view.line_stipple = "-"
+
+          (0...preview_points.length - 1).each do |i|
+            start_pt = preview_points[i]
+            end_pt = preview_points[i + 1]
+
+            segment_vector = end_pt - start_pt
+            segment_length = segment_vector.length
+            next if segment_length == 0
+            segment_vector.normalize!
+
+            perp_vector = Geom::Vector3d.new(-segment_vector.y, segment_vector.x, 0)
+            perp_vector.normalize!
+
+            offset_start = start_pt.offset(perp_vector, @offset_distance)
+            offset_end = end_pt.offset(perp_vector, @offset_distance)
+
+            layout = calculate_panel_layout(offset_start, offset_end)
+            next unless layout
+
+            layout[:panels].each do |panel|
+              draw_panel_outline(view, panel)
+            end
+          end
+
+          view.line_stipple = ""
+        end # draw_preview_panels
+
+        def draw_panel_outline(view, panel)
+          view.draw_line(panel[:bottom_start], panel[:bottom_end])
+          view.draw_line(panel[:bottom_end], panel[:top_end])
+          view.draw_line(panel[:top_end], panel[:top_start])
+          view.draw_line(panel[:top_start], panel[:bottom_start])
+        end # draw_panel_outline
+
+        def calculate_panel_layout(start_pt, end_pt, glass_height = @glass_height)
+          segment_vector = end_pt - start_pt
+          segment_length = segment_vector.length
+
+          return nil if segment_length == 0
+
+          segment_vector.normalize!
+
+          available_length = segment_length - @panel_gap
+          num_panels = calculate_panel_count(available_length)
+
+          return nil unless num_panels > 0
+
+          total_gaps = (num_panels - 1) * @panel_gap
+          panel_width = (available_length - total_gaps) / num_panels
+
+          panels = []
+
+          (0...num_panels).each do |i|
+            panel_start_distance = i * (panel_width + @panel_gap)
+            panel_end_distance = panel_start_distance + panel_width
+
+            panel_start = start_pt.offset(segment_vector, panel_start_distance)
+            panel_end = start_pt.offset(segment_vector, panel_end_distance)
+
+            panels << {
+              start: panel_start,
+              end: panel_end,
+              bottom_start: panel_start,
+              bottom_end: panel_end,
+              top_start: Geom::Point3d.new(panel_start.x, panel_start.y, panel_start.z + glass_height),
+              top_end: Geom::Point3d.new(panel_end.x, panel_end.y, panel_end.z + glass_height)
+            }
+          end
+
+          return {
+            num_panels: num_panels,
+            panel_width: panel_width,
+            panels: panels
+          }
+        end # calculate_panel_layout
+
         private
 
         def create_glass_railings
@@ -313,31 +295,21 @@ module Viewrail
             main_group = entities.add_group
             main_group.name = "Glass Railing Assembly"
 
-            # Get materials
             glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
             aluminum_material = Viewrail::SharedUtilities.get_or_add_material(:aluminum)
             wood_material = Viewrail::SharedUtilities.get_or_add_material(:wood)
 
-            # Create glass panels first
             create_glass_panel_group(main_group, glass_material)
 
-            # Create base channel if enabled
             if @include_base_channel
               baserail_group = create_continuous_base_channel(main_group)
               apply_material_with_softening(baserail_group, aluminum_material)
             end
 
-            # Create continuous handrail if enabled
             if @include_handrail
-              # Determine handrail material
               handrail_mat = (@handrail_material == "Wood") ? wood_material : aluminum_material
-              
-              z_adjust = Viewrail::ProductData.calculate_handrail_z_adjustment(
-                @total_height,
-                false,  # No floor cover in path mode
-                @glass_height
-              )
-              
+
+              z_adjust = Viewrail::ProductData.calculate_handrail_z_adjustment(@total_height)
               handrail_group = create_continuous_handrail(main_group, [0, 0, z_adjust])
               apply_material_with_softening(handrail_group, handrail_mat)
             end
@@ -368,15 +340,12 @@ module Viewrail
           return if segment_length == 0
           segment_vector.normalize!
 
-          # Calculate perpendicular vector for offset
           perp_vector = Geom::Vector3d.new(-segment_vector.y, segment_vector.x, 0)
           perp_vector.normalize!
-          
-          # Apply offset to start and end points
+
           offset_start = start_pt.offset(perp_vector, @offset_distance)
           offset_end = end_pt.offset(perp_vector, @offset_distance)
 
-          # Use calculate_panel_layout
           layout = calculate_panel_layout(offset_start, offset_end)
           return unless layout
 
@@ -425,10 +394,8 @@ module Viewrail
           feature_group = main_group.entities.add_group
           feature_group.name = config[:name]
 
-          # Calculate feature path with offsets
           feature_path = calculate_feature_path(config[:offset])
 
-          # Extrude profile along path
           (0...feature_path.length - 1).each do |i|
             start_pt = Geom::Point3d.new(feature_path[i])
             end_pt = Geom::Point3d.new(feature_path[i + 1])
@@ -438,11 +405,9 @@ module Viewrail
             next if segment_length == 0
             vec.normalize!
 
-            # Create perpendicular vector for profile orientation
             perp_vec = Geom::Vector3d.new(-vec.y, vec.x, 0)
             perp_vec.normalize!
 
-            # Apply position adjustment if provided
             adjusted_start = start_pt.clone
             if config[:adjust_position]
               adjusted_start.x += config[:adjust_position][0]
@@ -450,14 +415,12 @@ module Viewrail
               adjusted_start.z += config[:adjust_position][2]
             end
 
-            # Transform profile points
             profile = config[:profile]
             profile_points = profile.map do |p|
               transformed_pt = adjusted_start.offset(perp_vec, p[0])
               transformed_pt.offset([0,0,1], p[1])
             end
 
-            # Create and extrude face
             face = feature_group.entities.add_face(profile_points)
             if face
               face.pushpull(-segment_length)
@@ -469,10 +432,9 @@ module Viewrail
 
         def calculate_feature_path(center_offset)
           feature_path = []
-          
+
           @points.each_with_index do |pt, i|
             if i == 0
-              # First point
               next_pt = @points[i + 1]
               vec = next_pt - pt
               vec.normalize!
@@ -482,7 +444,6 @@ module Viewrail
               feature_path << [offset_pt.x, offset_pt.y, offset_pt.z]
 
             elsif i == @points.length - 1
-              # Last point
               prev_pt = @points[i - 1]
               vec = pt - prev_pt
               vec.normalize!
@@ -492,7 +453,6 @@ module Viewrail
               feature_path << [offset_pt.x, offset_pt.y, offset_pt.z]
 
             else
-              # Middle points - calculate miter
               prev_pt = @points[i - 1]
               next_pt = @points[i + 1]
 
@@ -501,14 +461,11 @@ module Viewrail
               vec2 = next_pt - pt
               vec2.normalize!
 
-              # Calculate bisector for miter
               bisector = vec1 + vec2
               bisector.normalize!
 
-              # Calculate perpendicular
               perp = Geom::Vector3d.new(-bisector.y, bisector.x, 0)
 
-              # Calculate miter offset distance
               angle = vec1.angle_between(vec2)
               miter_factor = 1.0 / Math.cos(angle / 2.0)
               offset_distance = center_offset * miter_factor
@@ -539,7 +496,6 @@ module Viewrail
           })
         end # create_continuous_handrail
 
-        # Centralized offset calculations - easy to modify or make configurable
         def calculate_base_channel_offset
           @offset_distance - (@glass_thickness / 2.0)
         end
@@ -549,16 +505,13 @@ module Viewrail
         end
 
         def apply_material_with_softening(group, material)
-          # Apply material to all faces
           group.entities.grep(Sketchup::Face).each do |face|
             face.material = material
             face.back_material = material
           end
-          
-          # Soften horizontal edges for rounded appearance
+
           group.entities.grep(Sketchup::Edge).each do |edge|
             edge_vec = edge.line[1]
-            # If line is horizontal, soften it
             if edge_vec.parallel?([1,0,0]) || edge_vec.parallel?([0,1,0])
               edge.soft = true
               edge.smooth = true
