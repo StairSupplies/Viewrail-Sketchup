@@ -163,8 +163,6 @@ module Viewrail
           riser_face.pushpull(riser_thickness) if riser_face
         end
 
-        puts "Creating hash for stairs"
-        # Create a hash to store all stair parameters
         stair_hash = {
           "num_treads" => num_treads,
           "tread_run" => tread_run,
@@ -173,7 +171,6 @@ module Viewrail
           "glass_railing" => glass_railing,
           "glass_height" => glass_height
         }
-
 
         if glass_railing != "None"
           add_glass_railings_to_segment(stairs_entities, stair_hash)
@@ -351,39 +348,10 @@ module Viewrail
       end # create_wide_landing
 
       def add_glass_railings_to_segment(entities, stair_hash)
-
-        tread_run = stair_hash["tread_run"].to_f
-        stair_rise = stair_hash["stair_rise"].to_f
-        glass_railing = stair_hash["glass_railing"]
-        glass_height = stair_hash["glass_height"].to_f
-        tread_width = stair_hash["tread_width"].to_f
         
-        glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
         panel_tread_counts = stair_panel_layout(stair_hash)
-
-        stair_angle = stair_rise / tread_run
-        panel_params = {
-          tread_run: tread_run,
-          stair_rise: stair_rise,
-          stair_angle: stair_angle,
-          bottom_z: 1.0,
-          glass_height: glass_height,
-          bottom_x_back: tread_run + 5,
-          panel_extension: 1.0
-        }
-
-        panel_sides = [
-          {
-            name: "Left",
-            enabled: glass_railing == "Left" || glass_railing == "Both",
-            y: tread_width - GLASS_INSET - @glass_thickness
-          },
-          {
-            name: "Right",
-            enabled: glass_railing == "Right" || glass_railing == "Both",
-            y: GLASS_INSET
-          }
-        ]
+        panel_params = create_panel_params(stair_hash)
+        panel_sides = create_panel_array(stair_hash)
 
         panel_sides.each do |side|
           next unless side[:enabled]
@@ -404,11 +372,51 @@ module Viewrail
               middle_stair_panel_points(tread_start, tread_end, panel_params)
             end
 
-            create_glass_panel(entities, glass_points, glass_material)
-
+            create_glass_panel(entities, glass_points)
             tread_start = tread_end
           end
         end
+      end
+
+      def create_panel_params(stair_hash)
+
+        tread_run = stair_hash["tread_run"].to_f
+        stair_rise = stair_hash["stair_rise"].to_f
+        stair_angle = stair_rise / tread_run
+
+        panel_params = {
+          tread_run: tread_run,
+          stair_rise: stair_rise,
+          stair_angle: stair_angle,
+          bottom_z: 1.0,
+          glass_height: stair_hash["glass_height"].to_f,
+          bottom_x_back: tread_run + 5,
+          panel_extension: 1.0
+        }
+
+        return panel_params
+
+      end
+
+      def create_panel_array(stair_hash)
+
+        glass_railing = stair_hash["glass_railing"]
+        tread_width = stair_hash["tread_width"].to_f
+        panel_sides = [
+          {
+            name: "Left",
+            enabled: glass_railing == "Left" || glass_railing == "Both",
+            y: tread_width - GLASS_INSET - @glass_thickness
+          },
+          {
+            name: "Right",
+            enabled: glass_railing == "Right" || glass_railing == "Both",
+            y: GLASS_INSET
+          }
+        ]
+
+        return panel_sides
+
       end
 
       def stair_panel_layout(stair_hash)
@@ -431,7 +439,8 @@ module Viewrail
         end
         
         panel_tread_counts
-      end
+
+      end #stair_panel_layout
 
       def first_stair_panel_points(treads_in_panel, params)
         start_x = 0
@@ -451,7 +460,7 @@ module Viewrail
         points << [start_x, params[:side_y], top_start_z]
         
         points
-      end
+      end #first_stair_panel_points
 
       def middle_stair_panel_points(tread_start, tread_end, params)
         start_x = tread_start * params[:tread_run] + 5 + PANEL_GAP
@@ -470,7 +479,7 @@ module Viewrail
           [end_x, params[:side_y], top_end_z],
           [start_x, params[:side_y], top_start_z]
         ]
-      end
+      end #middle_stair_panel_points
 
       def last_stair_panel_points(tread_start, tread_end, params)
         start_x = (tread_start * params[:tread_run]) + 5 + PANEL_GAP
@@ -489,10 +498,9 @@ module Viewrail
           [end_x, params[:side_y], top_end_z],
           [start_x, params[:side_y], top_start_z]
         ]
-      end
+      end #last_stair_panel_points
 
       def add_glass_railings_to_landing(entities, landing_hash, edges_to_rail)
-        glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
         glass_height = 42.0
         corner_gap = 1.0
         max_panel_width = 48.0
@@ -517,7 +525,7 @@ module Viewrail
                 [stair_overlap + panel_length, y_pos, -thickness],
                 [stair_overlap + panel_gap, y_pos, -thickness]
               ]
-              create_glass_panel(entities, glass_points, glass_material)
+              create_glass_panel(entities, glass_points)
             else
               num_panels = (panel_length / max_panel_width).ceil
               actual_panel_width = (panel_length - (num_panels - 1) * panel_gap) / num_panels
@@ -532,7 +540,7 @@ module Viewrail
                   [end_x, y_pos, 0],
                   [start_x, y_pos, 0]
                 ]
-                create_glass_panel(entities, glass_points, glass_material)
+                create_glass_panel(entities, glass_points)
               end
             end
 
@@ -548,7 +556,7 @@ module Viewrail
                 [x_pos, y_pos + panel_length, -thickness],
                 [x_pos, y_pos, -thickness]
               ]
-              create_glass_panel(entities, glass_points, glass_material)
+              create_glass_panel(entities, glass_points)
             else
               num_panels = (panel_length / max_panel_width).ceil
               actual_panel_width = (panel_length - (num_panels - 1) * panel_gap) / num_panels
@@ -563,14 +571,15 @@ module Viewrail
                   [x_pos, end_y, 0],
                   [x_pos, start_y, 0]
                 ]
-                create_glass_panel(entities, glass_points, glass_material)
+                create_glass_panel(entities, glass_points)
               end
             end
           end
         end
       end # add_glass_railings_to_landing
 
-      def create_glass_panel(entities, points, material)
+      def create_glass_panel(entities, points)
+        material = Viewrail::SharedUtilities.get_or_add_material(:glass)
         group = entities.add_group
         face = group.entities.add_face(points)
         if face
@@ -769,16 +778,13 @@ module Viewrail
 
       def show_about
         UI.messagebox(
-          "Stair Generator Extension v3.1.0\n\n" +
+          "Stair Generator Extension\n\n" +
           "Creates parametric stairs for architectural visualization.\n\n" +
           "Features:\n" +
-          "• Straight stairs with customizable dimensions\n" +
-          "• L-shaped (90°) stairs with landing\n" +
-          "• U-shaped stairs with two landings\n" +
-          "• Automatic calculation of stair rise\n" +
-          "• Building code compliance checking\n" +
           "• 3D stair geometry with glass railings\n" +
-          "• Modular stair segments and landings\n\n" +
+          "• Automatically calculated to fit any dimensions\n" +
+          "• All stair shapes: Straights, 90°s, U's, & Switchbacks\n" +
+          "• Modular & modifiable stair segments and landings\n\n" +
           "© 2025 Viewrail",
           MB_OK,
           "About Stair Generator"

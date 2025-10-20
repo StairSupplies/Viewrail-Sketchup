@@ -7,11 +7,10 @@ module Viewrail
     class << self
       def show_about
         UI.messagebox(
-          "Railing Generator Extension v1.0.0\n\n" +
+          "Railing Generator Extension\n\n" +
           "Creates various types of railings for architectural visualization.\n\n" +
           "Features:\n" +
           "• Glass railing systems\n" +
-          "• Cable railing systems (coming soon)\n" +
           "• Customizable dimensions and spacing\n" +
           "• Live preview while drawing\n\n" +
           "© 2025 Viewrail",
