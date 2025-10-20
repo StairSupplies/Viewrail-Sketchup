@@ -8,7 +8,14 @@ require_relative 'tools/modify_stair'
 module Viewrail
 
   module StairGenerator
-
+    @glass_thickness = Viewrail::ProductData.glass_thickness
+    MAX_PANEL_WIDTH = 48.0
+    PANEL_GAP = 1.0
+    STAIR_GLASS_HEIGHT = 36.0
+    LANDING_GLASS_HEIGHT = 42.0
+    GLASS_INSET = 1.0
+    CORNER_GAP = 1.0
+    STAIR_OVERLAP = 5.0
     class << self
       attr_accessor :selection_cache, :cached_validation_result
 
@@ -118,8 +125,6 @@ module Viewrail
         tread_thickness = stair_rise - reveal
         riser_thickness = 1.0
 
-        glass_thickness = 0.5
-        glass_inset = 1.0
         glass_height = 36.0
 
         stairs_group = entities.add_group
@@ -158,9 +163,20 @@ module Viewrail
           riser_face.pushpull(riser_thickness) if riser_face
         end
 
+        puts "Creating hash for stairs"
+        # Create a hash to store all stair parameters
+        stair_hash = {
+          "num_treads" => num_treads,
+          "tread_run" => tread_run,
+          "tread_width" => tread_width,
+          "stair_rise" => stair_rise,
+          "glass_railing" => glass_railing,
+          "glass_height" => glass_height
+        }
+
+
         if glass_railing != "None"
-          add_glass_railings_to_segment(stairs_entities, num_treads, tread_run, tread_width,
-                                       stair_rise, glass_railing, glass_thickness, glass_inset, glass_height)
+          add_glass_railings_to_segment(stairs_entities, stair_hash)
         end
 
         stairs_group.name = "#{segment_name} - #{num_treads} treads"
@@ -334,18 +350,77 @@ module Viewrail
         return landing_group
       end # create_wide_landing
 
-      def add_glass_railings_to_segment(entities, num_treads, tread_run, tread_width, stair_rise, glass_railing, glass_thickness, glass_inset, glass_height)
+      def add_glass_railings_to_segment(entities, stair_hash)
+
+        tread_run = stair_hash["tread_run"].to_f
+        stair_rise = stair_hash["stair_rise"].to_f
+        glass_railing = stair_hash["glass_railing"]
+        glass_height = stair_hash["glass_height"].to_f
+        tread_width = stair_hash["tread_width"].to_f
+        
         glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
+        panel_tread_counts = stair_panel_layout(stair_hash)
 
-        max_panel_width = 48.0
-        panel_gap = 1.0
+        stair_angle = stair_rise / tread_run
+        panel_params = {
+          tread_run: tread_run,
+          stair_rise: stair_rise,
+          stair_angle: stair_angle,
+          bottom_z: 1.0,
+          glass_height: glass_height,
+          bottom_x_back: tread_run + 5,
+          panel_extension: 1.0
+        }
 
-        treads_per_panel = (max_panel_width / tread_run).floor
+        panel_sides = [
+          {
+            name: "Left",
+            enabled: glass_railing == "Left" || glass_railing == "Both",
+            y: tread_width - GLASS_INSET - @glass_thickness
+          },
+          {
+            name: "Right",
+            enabled: glass_railing == "Right" || glass_railing == "Both",
+            y: GLASS_INSET
+          }
+        ]
 
+        panel_sides.each do |side|
+          next unless side[:enabled]
+          
+          panel_params[:side_y] = side[:y]
+          tread_start = 0
+
+          panel_tread_counts.each_with_index do |treads_in_panel, panel_index|
+            tread_end = tread_start + treads_in_panel
+            is_first_panel = (panel_index == 0)
+            is_last_panel = (panel_index == panel_tread_counts.length - 1)
+
+            glass_points = if is_first_panel
+              first_stair_panel_points(treads_in_panel, panel_params)
+            elsif is_last_panel
+              last_stair_panel_points(tread_start, tread_end, panel_params)
+            else
+              middle_stair_panel_points(tread_start, tread_end, panel_params)
+            end
+
+            create_glass_panel(entities, glass_points, glass_material)
+
+            tread_start = tread_end
+          end
+        end
+      end
+
+      def stair_panel_layout(stair_hash)
+        
+        num_treads = stair_hash["num_treads"].to_i
+        tread_run = stair_hash["tread_run"].to_f
+        
+        treads_per_panel = (MAX_PANEL_WIDTH / tread_run).floor
         panels_needed = (num_treads.to_f / treads_per_panel).ceil
         base_treads = num_treads / panels_needed
         extra_treads = num_treads % panels_needed
-
+        
         panel_tread_counts = []
         panels_needed.times do |i|
           if i < panels_needed - extra_treads
@@ -354,115 +429,70 @@ module Viewrail
             panel_tread_counts << base_treads + 1
           end
         end
+        
+        panel_tread_counts
+      end
 
-        stair_angle = stair_rise.to_f / tread_run.to_f
-        panel_extension = 1.0
-        bottom_x_back = tread_run + 5
-        bottom_z = 1.0
-        left_y = tread_width - glass_inset - glass_thickness
-        right_y = glass_inset
+      def first_stair_panel_points(treads_in_panel, params)
+        start_x = 0
+        end_x = treads_in_panel * params[:tread_run] + 5
+        
+        bottom_start_z = params[:bottom_z]
+        bottom_end_z = (treads_in_panel - 1) * params[:stair_rise] + params[:bottom_z]
+        
+        top_start_z = params[:glass_height] + params[:stair_rise]
+        top_end_z = end_x * params[:stair_angle] + top_start_z
+        
+        points = []
+        points << [start_x, params[:side_y], bottom_start_z]
+        points << [params[:bottom_x_back], params[:side_y], bottom_start_z]
+        points << [end_x, params[:side_y], bottom_end_z] if treads_in_panel > 1
+        points << [end_x, params[:side_y], top_end_z]
+        points << [start_x, params[:side_y], top_start_z]
+        
+        points
+      end
 
-        panel_sides = [
-          {
-            name: "Left",
-            enabled: glass_railing == "Left" || glass_railing == "Both",
-            y: left_y,
-            y_min: left_y - 0.01,
-            y_max: left_y + glass_thickness + 0.01
-          },
-          {
-            name: "Right",
-            enabled: glass_railing == "Right" || glass_railing == "Both",
-            y: right_y,
-            y_min: right_y - 0.01,
-            y_max: right_y + glass_thickness + 0.01
-          }
+      def middle_stair_panel_points(tread_start, tread_end, params)
+        start_x = tread_start * params[:tread_run] + 5 + PANEL_GAP
+        end_x = tread_end * params[:tread_run] + 5
+        
+        bottom_start_z = (tread_start - 1) * params[:stair_rise] + params[:bottom_z]
+        bottom_end_z = (tread_end - 1) * params[:stair_rise] + params[:bottom_z]
+        
+        angle_start_z = params[:glass_height] + params[:stair_rise]
+        top_start_z = angle_start_z + start_x * params[:stair_angle]
+        top_end_z = angle_start_z + end_x * params[:stair_angle]
+        
+        [
+          [start_x, params[:side_y], bottom_start_z],
+          [end_x, params[:side_y], bottom_end_z],
+          [end_x, params[:side_y], top_end_z],
+          [start_x, params[:side_y], top_start_z]
         ]
+      end
 
-        panel_sides.each do |side|
-          next unless side[:enabled]
-
-          tread_start = 0
-
-          panel_tread_counts.each_with_index do |treads_in_panel, panel_index|
-            tread_end = tread_start + treads_in_panel
-            is_first_panel = (panel_index == 0)
-            is_last_panel = (panel_index == panel_tread_counts.length - 1)
-
-            glass_points = []
-
-            if is_first_panel
-              start_x = 0
-              end_x = tread_end * tread_run + 5
-
-              bottom_start_z = bottom_z
-              bottom_end_z = (tread_end - 1) * stair_rise + bottom_z
-
-              top_start_z = glass_height + stair_rise
-              top_end_z = end_x * stair_angle + top_start_z
-
-              glass_points << [start_x, side[:y], bottom_start_z]
-              glass_points << [bottom_x_back, side[:y], bottom_start_z]
-              if treads_in_panel > 1
-                glass_points << [end_x, side[:y], bottom_end_z]
-              end
-              glass_points << [end_x, side[:y], top_end_z]
-              glass_points << [start_x, side[:y], top_start_z]
-
-            elsif is_last_panel
-              start_x = (tread_start * tread_run) + 5 + panel_gap
-              end_x = (tread_end * tread_run) + 5 + panel_extension
-
-              bottom_start_z = (tread_start - 1) * stair_rise + bottom_z
-              bottom_end_z = (tread_end - 1) * stair_rise + bottom_z
-              angle_start_z = glass_height + stair_rise
-              top_start_z = angle_start_z + start_x * stair_angle
-              top_end_z = angle_start_z + end_x * stair_angle
-
-              glass_points << [start_x, side[:y], bottom_start_z]
-              glass_points << [end_x, side[:y], bottom_end_z]
-              glass_points << [end_x, side[:y], top_end_z]
-              glass_points << [start_x, side[:y], top_start_z]
-
-            else
-              start_x = tread_start * tread_run + 5 + panel_gap
-              end_x = tread_end * tread_run + 5
-
-              bottom_start_z = (tread_start - 1) * stair_rise + bottom_z
-              bottom_end_z = (tread_end - 1) * stair_rise + bottom_z
-              angle_start_z = glass_height + stair_rise
-              top_start_z = angle_start_z + start_x * stair_angle
-              top_end_z = angle_start_z + end_x * stair_angle
-
-              glass_points << [start_x, side[:y], bottom_start_z]
-              glass_points << [end_x, side[:y], bottom_end_z]
-              glass_points << [end_x, side[:y], top_end_z]
-              glass_points << [start_x, side[:y], top_start_z]
-            end
-
-            face = entities.add_face(glass_points)
-            if face
-              face.pushpull(-glass_thickness)
-              face.material = glass_material
-              face.back_material = glass_material
-
-              entities.grep(Sketchup::Face).each do |f|
-                if f.bounds.min.y >= side[:y_min] && f.bounds.max.y <= side[:y_max]
-                  f.material = glass_material
-                  f.back_material = glass_material
-                end
-              end
-            end
-
-            tread_start = tread_end
-          end
-        end
-      end # add_glass_railings_to_segment
+      def last_stair_panel_points(tread_start, tread_end, params)
+        start_x = (tread_start * params[:tread_run]) + 5 + PANEL_GAP
+        end_x = (tread_end * params[:tread_run]) + 5 + params[:panel_extension]
+        
+        bottom_start_z = (tread_start - 1) * params[:stair_rise] + params[:bottom_z]
+        bottom_end_z = (tread_end - 1) * params[:stair_rise] + params[:bottom_z]
+        
+        angle_start_z = params[:glass_height] + params[:stair_rise]
+        top_start_z = angle_start_z + start_x * params[:stair_angle]
+        top_end_z = angle_start_z + end_x * params[:stair_angle]
+        
+        [
+          [start_x, params[:side_y], bottom_start_z],
+          [end_x, params[:side_y], bottom_end_z],
+          [end_x, params[:side_y], top_end_z],
+          [start_x, params[:side_y], top_start_z]
+        ]
+      end
 
       def add_glass_railings_to_landing(entities, landing_hash, edges_to_rail)
         glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
-        glass_thickness = 0.5
-        glass_inset = 1.0
         glass_height = 42.0
         corner_gap = 1.0
         max_panel_width = 48.0
@@ -471,24 +501,23 @@ module Viewrail
 
         width = landing_hash[:width]
         depth = landing_hash[:depth]
-        # thickness = landing_hash[:thickness]
-        # glass_railing = landing_hash[:glass_railing]
+        thickness = landing_hash[:thickness]
         turn_direction = landing_hash[:turn_direction]
 
         edges_to_rail.each do |edge|
           case edge
           when "left", "right"
             panel_length = depth - corner_gap - stair_overlap
-            y_pos = edge == "right" ? glass_inset : width - glass_inset - glass_thickness
+            y_pos = edge == "right" ? GLASS_INSET : width - GLASS_INSET - @glass_thickness
 
             if panel_length <= max_panel_width
               glass_points = [
                 [stair_overlap + panel_gap, y_pos, glass_height],
                 [stair_overlap + panel_length, y_pos, glass_height],
-                [stair_overlap + panel_length, y_pos, 0],
-                [stair_overlap + panel_gap, y_pos, 0]
+                [stair_overlap + panel_length, y_pos, -thickness],
+                [stair_overlap + panel_gap, y_pos, -thickness]
               ]
-              create_glass_panel(entities, glass_points, glass_thickness, glass_material)
+              create_glass_panel(entities, glass_points, glass_material)
             else
               num_panels = (panel_length / max_panel_width).ceil
               actual_panel_width = (panel_length - (num_panels - 1) * panel_gap) / num_panels
@@ -503,23 +532,23 @@ module Viewrail
                   [end_x, y_pos, 0],
                   [start_x, y_pos, 0]
                 ]
-                create_glass_panel(entities, glass_points, glass_thickness, glass_material)
+                create_glass_panel(entities, glass_points, glass_material)
               end
             end
 
           when "front", "back"
             panel_length = width - corner_gap - stair_overlap
-            x_pos = edge == "left" ? glass_inset : depth - glass_inset - glass_thickness
+            x_pos = edge == "left" ? GLASS_INSET : depth - GLASS_INSET - @glass_thickness
             y_pos = turn_direction == "Left" ? corner_gap : stair_overlap
 
             if panel_length <= max_panel_width
               glass_points = [
                 [x_pos, y_pos, glass_height],
                 [x_pos, y_pos + panel_length, glass_height],
-                [x_pos, y_pos + panel_length, 0],
-                [x_pos, y_pos, 0]
+                [x_pos, y_pos + panel_length, -thickness],
+                [x_pos, y_pos, -thickness]
               ]
-              create_glass_panel(entities, glass_points, glass_thickness, glass_material)
+              create_glass_panel(entities, glass_points, glass_material)
             else
               num_panels = (panel_length / max_panel_width).ceil
               actual_panel_width = (panel_length - (num_panels - 1) * panel_gap) / num_panels
@@ -534,18 +563,18 @@ module Viewrail
                   [x_pos, end_y, 0],
                   [x_pos, start_y, 0]
                 ]
-                create_glass_panel(entities, glass_points, glass_thickness, glass_material)
+                create_glass_panel(entities, glass_points, glass_material)
               end
             end
           end
         end
       end # add_glass_railings_to_landing
 
-      def create_glass_panel(entities, points, thickness, material)
+      def create_glass_panel(entities, points, material)
         group = entities.add_group
         face = group.entities.add_face(points)
         if face
-          face.pushpull(thickness)
+          face.pushpull(@glass_thickness)
           group.entities.grep(Sketchup::Face).each do |f|
             f.material = material
             f.back_material = material
