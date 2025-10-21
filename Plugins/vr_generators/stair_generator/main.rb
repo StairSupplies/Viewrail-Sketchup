@@ -40,15 +40,15 @@ module Viewrail
           when :landing_90
             {
               :num_treads_lower => 6,
-              :num_treads_upper => 6,
-              :header_to_wall => 144.0,
+              :num_treads_upper => 7,
+              :header_to_wall => 113.0,
               :tread_width_lower => 36.0,
               :tread_width_upper => 36.0,
               :landing_width => 36.0,
               :landing_depth => 36.0,
               :tread_run => 11.0,
               :stair_rise => 7.5,
-              :total_rise => 91.0,
+              :total_rise => 107.5,
               :turn_direction => "Left",
               :glass_railing => "None"
             }
