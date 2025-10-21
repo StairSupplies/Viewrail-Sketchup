@@ -22,7 +22,7 @@ module Viewrail
       def init_selection_cache
         @selection_cache_id = nil
         @cached_validation_result = false
-      end
+      end # init_selection_cache
 
       def last_form_values(stair_type = :straight)
         @last_form_values ||= {}
@@ -377,7 +377,7 @@ module Viewrail
             tread_start = tread_end
           end
         end
-      end
+      end # add_glass_railings_to_segment
 
       def create_panel_params(stair_hash)
 
@@ -398,7 +398,7 @@ module Viewrail
 
         return panel_params
 
-      end
+      end # create_panel_params
 
       def create_panel_array(stair_hash)
 
@@ -419,7 +419,7 @@ module Viewrail
 
         return panel_sides
 
-      end
+      end # create_panel_array
 
       def stair_panel_layout(stair_hash)
         
@@ -442,7 +442,7 @@ module Viewrail
         
         panel_tread_counts
 
-      end #stair_panel_layout
+      end # stair_panel_layout
 
       def first_stair_panel_points(treads_in_panel, params)
         start_x = 0
@@ -462,7 +462,7 @@ module Viewrail
         points << [start_x, params[:side_y], top_start_z]
         
         points
-      end #first_stair_panel_points
+      end # first_stair_panel_points
 
       def middle_stair_panel_points(tread_start, tread_end, params)
         start_x = tread_start * params[:tread_run] + 5 + PANEL_GAP
@@ -481,7 +481,7 @@ module Viewrail
           [end_x, params[:side_y], top_end_z],
           [start_x, params[:side_y], top_start_z]
         ]
-      end #middle_stair_panel_points
+      end # middle_stair_panel_points
 
       def last_stair_panel_points(tread_start, tread_end, params)
         start_x = (tread_start * params[:tread_run]) + 5 + PANEL_GAP
@@ -501,7 +501,7 @@ module Viewrail
           [end_x, params[:side_y], top_end_z],
           [start_x, params[:side_y], top_start_z]
         ]
-      end #last_stair_panel_points
+      end # last_stair_panel_points
 
       def add_glass_railings_to_landing(entities, landing_hash, edges_to_rail)
         glass_height = 42.0
@@ -692,7 +692,7 @@ module Viewrail
       def has_valid_stair_selection?
         params = get_selected_stair_parameters
         return !params.nil?
-      end
+      end # has_valid_stair_selection?
 
       def has_valid_stair_selection_cached?
         model = Sketchup.active_model
@@ -792,7 +792,7 @@ module Viewrail
           MB_OK,
           "About Stair Generator"
         )
-      end
+      end # show_about
 
     end # class << self
 
@@ -808,7 +808,7 @@ module Viewrail
       cmd_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_straight.svg")
       cmd_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_straight.svg")
       cmd_stairs.tooltip = "Create Straight Stairs"
-      cmd_stairs.status_bar_text = "Create parametric straight stairs with customizable dimensions"
+      cmd_stairs.status_bar_text = "Create Straight staircase"
       cmd_stairs.menu_text = "Create Straight Stairs"
 
       cmd_landing_stairs = UI::Command.new("Create 90") {
@@ -826,7 +826,7 @@ module Viewrail
       cmd_switchback_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_switchback.svg")
       cmd_switchback_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_switchback.svg")
       cmd_switchback_stairs.tooltip = "Create Switchback Stairs"
-      cmd_switchback_stairs.status_bar_text = "Create U-shaped stairs with landing platform"
+      cmd_switchback_stairs.status_bar_text = "Create Switchback stairs with landing platform"
       cmd_switchback_stairs.menu_text = "Create Switchback System Stairs"
 
       cmd_u_stairs = UI::Command.new("Create U-Shaped Stairs") {
@@ -844,7 +844,7 @@ module Viewrail
       cmd_modify.small_icon = File.join(File.dirname(__FILE__), "icons", "modify.svg")
       cmd_modify.large_icon = File.join(File.dirname(__FILE__), "icons", "modify.svg")
       cmd_modify.tooltip = "Modify Existing Stairs"
-      cmd_modify.status_bar_text = "Modify parameters of selected stairs"
+      cmd_modify.status_bar_text = "Modify the selected stairs"
       cmd_modify.menu_text = "Modify Stairs"
 
       cmd_modify.set_validation_proc {
