@@ -408,12 +408,12 @@ module Viewrail
           {
             name: "Left",
             enabled: glass_railing == "Left" || glass_railing == "Both",
-            y: tread_width - GLASS_INSET - @glass_thickness
+            y: tread_width - GLASS_INSET
           },
           {
             name: "Right",
             enabled: glass_railing == "Right" || glass_railing == "Both",
-            y: GLASS_INSET
+            y: GLASS_INSET + @glass_thickness
           }
         ]
 
@@ -549,7 +549,7 @@ module Viewrail
 
           when "front", "back"
             panel_length = width - corner_gap - stair_overlap
-            x_pos = edge == "left" ? GLASS_INSET : depth - GLASS_INSET - @glass_thickness
+            x_pos = edge == "left" ? GLASS_INSET : depth - GLASS_INSET
             y_pos = turn_direction == "Left" ? corner_gap : stair_overlap
 
             if panel_length <= max_panel_width
