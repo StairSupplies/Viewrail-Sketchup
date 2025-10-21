@@ -808,7 +808,7 @@ module Viewrail
       cmd_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_straight.svg")
       cmd_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_straight.svg")
       cmd_stairs.tooltip = "Create Straight Stairs"
-      cmd_stairs.status_bar_text = "Create Straight staircase"
+      cmd_stairs.status_bar_text = "Create Straight Stairs"
       cmd_stairs.menu_text = "Create Straight Stairs"
 
       cmd_landing_stairs = UI::Command.new("Create 90") {
@@ -817,8 +817,8 @@ module Viewrail
       cmd_landing_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_90.svg")
       cmd_landing_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_90.svg")
       cmd_landing_stairs.tooltip = "Create 90 Stairs"
-      cmd_landing_stairs.status_bar_text = "Create L-shaped stairs with landing platform"
-      cmd_landing_stairs.menu_text = "Create 90 System Stairs"
+      cmd_landing_stairs.status_bar_text = "Create 90 Stairs"
+      cmd_landing_stairs.menu_text = "Create 90 Stairs"
 
       cmd_switchback_stairs = UI::Command.new("Create Switchback") {
         self.add_switchback_stair_menu
@@ -826,25 +826,25 @@ module Viewrail
       cmd_switchback_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_switchback.svg")
       cmd_switchback_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_switchback.svg")
       cmd_switchback_stairs.tooltip = "Create Switchback Stairs"
-      cmd_switchback_stairs.status_bar_text = "Create Switchback stairs with landing platform"
-      cmd_switchback_stairs.menu_text = "Create Switchback System Stairs"
+      cmd_switchback_stairs.status_bar_text = "Create Switchback Stairs"
+      cmd_switchback_stairs.menu_text = "Create Switchback Stairs"
 
       cmd_u_stairs = UI::Command.new("Create U-Shaped Stairs") {
         self.add_u_stair_menu
       }
       cmd_u_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_u.svg")
       cmd_u_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_u.svg")
-      cmd_u_stairs.tooltip = "Create U-Shaped Stairs"
-      cmd_u_stairs.status_bar_text = "Create U-shaped stairs with two landings"
-      cmd_u_stairs.menu_text = "Create U-Shaped Stairs"
+      cmd_u_stairs.tooltip = "Create U Stairs"
+      cmd_u_stairs.status_bar_text = "Create U Stairs"
+      cmd_u_stairs.menu_text = "Create U Stairs"
 
       cmd_modify = UI::Command.new("Modify Stairs") {
         Viewrail::StairGenerator::Tools::ModifyStairTool.activate
       }
       cmd_modify.small_icon = File.join(File.dirname(__FILE__), "icons", "modify.svg")
       cmd_modify.large_icon = File.join(File.dirname(__FILE__), "icons", "modify.svg")
-      cmd_modify.tooltip = "Modify Existing Stairs"
-      cmd_modify.status_bar_text = "Modify the selected stairs"
+      cmd_modify.tooltip = "Modify Stairs"
+      cmd_modify.status_bar_text = "Select a stair first, then use this tool to modify."
       cmd_modify.menu_text = "Modify Stairs"
 
       cmd_modify.set_validation_proc {
