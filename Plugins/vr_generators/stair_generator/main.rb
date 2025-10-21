@@ -169,7 +169,8 @@ module Viewrail
           "tread_width" => tread_width,
           "stair_rise" => stair_rise,
           "glass_railing" => glass_railing,
-          "glass_height" => glass_height
+          "glass_height" => glass_height,
+          "last_stair" => lastStair
         }
 
         if glass_railing != "None"
@@ -391,7 +392,8 @@ module Viewrail
           bottom_z: 1.0,
           glass_height: stair_hash["glass_height"].to_f,
           bottom_x_back: tread_run + 5,
-          panel_extension: 1.0
+          panel_extension: 1.0,
+          last_stair: stair_hash["last_stair"]
         }
 
         return panel_params
@@ -483,15 +485,16 @@ module Viewrail
 
       def last_stair_panel_points(tread_start, tread_end, params)
         start_x = (tread_start * params[:tread_run]) + 5 + PANEL_GAP
-        end_x = (tread_end * params[:tread_run]) + 5 + params[:panel_extension]
-        
+        end_x = (tread_end * params[:tread_run]) + params[:panel_extension]
+        end_x += 5 unless params[:last_stair]
+
         bottom_start_z = (tread_start - 1) * params[:stair_rise] + params[:bottom_z]
-        bottom_end_z = (tread_end - 1) * params[:stair_rise] + params[:bottom_z]
+        bottom_end_z = bottom_start_z + ((end_x-start_x) * params[:stair_angle])
         
         angle_start_z = params[:glass_height] + params[:stair_rise]
         top_start_z = angle_start_z + start_x * params[:stair_angle]
-        top_end_z = angle_start_z + end_x * params[:stair_angle]
-        
+        top_end_z = angle_start_z + (end_x * params[:stair_angle])
+
         [
           [start_x, params[:side_y], bottom_start_z],
           [end_x, params[:side_y], bottom_end_z],

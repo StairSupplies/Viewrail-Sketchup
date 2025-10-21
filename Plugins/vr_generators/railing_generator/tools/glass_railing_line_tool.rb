@@ -96,11 +96,6 @@ module Viewrail
 
           @offset_distance = Viewrail::ProductData.offset_for_railing_type(@railing_type)
 
-          puts "Glass Railing configured:"
-          puts "  Type: #{@railing_type}"
-          puts "  Height: #{@total_height}"
-          puts "  Caprail: #{@include_handrail}"
-          puts "  Caprail Material: #{@handrail_material}" if @include_handrail
         end # configure_from_dialog
 
         def onLButtonDown(flags, x, y, view)

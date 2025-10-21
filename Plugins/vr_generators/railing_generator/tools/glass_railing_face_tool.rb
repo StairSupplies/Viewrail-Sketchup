@@ -509,12 +509,8 @@ module Viewrail
           feature_group.name = config[:name]
           center_offset = config[:offset]
 
-          puts "---- sorting user selections for #{config[:name]}"
-
           sorted_edges, sorted_faces = Viewrail::SharedUtilities.sort_face_edges_and_faces(@face_edges, @selected_faces)
           path_edges = Viewrail::SharedUtilities.create_offset_path(sorted_edges, sorted_faces, feature_group, center_offset)
-
-          puts "---- creating path for #{config[:name]}"
 
           first_edge = path_edges.first
           first_segment = [first_edge.start.position, first_edge.end.position]
@@ -527,15 +523,11 @@ module Viewrail
             start_pt.z += config[:adjust_position][2]
           end
 
-          puts "---- transforming profile for #{config[:name]}"
-
           profile = config[:profile]
           profile_points = profile.map do |p|
             transformed_pt = start_pt.offset(perp_vec, p[0])
             transformed_pt.offset([0,0,1], p[1])
           end
-
-          puts "---- extruding profile along path for #{config[:name]}"
 
           Viewrail::SharedUtilities.extrude_profile_along_path(feature_group, profile_points, path_edges)
 
