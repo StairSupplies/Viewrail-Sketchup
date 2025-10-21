@@ -180,7 +180,8 @@ module Viewrail
               end
             end
 
-            upper_stairs = Viewrail::StairGenerator.create_stair_segment(upper_params, upper_start)
+            last_stair = true
+            upper_stairs = Viewrail::StairGenerator.create_stair_segment(upper_params, upper_start, last_stair)
 
             if upper_stairs
               rotation_point = Geom::Point3d.new(upper_start)

@@ -50,7 +50,7 @@ module Viewrail
 
             dialog.close
 
-            new_stair = Viewrail::StairGenerator.create_stair_segment(values)
+            new_stair = Viewrail::StairGenerator.create_stair_segment(values, [0,0,0], true)
 
             Viewrail::StairGenerator.store_stair_parameters(new_stair, values, :straight)
           end
