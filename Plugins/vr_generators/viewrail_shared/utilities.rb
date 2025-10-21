@@ -73,6 +73,7 @@ module Viewrail
         materials = model.materials
 
         if material_def[:builtin]
+          puts "Loading built-in material '#{material_def[:name]}'"
           material = load_builtin_material(material_def[:name], model)
         else
           material = materials[material_def[:name]]
@@ -88,38 +89,60 @@ module Viewrail
         model ||= Sketchup.active_model
         materials = model.materials
 
+        puts "Model materials: #{materials.map(&:name).join(', ')}"
+
         material = materials[material_name]
-        return material if material
+        if material
+          puts "Built-in material '#{material_name}' already loaded"
+          return material
+        end
 
         begin
           if Sketchup.platform == :platform_win
-            materials_path = Sketchup.find_support_file("Materials")
-            wood_materials_path = File.join(materials_path, "Wood")
-
-            Dir.glob(File.join(wood_materials_path, "*.skm")).each do |file|
-              temp_materials = model.materials.load(file)
-              if temp_materials && model.materials[material_name]
-                return model.materials[material_name]
+            puts "Loading built-in material '#{material_name}' on Windows platform"
+            
+            # Correct path for SketchUp 2025 materials in ProgramData
+            base_path = File.join(ENV['ProgramData'], "SketchUp", "SketchUp 2025", "SketchUp", "Materials")
+            material_file = File.join(base_path, "Wood", "#{material_name}.skm")
+            
+            if File.exist?(material_file)
+              puts "Found material file at: #{material_file}"
+              model.materials.load(material_file)
+              
+              material = model.materials[material_name]
+              if material
+                puts "Successfully loaded '#{material_name}'"
+                return material
+              else
+                puts "Material file loaded but '#{material_name}' not found in model.materials"
               end
+            else
+              puts "Material file not found at: #{material_file}"
             end
           else
+            puts "Attempting to load built-in material '#{material_name}' on non-Windows platform"
+            
+            # Mac/Linux might use a similar structure
             materials_path = Sketchup.find_support_file("Materials")
             material_file = File.join(materials_path, "Wood", "#{material_name}.skm")
+            
             if File.exist?(material_file)
               model.materials.load(material_file)
-              return model.materials[material_name]
+              material = model.materials[material_name]
+              return material if material
             end
           end
 
           puts "Built-in material '#{material_name}' not found, creating fallback wood material"
           material = materials.add(material_name)
-          material.color = [139, 90, 43]  # Default wood color
+          material.color = [139, 90, 43]
           return material
 
         rescue => e
           puts "Error loading built-in material: #{e.message}"
+          puts e.backtrace.first(5).join("\n")
           material = materials.add(material_name)
-          material.color = [139, 90, 43]  # Default wood color
+          material.color = [139, 90, 43]
           return material
         end
       end # load_builtin_material
