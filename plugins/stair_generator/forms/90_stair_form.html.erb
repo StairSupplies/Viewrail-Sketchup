@@ -188,7 +188,7 @@
         <div class="input-wrapper">
           <input type="number" id="header_to_wall" value="<%= @last_values[:header_to_wall] %>" min="24" max="240" step="0.25">
           <button type="button" class="lock-toggle" data-target="header_to_wall" aria-pressed="false" title="Lock field">
-            <img id="lock-icon-header_to_wall" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+            <img id="lock-icon-header_to_wall" alt="lock" src="<%= @unlocked_icon %>" data-locked-src="<%= @locked_icon %>" data-unlocked-src="<%= @unlocked_icon %>" />
           </button>
         </div>
         <div class="error" id="header-to-wall-error"></div>
@@ -229,7 +229,7 @@
         <div class="input-wrapper">
           <input type="number" id="num_treads_lower" value="<%= @last_values[:num_treads_lower] %>" min="1" max="22" step="1">
           <button type="button" class="lock-toggle" data-target="num_treads_lower" aria-pressed="false" title="Lock field">
-            <img id="lock-icon-num_treads_lower" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+            <img id="lock-icon-num_treads_lower" alt="lock" src="<%= @unlocked_icon %>" data-locked-src="<%= @locked_icon %>" data-unlocked-src="<%= @unlocked_icon %>" />
           </button>
         </div>
         <div class="error" id="treads-lower-error"></div>
@@ -239,7 +239,7 @@
         <div class="input-wrapper">
           <input type="number" id="tread_width_lower" value="<%= @last_values[:tread_width_lower] %>" min="24" max="60" step="1">
           <button type="button" class="lock-toggle" data-target="tread_width_lower" aria-pressed="false" title="Lock field">
-            <img id="lock-icon-tread_width_lower" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+            <img id="lock-icon-tread_width_lower" alt="lock" src="<%= @unlocked_icon %>" data-locked-src="<%= @locked_icon %>" data-unlocked-src="<%= @unlocked_icon %>" />
           </button>
         </div>
         <div class="error" id="width-lower-error"></div>
@@ -251,7 +251,7 @@
         <div class="input-wrapper">
           <input type="number" id="num_treads_upper" value="<%= @last_values[:num_treads_upper] %>" min="1" max="22" step="1">
           <button type="button" class="lock-toggle" data-target="num_treads_upper" aria-pressed="false" title="Lock field">
-            <img id="lock-icon-num_treads_upper" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+            <img id="lock-icon-num_treads_upper" alt="lock" src="<%= @unlocked_icon %>" data-locked-src="<%= @locked_icon %>" data-unlocked-src="<%= @unlocked_icon %>" />
           </button>
         </div>
         <div class="error" id="treads-upper-error"></div>
@@ -261,7 +261,7 @@
         <div class="input-wrapper">
           <input type="number" id="tread_width_upper" value="<%= @last_values[:tread_width_upper] %>" min="24" max="60" step="1">
           <button type="button" class="lock-toggle" data-target="tread_width_upper" aria-pressed="false" title="Lock field">
-            <img id="lock-icon-tread_width_upper" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+            <img id="lock-icon-tread_width_upper" alt="lock" src="<%= @unlocked_icon %>" data-locked-src="<%= @locked_icon %>" data-unlocked-src="<%= @unlocked_icon %>" />
           </button>
         </div>
         <div class="error" id="width-upper-error"></div>
@@ -273,7 +273,7 @@
         <div class="input-wrapper">
           <input type="number" id="landing_width" value="<%= @last_values[:landing_width] %>" min="24" max="120" step="1">
           <button type="button" class="lock-toggle" data-target="landing_width" aria-pressed="false" title="Lock field">
-            <img id="lock-icon-landing_width" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+            <img id="lock-icon-landing_width" alt="lock" src="<%= @unlocked_icon %>" data-locked-src="<%= @locked_icon %>" data-unlocked-src="<%= @unlocked_icon %>" />>
           </button>
         </div>
         <div class="error" id="landing-width-error"></div>
@@ -283,7 +283,7 @@
         <div class="input-wrapper">
           <input type="number" id="landing_depth" value="<%= @last_values[:landing_depth] %>" min="24" max="120" step="1">
           <button type="button" class="lock-toggle" data-target="landing_depth" aria-pressed="false" title="Lock field">
-            <img id="lock-icon-landing_depth" alt="lock" src="C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg" />
+            <img id="lock-icon-landing_depth" alt="lock" src="<%= @unlocked_icon %>" data-locked-src="<%= @locked_icon %>" data-unlocked-src="<%= @unlocked_icon %>" />
           </button>
         </div>
         <div class="error" id="landing-depth-error"></div>
@@ -499,12 +499,12 @@
         if (nextLocked) {
           input.classList.add('locked');
           btn.classList.add('locked');
-          icon.src = 'C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_locked.svg';
+          icon.src = icon.getAttribute('data-locked-src');
           btn.title = 'Unlock field';
         } else {
           input.classList.remove('locked');
           btn.classList.remove('locked');
-          icon.src = 'C:/Viewrail-Sketchup/plugins/stair_generator/icons/padlock_unlocked.svg';
+          icon.src = icon.getAttribute('data-unlocked-src');
           btn.title = 'Lock field';
         }
       });
