@@ -142,7 +142,7 @@ module Viewrail
             dialog.set_size(dimensions["width"], dimensions["height"])
           end
 
-          dialog.add_action_callback("create_landing_stairs") do |action_context, params|
+          dialog.add_action_callback("create_landing_90") do |action_context, params|
             values = JSON.parse(params)
 
             Viewrail::StairGenerator.last_form_values(:landing_90).merge!(values.transform_keys(&:to_sym))

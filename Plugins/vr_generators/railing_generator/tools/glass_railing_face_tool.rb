@@ -400,34 +400,33 @@ module Viewrail
             main_group = entities.add_group
             main_group.name = "Glass Railing Assembly"
 
-            glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
-            aluminum_material = Viewrail::SharedUtilities.get_or_add_material(:aluminum)
-            wood_material = Viewrail::SharedUtilities.get_or_add_material(:wood)
-
             @face_segments.each_with_index do |segment_points, index|
               segment_group = main_group.entities.add_group
               segment_group.name = "Glass Railing Face #{index + 1}"
 
               extrude_direction = @selected_faces[index].normal
-              create_glass_panel_group_for_segment(segment_group, glass_material, segment_points, extrude_direction)
+              create_glass_panel_group_for_segment(segment_group, segment_points, extrude_direction)
             end
 
             if @include_base_channel
               baserail_group = create_continuous_base_channel(main_group)
-              apply_material_with_softening(baserail_group, aluminum_material)
+              Viewrail::SharedUtilities.apply_material_to_group(baserail_group, :aluminum)
+              Viewrail::SharedUtilities.soften_edges_in_group(baserail_group)
             end
 
             if @include_floor_cover
               cover_group = create_continuous_floor_cover(main_group)
-              apply_material_with_softening(cover_group, wood_material)
+              Viewrail::SharedUtilities.apply_material_to_group(cover_group, :wood)
+              Viewrail::SharedUtilities.soften_edges_in_group(cover_group)
             end
 
             if @include_handrail
-              handrail_mat = (@handrail_material == "Wood") ? wood_material : aluminum_material
+              handrail_mat = (@handrail_material == "Wood") ? :wood : :aluminum
 
               z_adjust = Viewrail::ProductData.calculate_handrail_z_adjustment(@total_height)
               handrail_group = create_continuous_handrail(main_group, [0, 0, z_adjust])
-              apply_material_with_softening(handrail_group, handrail_mat)
+              Viewrail::SharedUtilities.apply_material_to_group(handrail_group, handrail_mat)
+              Viewrail::SharedUtilities.soften_edges_in_group(handrail_group)
             end
 
             model.commit_operation
@@ -441,7 +440,7 @@ module Viewrail
           end
         end # create_glass_railings_from_face_segments
 
-        def create_glass_panel_group_for_segment(parent_group, glass_material, segment_points, extrude_direction)
+        def create_glass_panel_group_for_segment(parent_group, segment_points, extrude_direction)
           start_pt = segment_points[0]
           end_pt = segment_points[1]
 
@@ -450,10 +449,10 @@ module Viewrail
             end_pt = Geom::Point3d.new(end_pt.x, end_pt.y, end_pt.z - @glass_below_floor)
           end
 
-          return create_glass_panels(parent_group, glass_material, start_pt, end_pt, true, extrude_direction)
+          return create_glass_panels(parent_group, start_pt, end_pt, true, extrude_direction)
         end # create_glass_panel_group_for_segment
 
-        def create_glass_panels(group, glass_material, start_pt, end_pt, segmented=false, extrude_direction=nil)
+        def create_glass_panels(group, start_pt, end_pt, segmented=false, extrude_direction=nil)
           glass_group = segmented ? group : group.entities.add_group
 
           layout = calculate_panel_layout(start_pt, end_pt)
@@ -474,12 +473,8 @@ module Viewrail
               else
                 face.pushpull(-@glass_thickness)
               end
-
-              glass_group.entities.grep(Sketchup::Face).each do |f|
-                f.material = glass_material
-                f.back_material = glass_material
-              end
             end
+            Viewrail::SharedUtilities.apply_material_to_group(glass_group, :glass)
           end
         end # create_glass_panels
 

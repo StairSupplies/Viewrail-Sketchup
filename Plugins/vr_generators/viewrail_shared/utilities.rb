@@ -89,37 +89,52 @@ module Viewrail
         materials = model.materials
 
         material = materials[material_name]
-        return material if material
+        if material
+          return material
+        end
 
         begin
           if Sketchup.platform == :platform_win
-            materials_path = Sketchup.find_support_file("Materials")
-            wood_materials_path = File.join(materials_path, "Wood")
+            base_path = File.join(ENV['ProgramData'], "SketchUp", "SketchUp 2025", "SketchUp", "Materials")
+            material_file = File.join(base_path, "Wood", "#{material_name}.skm")
 
-            Dir.glob(File.join(wood_materials_path, "*.skm")).each do |file|
-              temp_materials = model.materials.load(file)
-              if temp_materials && model.materials[material_name]
-                return model.materials[material_name]
+            if File.exist?(material_file)
+              puts "Found material file at: #{material_file}"
+              model.materials.load(material_file)
+
+              material = model.materials[material_name]
+              if material
+                puts "Successfully loaded '#{material_name}'"
+                return material
+              else
+                puts "Material file loaded but '#{material_name}' not found in model.materials"
               end
+            else
+              puts "Material file not found at: #{material_file}"
             end
           else
+            puts "Attempting to load built-in material '#{material_name}' on non-Windows platform"
+
             materials_path = Sketchup.find_support_file("Materials")
             material_file = File.join(materials_path, "Wood", "#{material_name}.skm")
+
             if File.exist?(material_file)
               model.materials.load(material_file)
-              return model.materials[material_name]
+              material = model.materials[material_name]
+              return material if material
             end
           end
 
           puts "Built-in material '#{material_name}' not found, creating fallback wood material"
           material = materials.add(material_name)
-          material.color = [139, 90, 43]  # Default wood color
+          material.color = [139, 90, 43]
           return material
 
         rescue => e
           puts "Error loading built-in material: #{e.message}"
+          puts e.backtrace.first(5).join("\n")
           material = materials.add(material_name)
-          material.color = [139, 90, 43]  # Default wood color
+          material.color = [139, 90, 43]
           return material
         end
       end # load_builtin_material
@@ -149,6 +164,31 @@ module Viewrail
           MATERIAL_DEFINITIONS[key][:texture_size] = texture_size if texture_size
         end
       end # create_material_definition
+
+      def apply_material_to_group(group, material, last_count = 0)
+        material = get_or_add_material(material) if material.is_a?(Symbol)
+        entities = group.entities if group.respond_to?(:entities)
+        entities ||= group
+        if last_count > 0
+          faces = entities.grep(Sketchup::Face).last(last_count)
+        else
+          faces = entities.grep(Sketchup::Face)
+        end
+        faces.each do |face|
+          face.material = material
+          face.back_material = material
+        end
+      end # apply_material_with_softening
+
+      def soften_edges_in_group(group)
+        group.entities.grep(Sketchup::Edge).each do |edge|
+          edge_vec = edge.line[1]
+          if edge_vec.parallel?([1,0,0]) || edge_vec.parallel?([0,1,0])
+            edge.soft = true
+            edge.smooth = true
+          end
+        end
+      end # soften_edges_in_group
 
       def available_material_types
         MATERIAL_DEFINITIONS.keys
