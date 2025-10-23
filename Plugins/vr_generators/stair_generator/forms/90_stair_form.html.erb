@@ -192,7 +192,7 @@
         <div class="input-wrapper">
           <input type="number" id="header_to_wall" value="<%= @last_values[:header_to_wall] %>" min="24" max="240" step="0.25">
           <button type="button" id="header_to_wall_lock" class="lock-toggle" data-target="header_to_wall_lock" aria-pressed="false" title="Lock field">
-            <img id="lock-icon-header_to_wall_lock" alt="lock" src="<%= @unlocked_icon %>" data-locked-src="<%= @locked_icon %>" data-unlocked-src="<%= @unlocked_icon %>" />
+            <img id="lock_icon_header_to_wall_lock" alt="lock" src="<%= @unlocked_icon %>" data-locked-src="<%= @locked_icon %>" data-unlocked-src="<%= @unlocked_icon %>" />
           </button>
         </div>
         <div class="error" id="header-to-wall-error"></div>
@@ -446,7 +446,7 @@
       btn.addEventListener('click', () => {
         const targetId = btn.getAttribute('data-target');
         const input = document.getElementById(targetId.replace("_lock", ""));
-        const icon = document.getElementById('lock-icon-' + targetId);
+        const icon = document.getElementById('lock_icon_' + targetId);
         const isLocked = !!lockedFields[targetId];
         const nextLocked = !isLocked;
         lockedFields[targetId] = nextLocked;
