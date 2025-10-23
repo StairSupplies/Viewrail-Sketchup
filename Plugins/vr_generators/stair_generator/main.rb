@@ -116,7 +116,7 @@ module Viewrail
 
       def determine_glass_railing_edges(glass_railing, turn_direction, is_wide_landing = false)
         return [] if glass_railing == "None" || glass_railing == "Inner"
-        
+
         if is_wide_landing
           ["left", "back", "right"]
         elsif turn_direction == "Left"
@@ -204,23 +204,7 @@ module Viewrail
           Viewrail::SharedUtilities.apply_material_to_group(stairs_group, :wood, num_faces)
         end
         return stairs_group
-      end
-
-      def create_landing_surface(landing_group, width, depth, thickness)
-        landing_points = [
-          [0, 0, 0],
-          [depth, 0, 0],
-          [depth, width, 0],
-          [0, width, 0]
-        ]
-        
-        landing_face = landing_group.entities.add_face(landing_points)
-        if landing_face
-          landing_face.pushpull(thickness)
-          Viewrail::SharedUtilities.apply_material_to_group(landing_group, :wood, 6)
-        end
-        return landing_group
-      end
+      end # create_tread
 
       def create_riser(stairs_group, x_position, z_position, tread_run, tread_width, riser_thickness, nosing_value, stack_overhang, tread_thickness)
         riser_points = [
@@ -254,7 +238,7 @@ module Viewrail
       end # color_riser_faces
 
       def create_landing(params, position = [0, 0, 0])
-        
+
         model = Sketchup.active_model
 
         stack_overhang = 5
@@ -265,13 +249,13 @@ module Viewrail
         turn_direction = params["turn_direction"] || "Left"
 
         landing_group = model.active_entities.add_group
-        landing_group = create_landing_surface(landing_group, width, depth, thickness)   
+        landing_group = create_landing_surface(landing_group, width, depth, thickness)
 
         # Create riser
         nosing_value = 0.75
         riser_thickness = 1.0
         landing_group = create_riser(landing_group, 0, 0, depth, width, riser_thickness, nosing_value, 0, thickness)
-        
+
         if glass_railing != "None"
           add_glass_railings_to_landing(
             landing_group.entities,
@@ -292,23 +276,24 @@ module Viewrail
 
       end # create_landing
 
-      def configure_landing_group(landing_group, width, depth, thickness, glass_railing)
-        landing_group.name = "Landing - #{width.round}\" x #{depth.round}\""
-        
-        landing_group.set_attribute("stair_generator", "width", width)
-        landing_group.set_attribute("stair_generator", "depth", depth)
-        landing_group.set_attribute("stair_generator", "thickness", thickness)
-        landing_group.set_attribute("stair_generator", "glass_railing", glass_railing)
-        landing_group.set_attribute("stair_generator", "segment_type", "landing")
-      end
-
       def apply_landing_transform(landing_group, position, turn_direction)
         offset = turn_direction == "Left" ? 0 : -5
         transform = Geom::Transformation.new([position[0], position[1] + offset, position[2]])
         landing_group.transform!(transform)
       end
 
+      def configure_landing_group(landing_group, width, depth, thickness, glass_railing)
+        landing_group.name = "Landing - #{width.round}\" x #{depth.round}\""
+
+        landing_group.set_attribute("stair_generator", "width", width)
+        landing_group.set_attribute("stair_generator", "depth", depth)
+        landing_group.set_attribute("stair_generator", "thickness", thickness)
+        landing_group.set_attribute("stair_generator", "glass_railing", glass_railing)
+        landing_group.set_attribute("stair_generator", "segment_type", "landing")
+      end # configure_landing_group
+
       def create_wide_landing(params, position = [0, 0, 0])
+
         model = Sketchup.active_model
 
         width = params["width"]
@@ -316,7 +301,7 @@ module Viewrail
         thickness = params["thickness"]
         glass_railing = params["glass_railing"] || "None"
         turn_direction = params["turn_direction"] || "Left"
-        
+
         landing_group = model.active_entities.add_group
         landing_group = create_landing_surface(landing_group, width, depth, thickness)
 
@@ -345,15 +330,31 @@ module Viewrail
 
       end # create_wide_landing
 
+      def create_landing_surface(landing_group, width, depth, thickness)
+        landing_points = [
+          [0, 0, 0],
+          [depth, 0, 0],
+          [depth, width, 0],
+          [0, width, 0]
+        ]
+
+        landing_face = landing_group.entities.add_face(landing_points)
+        if landing_face
+          landing_face.pushpull(thickness)
+          Viewrail::SharedUtilities.apply_material_to_group(landing_group, :wood, 6)
+        end
+        return landing_group
+      end # create_landing_surface
+
       def add_glass_railings_to_segment(entities, stair_hash)
-        
+
         panel_tread_counts = stair_panel_layout(stair_hash)
         panel_params = create_panel_params(stair_hash)
         panel_sides = create_panel_array(stair_hash)
 
         panel_sides.each do |side|
           next unless side[:enabled]
-          
+
           panel_params[:side_y] = side[:y]
           tread_start = 0
 
@@ -419,15 +420,15 @@ module Viewrail
       end # create_panel_array
 
       def stair_panel_layout(stair_hash)
-        
+
         num_treads = stair_hash["num_treads"].to_i
         tread_run = stair_hash["tread_run"].to_f
-        
+
         treads_per_panel = (MAX_PANEL_WIDTH / tread_run).floor
         panels_needed = (num_treads.to_f / treads_per_panel).ceil
         base_treads = num_treads / panels_needed
         extra_treads = num_treads % panels_needed
-        
+
         panel_tread_counts = []
         panels_needed.times do |i|
           if i < panels_needed - extra_treads
@@ -436,7 +437,7 @@ module Viewrail
             panel_tread_counts << base_treads + 1
           end
         end
-        
+
         panel_tread_counts
 
       end # stair_panel_layout
@@ -444,34 +445,34 @@ module Viewrail
       def first_stair_panel_points(treads_in_panel, params)
         start_x = 0
         end_x = treads_in_panel * params[:tread_run] + 5
-        
+
         bottom_start_z = params[:bottom_z]
         bottom_end_z = (treads_in_panel - 1) * params[:stair_rise] + params[:bottom_z]
-        
+
         top_start_z = params[:glass_height] + params[:stair_rise]
         top_end_z = end_x * params[:stair_angle] + top_start_z
-        
+
         points = []
         points << [start_x, params[:side_y], bottom_start_z]
         points << [params[:bottom_x_back], params[:side_y], bottom_start_z]
         points << [end_x, params[:side_y], bottom_end_z] if treads_in_panel > 1
         points << [end_x, params[:side_y], top_end_z]
         points << [start_x, params[:side_y], top_start_z]
-        
+
         points
       end # first_stair_panel_points
 
       def middle_stair_panel_points(tread_start, tread_end, params)
         start_x = tread_start * params[:tread_run] + 5 + PANEL_GAP
         end_x = tread_end * params[:tread_run] + 5
-        
+
         bottom_start_z = (tread_start - 1) * params[:stair_rise] + params[:bottom_z]
         bottom_end_z = (tread_end - 1) * params[:stair_rise] + params[:bottom_z]
-        
+
         angle_start_z = params[:glass_height] + params[:stair_rise]
         top_start_z = angle_start_z + start_x * params[:stair_angle]
         top_end_z = angle_start_z + end_x * params[:stair_angle]
-        
+
         [
           [start_x, params[:side_y], bottom_start_z],
           [end_x, params[:side_y], bottom_end_z],
@@ -487,7 +488,7 @@ module Viewrail
 
         bottom_start_z = (tread_start - 1) * params[:stair_rise] + params[:bottom_z]
         bottom_end_z = bottom_start_z + ((end_x-start_x) * params[:stair_angle])
-        
+
         angle_start_z = params[:glass_height] + params[:stair_rise]
         top_start_z = angle_start_z + start_x * params[:stair_angle]
         top_end_z = angle_start_z + (end_x * params[:stair_angle])
@@ -501,7 +502,7 @@ module Viewrail
       end # last_stair_panel_points
 
       def add_glass_railings_to_landing(entities, landing_hash, is_wide_landing = false)
-        
+
         glass_height = 42.0
         corner_gap = 1.0
         max_panel_width = 48.0
@@ -724,7 +725,7 @@ module Viewrail
           turn_direction: params["turn_direction"],
           glass_railing: params["glass_railing"]
         }
-        
+
         type_specific_attrs = case stair_type
           when :straight
             {
@@ -770,7 +771,7 @@ module Viewrail
               landing_depth: params["landing_depth"]
             }
         end
-        
+
         segment_type = stair_type == :straight ? "stairs" : stair_type.to_s
         all_attrs = common_attrs.merge(type_specific_attrs)
         set_stair_attributes(group, all_attrs, segment_type)

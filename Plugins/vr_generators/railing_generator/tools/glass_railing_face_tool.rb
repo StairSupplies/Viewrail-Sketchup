@@ -408,7 +408,6 @@ module Viewrail
               create_glass_panel_group_for_segment(segment_group, segment_points, extrude_direction)
             end
 
-            # TODO: move the material and soften calls into the creation methods?
             if @include_base_channel
               baserail_group = create_continuous_base_channel(main_group)
               Viewrail::SharedUtilities.apply_material_to_group(baserail_group, :aluminum)
@@ -454,7 +453,6 @@ module Viewrail
         end # create_glass_panel_group_for_segment
 
         def create_glass_panels(group, start_pt, end_pt, segmented=false, extrude_direction=nil)
-          
           glass_group = segmented ? group : group.entities.add_group
 
           layout = calculate_panel_layout(start_pt, end_pt)
