@@ -73,7 +73,6 @@ module Viewrail
         materials = model.materials
 
         if material_def[:builtin]
-          puts "Loading built-in material '#{material_def[:name]}'"
           material = load_builtin_material(material_def[:name], model)
         else
           material = materials[material_def[:name]]
@@ -89,18 +88,13 @@ module Viewrail
         model ||= Sketchup.active_model
         materials = model.materials
 
-        puts "Model materials: #{materials.map(&:name).join(', ')}"
-
         material = materials[material_name]
         if material
-          puts "Built-in material '#{material_name}' already loaded"
           return material
         end
 
         begin
           if Sketchup.platform == :platform_win
-            puts "Loading built-in material '#{material_name}' on Windows platform"
-            
             # Correct path for SketchUp 2025 materials in ProgramData
             base_path = File.join(ENV['ProgramData'], "SketchUp", "SketchUp 2025", "SketchUp", "Materials")
             material_file = File.join(base_path, "Wood", "#{material_name}.skm")
@@ -172,6 +166,32 @@ module Viewrail
           MATERIAL_DEFINITIONS[key][:texture_size] = texture_size if texture_size
         end
       end # create_material_definition
+
+    # TODO: UPDATE RULES TO USE THESE METHODS INSTEAD!!!!!!!!
+      def apply_material_to_group(group, material, last_count = 0)
+        material = get_or_add_material(material) if material.is_a?(Symbol)
+        entities = group.entities if group.respond_to?(:entities)
+        entities ||= group
+        if last_count > 0
+          faces = entities.grep(Sketchup::Face).last(last_count)
+        else
+          faces = entities.grep(Sketchup::Face)
+        end
+        faces.each do |face|
+          face.material = material
+          face.back_material = material
+        end
+      end # apply_material_with_softening
+
+      def soften_edges_in_group(group)
+        group.entities.grep(Sketchup::Edge).each do |edge|
+          edge_vec = edge.line[1]
+          if edge_vec.parallel?([1,0,0]) || edge_vec.parallel?([0,1,0])
+            edge.soft = true
+            edge.smooth = true
+          end
+        end
+      end
 
       def available_material_types
         MATERIAL_DEFINITIONS.keys

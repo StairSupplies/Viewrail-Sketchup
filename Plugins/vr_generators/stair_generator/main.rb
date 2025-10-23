@@ -9,6 +9,10 @@ module Viewrail
 
   module StairGenerator
     @glass_thickness = Viewrail::ProductData.glass_thickness
+    @wood_material = Viewrail::SharedUtilities.get_or_add_material(:wood)
+    @glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
+    @rubber_material = Viewrail::SharedUtilities.get_or_add_material(:cable)
+
     MAX_PANEL_WIDTH = 48.0
     PANEL_GAP = 1.0
     STAIR_GLASS_HEIGHT = 36.0
@@ -121,15 +125,9 @@ module Viewrail
         glass_railing = params["glass_railing"] || "None"
         segment_name = params["segment_name"] || "Stairs"
 
-        reveal = 1
-        tread_thickness = stair_rise - reveal
-        riser_thickness = 1.0
-
+        reveal = 1.0
+        tread_thickness = stair_rise - reveal        
         glass_height = 36.0
-
-        # Get materials
-        wood_material = Viewrail::SharedUtilities.get_or_add_material(:wood)
-        rubber_material = Viewrail::SharedUtilities.get_or_add_material(:cable)
 
         stairs_group = entities.add_group
         stairs_entities = stairs_group.entities
@@ -147,59 +145,11 @@ module Viewrail
             stack_overhang = 0
           end
 
-          # Create tread
-          tread_points = [
-            [x_position, 0, z_position],
-            [x_position + tread_run + stack_overhang, 0, z_position],
-            [x_position + tread_run + stack_overhang, tread_width, z_position],
-            [x_position, tread_width, z_position]
-          ]
-          tread_face = stairs_entities.add_face(tread_points)
-          if tread_face
-            tread_face.pushpull(-tread_thickness)
-            # Apply wood to all tread faces
-            stairs_entities.grep(Sketchup::Face).last(6).each do |face|
-              face.material = wood_material
-              face.back_material = wood_material
-            end
-          end
+          stairs_group = create_tread(stairs_group, x_position, z_position, tread_run, tread_width, tread_thickness, stack_overhang)
 
-          # Create riser
           nosing_value = 0.75
-          riser_points = [
-            [x_position + nosing_value, nosing_value, z_position - tread_thickness],
-            [x_position + tread_run - 0.5 + stack_overhang, nosing_value, z_position - tread_thickness],
-            [x_position + tread_run - 0.5 + stack_overhang, tread_width - nosing_value, z_position - tread_thickness],
-            [x_position + nosing_value, tread_width - nosing_value, z_position - tread_thickness]
-          ]
-          riser_face = stairs_entities.add_face(riser_points)
-          if riser_face
-            riser_face.pushpull(riser_thickness)
-            
-            # Apply wood to all faces first
-            riser_faces = stairs_entities.grep(Sketchup::Face).last(6)
-            riser_faces.each do |face|
-              face.material = wood_material
-              face.back_material = wood_material
-            end
-            
-            # Now find vertical faces with height matching riser_thickness and color them rubber
-            tolerance = 0.01
-            riser_faces.each do |face|
-              # Check if face is vertical (normal is horizontal)
-              if face.normal.z.abs < 0.1
-                # Get the z-coordinates of all vertices
-                z_coords = face.vertices.map { |v| v.position.z }
-                face_height = z_coords.max - z_coords.min
-                
-                # If height matches riser thickness, it's a vertical riser face
-                if (face_height - riser_thickness).abs < tolerance
-                  face.material = rubber_material
-                  face.back_material = rubber_material
-                end
-              end
-            end
-          end
+          riser_thickness = 1.0
+          stairs_group = create_riser(stairs_group, x_position, z_position, tread_run, tread_width, riser_thickness, nosing_value, stack_overhang, tread_thickness)
         end
 
         stair_hash = {
@@ -228,6 +178,53 @@ module Viewrail
         return stairs_group
       end # create_stair_segment
 
+      def create_tread(stairs_group, x_position, z_position, tread_run, tread_width, tread_thickness, stack_overhang)
+        tread_points = [
+          [x_position, 0, z_position],
+          [x_position + tread_run + stack_overhang, 0, z_position],
+          [x_position + tread_run + stack_overhang, tread_width, z_position],
+          [x_position, tread_width, z_position]
+        ]
+        tread_face = stairs_group.entities.add_face(tread_points)
+        if tread_face
+          tread_face.pushpull(-tread_thickness)
+          num_faces = 6
+          Viewrail::SharedUtilities.apply_material_to_group(stairs_group, :wood, num_faces)
+        end
+        return stairs_group
+      end
+
+      def create_riser(stairs_group, x_position, z_position, tread_run, tread_width, riser_thickness, nosing_value, stack_overhang, tread_thickness)
+        riser_points = [
+          [x_position + nosing_value, nosing_value, z_position - tread_thickness],
+          [x_position + tread_run - 0.5 + stack_overhang, nosing_value, z_position - tread_thickness],
+          [x_position + tread_run - 0.5 + stack_overhang, tread_width - nosing_value, z_position - tread_thickness],
+          [x_position + nosing_value, tread_width - nosing_value, z_position - tread_thickness]
+        ]
+        riser_face = stairs_group.entities.add_face(riser_points)
+        if riser_face
+          riser_face.pushpull(riser_thickness)
+          num_faces = 6
+          Viewrail::SharedUtilities.apply_material_to_group(stairs_group, :wood, num_faces)
+          color_riser_faces(stairs_group.entities, riser_thickness, num_faces)
+        end
+        return stairs_group
+      end
+
+      def color_riser_faces(stairs_entities, riser_thickness, num_faces)
+        tolerance = 0.01
+        stairs_entities.grep(Sketchup::Face).last(num_faces).each do |face|
+          if face.normal.z.abs < 0.1
+            z_coords = face.vertices.map { |v| v.position.z }
+            face_height = z_coords.max - z_coords.min
+            if (face_height - riser_thickness).abs < tolerance
+              face.material = @rubber_material
+              face.back_material = @rubber_material
+            end
+          end
+        end
+      end # color_riser_faces
+
       def create_landing(params, position = [0, 0, 0])
         model = Sketchup.active_model
         entities = model.active_entities
@@ -238,10 +235,6 @@ module Viewrail
         thickness = params["thickness"]
         glass_railing = params["glass_railing"] || "None"
         turn_direction = params["turn_direction"] || "Left"
-
-        # Get materials
-        wood_material = Viewrail::SharedUtilities.get_or_add_material(:wood)
-        rubber_material = Viewrail::SharedUtilities.get_or_add_material(:cable)
 
         landing_group = entities.add_group
         landing_entities = landing_group.entities
@@ -256,52 +249,14 @@ module Viewrail
         landing_face = landing_entities.add_face(landing_points)
         if landing_face
           landing_face.pushpull(thickness)
-          # Apply wood to all landing faces
-          landing_entities.grep(Sketchup::Face).last(6).each do |face|
-            face.material = wood_material
-            face.back_material = wood_material
-          end
+          num_faces = 6
+          Viewrail::SharedUtilities.apply_material_to_group(landing_group, :wood, num_faces)
         end
 
         # Create riser
         nosing_value = 0.75
-        reveal = 1
         riser_thickness = 1.0
-        riser_points = [
-          [nosing_value, nosing_value, -(thickness+reveal)],
-          [depth-nosing_value, nosing_value, -(thickness+reveal)],
-          [depth-nosing_value, width - nosing_value, -(thickness+reveal)],
-          [nosing_value, width - nosing_value, -(thickness+reveal)]
-        ]
-
-        riser_face = landing_entities.add_face(riser_points)
-        if riser_face
-          riser_face.pushpull(riser_thickness)
-          
-          # Apply wood to all faces first
-          riser_faces = landing_entities.grep(Sketchup::Face).last(6)
-          riser_faces.each do |face|
-            face.material = wood_material
-            face.back_material = wood_material
-          end
-          
-          # Now find vertical faces with height matching riser_thickness and color them rubber
-          tolerance = 0.01
-          riser_faces.each do |face|
-            # Check if face is vertical (normal is horizontal)
-            if face.normal.z.abs < 0.1
-              # Get the z-coordinates of all vertices
-              z_coords = face.vertices.map { |v| v.position.z }
-              face_height = z_coords.max - z_coords.min
-              
-              # If height matches riser thickness, it's a vertical riser face
-              if (face_height - riser_thickness).abs < tolerance
-                face.material = rubber_material
-                face.back_material = rubber_material
-              end
-            end
-          end
-        end
+        create_riser(landing_group, 0, 0, depth, width, riser_thickness, nosing_value, 0, thickness)
 
         if glass_railing != "None"
           edges_to_rail = []
@@ -359,10 +314,6 @@ module Viewrail
         thickness = params["thickness"]
         glass_railing = params["glass_railing"] || "None"
         turn_direction = params["turn_direction"] || "Left"
-
-        # Get materials
-        wood_material = Viewrail::SharedUtilities.get_or_add_material(:wood)
-        rubber_material = Viewrail::SharedUtilities.get_or_add_material(:cable)
         
         landing_group = entities.add_group
         landing_entities = landing_group.entities
@@ -377,52 +328,13 @@ module Viewrail
         landing_face = landing_entities.add_face(landing_points)
         if landing_face
           landing_face.pushpull(thickness)
-          # Apply wood to all landing faces
-          landing_entities.grep(Sketchup::Face).last(6).each do |face|
-            face.material = wood_material
-            face.back_material = wood_material
-          end
+          num_faces = 6
+          Viewrail::SharedUtilities.apply_material_to_group(landing_group, :wood, num_faces)
         end
 
         nosing_value = 0.75
-        reveal = 1
         riser_thickness = 1.0
-        riser_points = [
-          [nosing_value, nosing_value, -(thickness+reveal)],
-          [depth-nosing_value, nosing_value, -(thickness+reveal)],
-          [depth-nosing_value, width - nosing_value, -(thickness+reveal)],
-          [nosing_value, width - nosing_value, -(thickness+reveal)]
-        ]
-
-
-        riser_face = landing_entities.add_face(riser_points)
-        if riser_face
-          riser_face.pushpull(riser_thickness)
-          
-          # Apply wood to all faces first
-          riser_faces = landing_entities.grep(Sketchup::Face).last(6)
-          riser_faces.each do |face|
-            face.material = wood_material
-            face.back_material = wood_material
-          end
-          
-          # Now find vertical faces with height matching riser_thickness and color them rubber
-          tolerance = 0.01
-          riser_faces.each do |face|
-            # Check if face is vertical (normal is horizontal)
-            if face.normal.z.abs < 0.1
-              # Get the z-coordinates of all vertices
-              z_coords = face.vertices.map { |v| v.position.z }
-              face_height = z_coords.max - z_coords.min
-              
-              # If height matches riser thickness, it's a vertical riser face
-              if (face_height - riser_thickness).abs < tolerance
-                face.material = rubber_material
-                face.back_material = rubber_material
-              end
-            end
-          end
-        end
+        create_riser(landing_group, 0, 0, depth, width, riser_thickness, nosing_value, 0, thickness)
 
         if glass_railing != "None"
           edges_to_rail = []
@@ -695,15 +607,11 @@ module Viewrail
       end # add_glass_railings_to_landing
 
       def create_glass_panel(entities, points)
-        material = Viewrail::SharedUtilities.get_or_add_material(:glass)
         group = entities.add_group
         face = group.entities.add_face(points)
         if face
           face.pushpull(@glass_thickness)
-          group.entities.grep(Sketchup::Face).each do |f|
-            f.material = material
-            f.back_material = material
-          end
+          Viewrail::SharedUtilities.apply_material_to_group(group, :glass)
         end
       end # create_glass_panel
 
