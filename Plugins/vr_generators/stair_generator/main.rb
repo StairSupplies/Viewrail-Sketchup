@@ -114,6 +114,18 @@ module Viewrail
         Viewrail::StairGenerator::Tools::UStairMenu.show
       end
 
+      def determine_glass_railing_edges(glass_railing, turn_direction, is_wide_landing = false)
+        return [] if glass_railing == "None" || glass_railing == "Inner"
+        
+        if is_wide_landing
+          ["left", "back", "right"]
+        elsif turn_direction == "Left"
+          ["back", "right"]
+        else
+          ["back", "left"]
+        end
+      end
+
       def create_stair_segment(params, start_point = [0, 0, 0], lastStair = false)
         model = Sketchup.active_model
         entities = model.active_entities
@@ -257,25 +269,8 @@ module Viewrail
         nosing_value = 0.75
         riser_thickness = 1.0
         create_riser(landing_group, 0, 0, depth, width, riser_thickness, nosing_value, 0, thickness)
-
+        
         if glass_railing != "None"
-          edges_to_rail = []
-          if turn_direction == "Left"
-            case glass_railing
-            when "Inner"
-              # do nothing for now
-            when "Outer", "Both"
-              edges_to_rail = ["back", "right"]
-            end
-          else # Right turn
-            case glass_railing
-            when "Inner"
-              # do nothing for now
-            when "Outer", "Both"
-              edges_to_rail = ["back", "left"]
-            end
-          end
-
           add_glass_railings_to_landing(
             landing_entities,
             {
@@ -284,8 +279,7 @@ module Viewrail
               thickness: thickness,
               glass_railing: glass_railing,
               turn_direction: turn_direction
-            },
-            edges_to_rail
+            }
           )
         end
 
@@ -337,15 +331,6 @@ module Viewrail
         create_riser(landing_group, 0, 0, depth, width, riser_thickness, nosing_value, 0, thickness)
 
         if glass_railing != "None"
-          edges_to_rail = []
-
-          case glass_railing
-          when "Inner", "None"
-            # do nothing
-          when "Outer", "Both"
-            edges_to_rail = ["left", "back", "right"]
-          end # case
-
           add_glass_railings_to_landing(
             landing_entities,
             {
@@ -355,7 +340,7 @@ module Viewrail
               glass_railing: glass_railing,
               turn_direction: turn_direction
             },
-            edges_to_rail
+            true
           )
         end
 
@@ -528,7 +513,8 @@ module Viewrail
         ]
       end # last_stair_panel_points
 
-      def add_glass_railings_to_landing(entities, landing_hash, edges_to_rail)
+      def add_glass_railings_to_landing(entities, landing_hash, is_wide_landing = false)
+        
         glass_height = 42.0
         corner_gap = 1.0
         max_panel_width = 48.0
@@ -538,12 +524,18 @@ module Viewrail
         width = landing_hash[:width]
         depth = landing_hash[:depth]
         thickness = landing_hash[:thickness]
+        glass_railing = landing_hash[:glass_railing]
         turn_direction = landing_hash[:turn_direction]
 
+        edges_to_rail = determine_glass_railing_edges(glass_railing, turn_direction, is_wide_landing)
         edges_to_rail.each do |edge|
           case edge
           when "left", "right"
-            panel_length = depth - corner_gap - stair_overlap
+            stair_overlap = 5.0
+            if edge != turn_direction.downcase
+              stair_overlap = 6.0
+            end
+            panel_length = depth - corner_gap - stair_overlap - panel_gap
             y_pos = edge == "right" ? GLASS_INSET : width - GLASS_INSET - @glass_thickness
 
             if panel_length <= max_panel_width
@@ -553,6 +545,7 @@ module Viewrail
                 [stair_overlap + panel_length, y_pos, -thickness],
                 [stair_overlap + panel_gap, y_pos, -thickness]
               ]
+              puts "=== points: #{glass_points.inspect}"
               create_glass_panel(entities, glass_points)
             else
               num_panels = (panel_length / max_panel_width).ceil
@@ -573,7 +566,8 @@ module Viewrail
             end
 
           when "front", "back"
-            panel_length = width - corner_gap - stair_overlap
+            stair_overlap = 0 if is_wide_landing
+            panel_length = width - (corner_gap * 2) - stair_overlap
             x_pos = edge == "left" ? GLASS_INSET : depth - GLASS_INSET
             y_pos = turn_direction == "Left" ? corner_gap : stair_overlap
 
