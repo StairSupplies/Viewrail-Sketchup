@@ -95,7 +95,6 @@ module Viewrail
 
         begin
           if Sketchup.platform == :platform_win
-            # Correct path for SketchUp 2025 materials in ProgramData
             base_path = File.join(ENV['ProgramData'], "SketchUp", "SketchUp 2025", "SketchUp", "Materials")
             material_file = File.join(base_path, "Wood", "#{material_name}.skm")
             
@@ -115,8 +114,7 @@ module Viewrail
             end
           else
             puts "Attempting to load built-in material '#{material_name}' on non-Windows platform"
-            
-            # Mac/Linux might use a similar structure
+                        
             materials_path = Sketchup.find_support_file("Materials")
             material_file = File.join(materials_path, "Wood", "#{material_name}.skm")
             
@@ -166,8 +164,7 @@ module Viewrail
           MATERIAL_DEFINITIONS[key][:texture_size] = texture_size if texture_size
         end
       end # create_material_definition
-
-    # TODO: UPDATE RULES TO USE THESE METHODS INSTEAD!!!!!!!!
+ 
       def apply_material_to_group(group, material, last_count = 0)
         material = get_or_add_material(material) if material.is_a?(Symbol)
         entities = group.entities if group.respond_to?(:entities)

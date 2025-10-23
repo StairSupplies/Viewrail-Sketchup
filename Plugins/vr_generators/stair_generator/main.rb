@@ -138,7 +138,7 @@ module Viewrail
         segment_name = params["segment_name"] || "Stairs"
 
         reveal = 1.0
-        tread_thickness = stair_rise - reveal        
+        tread_thickness = stair_rise - reveal
         glass_height = 36.0
 
         stairs_group = entities.add_group
@@ -532,7 +532,6 @@ module Viewrail
                 [stair_overlap + panel_length, y_pos, -thickness],
                 [stair_overlap + panel_gap, y_pos, -thickness]
               ]
-              puts "=== points: #{glass_points.inspect}"
               create_glass_panel(entities, glass_points)
             else
               num_panels = (panel_length / max_panel_width).ceil
