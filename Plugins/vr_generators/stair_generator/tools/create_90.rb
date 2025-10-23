@@ -40,7 +40,7 @@ module Viewrail
             dialog.set_size(dimensions["width"], dimensions["height"])
           end
 
-          dialog.add_action_callback("create_landing_stairs") do |action_context, params|
+          dialog.add_action_callback("create_landing_90") do |action_context, params|
             values = JSON.parse(params)
 
             last_values[:num_treads_lower] = values["num_treads_lower"]

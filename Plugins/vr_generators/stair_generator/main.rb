@@ -206,6 +206,22 @@ module Viewrail
         return stairs_group
       end
 
+      def create_landing_surface(landing_group, width, depth, thickness)
+        landing_points = [
+          [0, 0, 0],
+          [depth, 0, 0],
+          [depth, width, 0],
+          [0, width, 0]
+        ]
+        
+        landing_face = landing_group.entities.add_face(landing_points)
+        if landing_face
+          landing_face.pushpull(thickness)
+          Viewrail::SharedUtilities.apply_material_to_group(landing_group, :wood, 6)
+        end
+        return landing_group
+      end
+
       def create_riser(stairs_group, x_position, z_position, tread_run, tread_width, riser_thickness, nosing_value, stack_overhang, tread_thickness)
         riser_points = [
           [x_position + nosing_value, nosing_value, z_position - tread_thickness],
@@ -238,8 +254,8 @@ module Viewrail
       end # color_riser_faces
 
       def create_landing(params, position = [0, 0, 0])
+        
         model = Sketchup.active_model
-        entities = model.active_entities
 
         stack_overhang = 5
         width = params["width"] + stack_overhang
@@ -248,31 +264,17 @@ module Viewrail
         glass_railing = params["glass_railing"] || "None"
         turn_direction = params["turn_direction"] || "Left"
 
-        landing_group = entities.add_group
-        landing_entities = landing_group.entities
-
-        landing_points = [
-          [0, 0, 0],
-          [depth, 0, 0],
-          [depth, width, 0],
-          [0, width, 0]
-        ]
-
-        landing_face = landing_entities.add_face(landing_points)
-        if landing_face
-          landing_face.pushpull(thickness)
-          num_faces = 6
-          Viewrail::SharedUtilities.apply_material_to_group(landing_group, :wood, num_faces)
-        end
+        landing_group = model.active_entities.add_group
+        landing_group = create_landing_surface(landing_group, width, depth, thickness)   
 
         # Create riser
         nosing_value = 0.75
         riser_thickness = 1.0
-        create_riser(landing_group, 0, 0, depth, width, riser_thickness, nosing_value, 0, thickness)
+        landing_group = create_riser(landing_group, 0, 0, depth, width, riser_thickness, nosing_value, 0, thickness)
         
         if glass_railing != "None"
           add_glass_railings_to_landing(
-            landing_entities,
+            landing_group.entities,
             {
               width: width,
               depth: depth,
@@ -283,25 +285,31 @@ module Viewrail
           )
         end
 
-        transform = Geom::Transformation.new(position)
-        transform = Geom::Transformation.new([position[0], position[1] - 5, position[2]]) unless turn_direction == "Left"
-        landing_group.transform!(transform)
+        apply_landing_transform(landing_group, position, turn_direction)
+        configure_landing_group(landing_group, width, depth, thickness, glass_railing)
 
+        return landing_group
+
+      end # create_landing
+
+      def configure_landing_group(landing_group, width, depth, thickness, glass_railing)
         landing_group.name = "Landing - #{width.round}\" x #{depth.round}\""
-
+        
         landing_group.set_attribute("stair_generator", "width", width)
         landing_group.set_attribute("stair_generator", "depth", depth)
         landing_group.set_attribute("stair_generator", "thickness", thickness)
         landing_group.set_attribute("stair_generator", "glass_railing", glass_railing)
         landing_group.set_attribute("stair_generator", "segment_type", "landing")
+      end
 
-        return landing_group
-      end # create_landing
+      def apply_landing_transform(landing_group, position, turn_direction)
+        offset = turn_direction == "Left" ? 0 : -5
+        transform = Geom::Transformation.new([position[0], position[1] + offset, position[2]])
+        landing_group.transform!(transform)
+      end
 
       def create_wide_landing(params, position = [0, 0, 0])
-
         model = Sketchup.active_model
-        entities = model.active_entities
 
         width = params["width"]
         depth = params["depth"]
@@ -309,30 +317,16 @@ module Viewrail
         glass_railing = params["glass_railing"] || "None"
         turn_direction = params["turn_direction"] || "Left"
         
-        landing_group = entities.add_group
-        landing_entities = landing_group.entities
-
-        landing_points = [
-          [0, 0, 0],
-          [depth, 0, 0],
-          [depth, width, 0],
-          [0, width, 0]
-        ]
-
-        landing_face = landing_entities.add_face(landing_points)
-        if landing_face
-          landing_face.pushpull(thickness)
-          num_faces = 6
-          Viewrail::SharedUtilities.apply_material_to_group(landing_group, :wood, num_faces)
-        end
+        landing_group = model.active_entities.add_group
+        landing_group = create_landing_surface(landing_group, width, depth, thickness)
 
         nosing_value = 0.75
         riser_thickness = 1.0
-        create_riser(landing_group, 0, 0, depth, width, riser_thickness, nosing_value, 0, thickness)
+        landing_group = create_riser(landing_group, 0, 0, depth, width, riser_thickness, nosing_value, 0, thickness)
 
         if glass_railing != "None"
           add_glass_railings_to_landing(
-            landing_entities,
+            landing_group.entities,
             {
               width: width,
               depth: depth,
@@ -344,18 +338,11 @@ module Viewrail
           )
         end
 
-        transform = Geom::Transformation.new(position)
-        landing_group.transform!(transform)
-
-        landing_group.name = "Landing - #{width.round}\" x #{depth.round}\""
-
-        landing_group.set_attribute("stair_generator", "width", width)
-        landing_group.set_attribute("stair_generator", "depth", depth)
-        landing_group.set_attribute("stair_generator", "thickness", thickness)
-        landing_group.set_attribute("stair_generator", "glass_railing", glass_railing)
-        landing_group.set_attribute("stair_generator", "segment_type", "landing")
+        landing_group.transform!(Geom::Transformation.new(position))
+        configure_landing_group(landing_group, width, depth, thickness, glass_railing)
 
         return landing_group
+
       end # create_wide_landing
 
       def add_glass_railings_to_segment(entities, stair_hash)
@@ -637,7 +624,7 @@ module Viewrail
 
               params[:type] = :straight
 
-            when "landing_stairs"
+            when "landing_90"
               params[:num_treads_lower] = dict["num_treads_lower"]
               params[:num_treads_upper] = dict["num_treads_upper"]
               params[:header_to_wall] = dict["header_to_wall"].to_f
@@ -731,68 +718,71 @@ module Viewrail
       end # has_valid_stair_cached?
 
       def store_stair_parameters(group, params, stair_type)
-        case stair_type
+        common_attrs = {
+          tread_run: params["tread_run"],
+          stair_rise: params["stair_rise"],
+          total_rise: params["total_rise"],
+          turn_direction: params["turn_direction"],
+          glass_railing: params["glass_railing"]
+        }
+        
+        type_specific_attrs = case stair_type
           when :straight
-            group.set_attribute("stair_generator", "segment_type", "stairs")
-            group.set_attribute("stair_generator", "num_treads", params["num_treads"])
-            group.set_attribute("stair_generator", "tread_run", params["tread_run"])
-            group.set_attribute("stair_generator", "tread_width", params["tread_width"] || 36.0)
-            group.set_attribute("stair_generator", "stair_rise", params["stair_rise"])
-            group.set_attribute("stair_generator", "glass_railing", params["glass_railing"])
-            group.set_attribute("stair_generator", "total_tread_run", params["total_tread_run"])
-            group.set_attribute("stair_generator", "total_rise", params["total_rise"])
-
+            {
+              num_treads: params["num_treads"],
+              tread_width: params["tread_width"] || 36.0,
+              total_tread_run: params["total_tread_run"]
+            }
           when :landing_90
-            group.set_attribute("stair_generator", "segment_type", "landing_stairs")
-            group.set_attribute("stair_generator", "num_treads_lower", params["num_treads_lower"])
-            group.set_attribute("stair_generator", "num_treads_upper", params["num_treads_upper"])
-            group.set_attribute("stair_generator", "header_to_wall", params["header_to_wall"])
-            group.set_attribute("stair_generator", "tread_width_lower", params["tread_width_lower"])
-            group.set_attribute("stair_generator", "tread_width_upper", params["tread_width_upper"])
-            group.set_attribute("stair_generator", "landing_width", params["landing_width"])
-            group.set_attribute("stair_generator", "landing_depth", params["landing_depth"])
-            group.set_attribute("stair_generator", "tread_run", params["tread_run"])
-            group.set_attribute("stair_generator", "stair_rise", params["stair_rise"])
-            group.set_attribute("stair_generator", "total_rise", params["total_rise"])
-            group.set_attribute("stair_generator", "turn_direction", params["turn_direction"])
-            group.set_attribute("stair_generator", "glass_railing", params["glass_railing"])
+            {
+              num_treads_lower: params["num_treads_lower"],
+              num_treads_upper: params["num_treads_upper"],
+              header_to_wall: params["header_to_wall"],
+              tread_width_lower: params["tread_width_lower"],
+              tread_width_upper: params["tread_width_upper"],
+              landing_width: params["landing_width"],
+              landing_depth: params["landing_depth"]
+            }
           when :landing_u
-            group.set_attribute("stair_generator", "segment_type", "landing_u")
-            group.set_attribute("stair_generator", "num_treads_lower", params["num_treads_lower"])
-            group.set_attribute("stair_generator", "num_treads_middle", params["num_treads_middle"])
-            group.set_attribute("stair_generator", "num_treads_upper", params["num_treads_upper"])
-            group.set_attribute("stair_generator", "header_to_wall", params["header_to_wall"])
-            group.set_attribute("stair_generator", "wall_to_wall", params["wall_to_wall"])
-            group.set_attribute("stair_generator", "tread_width_lower", params["tread_width_lower"])
-            group.set_attribute("stair_generator", "tread_width_middle", params["tread_width_middle"])
-            group.set_attribute("stair_generator", "tread_width_upper", params["tread_width_upper"])
-            group.set_attribute("stair_generator", "lower_landing_width", params["lower_landing_width"])
-            group.set_attribute("stair_generator", "lower_landing_depth", params["lower_landing_depth"])
-            group.set_attribute("stair_generator", "upper_landing_width", params["upper_landing_width"])
-            group.set_attribute("stair_generator", "upper_landing_depth", params["upper_landing_depth"])
-            group.set_attribute("stair_generator", "tread_run", params["tread_run"])
-            group.set_attribute("stair_generator", "stair_rise", params["stair_rise"])
-            group.set_attribute("stair_generator", "total_rise", params["total_rise"])
-            group.set_attribute("stair_generator", "turn_direction", params["turn_direction"])
-            group.set_attribute("stair_generator", "glass_railing", params["glass_railing"])
+            {
+              num_treads_lower: params["num_treads_lower"],
+              num_treads_middle: params["num_treads_middle"],
+              num_treads_upper: params["num_treads_upper"],
+              header_to_wall: params["header_to_wall"],
+              wall_to_wall: params["wall_to_wall"],
+              tread_width_lower: params["tread_width_lower"],
+              tread_width_middle: params["tread_width_middle"],
+              tread_width_upper: params["tread_width_upper"],
+              lower_landing_width: params["lower_landing_width"],
+              lower_landing_depth: params["lower_landing_depth"],
+              upper_landing_width: params["upper_landing_width"],
+              upper_landing_depth: params["upper_landing_depth"]
+            }
           when :switchback
-            group.set_attribute("stair_generator", "segment_type", "switchback")
-            group.set_attribute("stair_generator", "num_treads_lower", params["num_treads_lower"])
-            group.set_attribute("stair_generator", "num_treads_upper", params["num_treads_upper"])
-            group.set_attribute("stair_generator", "header_to_wall", params["header_to_wall"])
-            group.set_attribute("stair_generator", "wall_to_wall", params["wall_to_wall"])
-            group.set_attribute("stair_generator", "maximize_tread_width", params["maximize_tread_width"])
-            group.set_attribute("stair_generator", "tread_width_lower", params["tread_width_lower"])
-            group.set_attribute("stair_generator", "tread_width_upper", params["tread_width_upper"])
-            group.set_attribute("stair_generator", "landing_width", params["landing_width"])
-            group.set_attribute("stair_generator", "landing_depth", params["landing_depth"])
-            group.set_attribute("stair_generator", "tread_run", params["tread_run"])
-            group.set_attribute("stair_generator", "stair_rise", params["stair_rise"])
-            group.set_attribute("stair_generator", "total_rise", params["total_rise"])
-            group.set_attribute("stair_generator", "turn_direction", params["turn_direction"])
-            group.set_attribute("stair_generator", "glass_railing", params["glass_railing"])
+            {
+              num_treads_lower: params["num_treads_lower"],
+              num_treads_upper: params["num_treads_upper"],
+              header_to_wall: params["header_to_wall"],
+              wall_to_wall: params["wall_to_wall"],
+              maximize_tread_width: params["maximize_tread_width"],
+              tread_width_lower: params["tread_width_lower"],
+              tread_width_upper: params["tread_width_upper"],
+              landing_width: params["landing_width"],
+              landing_depth: params["landing_depth"]
+            }
         end
+        
+        segment_type = stair_type == :straight ? "stairs" : stair_type.to_s
+        all_attrs = common_attrs.merge(type_specific_attrs)
+        set_stair_attributes(group, all_attrs, segment_type)
       end # store_stair_parameters
+
+      def set_stair_attributes(group, attributes, segment_type)
+        group.set_attribute("stair_generator", "segment_type", segment_type)
+        attributes.each do |key, value|
+          group.set_attribute("stair_generator", key.to_s, value)
+        end
+      end # set_stair_attributes
 
       def show_about
         UI.messagebox(
@@ -826,14 +816,14 @@ module Viewrail
       cmd_stairs.status_bar_text = "Create Straight Stairs"
       cmd_stairs.menu_text = "Create Straight Stairs"
 
-      cmd_landing_stairs = UI::Command.new("Create 90") {
+      cmd_landing_90 = UI::Command.new("Create 90") {
         self.add_landing_stair_menu
       }
-      cmd_landing_stairs.small_icon = File.join(File.dirname(__FILE__), "icons", "add_90.svg")
-      cmd_landing_stairs.large_icon = File.join(File.dirname(__FILE__), "icons", "add_90.svg")
-      cmd_landing_stairs.tooltip = "Create 90 Stairs"
-      cmd_landing_stairs.status_bar_text = "Create 90 Stairs"
-      cmd_landing_stairs.menu_text = "Create 90 Stairs"
+      cmd_landing_90.small_icon = File.join(File.dirname(__FILE__), "icons", "add_90.svg")
+      cmd_landing_90.large_icon = File.join(File.dirname(__FILE__), "icons", "add_90.svg")
+      cmd_landing_90.tooltip = "Create 90 Stairs"
+      cmd_landing_90.status_bar_text = "Create 90 Stairs"
+      cmd_landing_90.menu_text = "Create 90 Stairs"
 
       cmd_switchback_stairs = UI::Command.new("Create Switchback") {
         self.add_switchback_stair_menu
@@ -880,7 +870,7 @@ module Viewrail
       cmd_about.menu_text = "About"
 
       toolbar = toolbar.add_item(cmd_stairs)
-      toolbar = toolbar.add_item(cmd_landing_stairs)
+      toolbar = toolbar.add_item(cmd_landing_90)
       toolbar = toolbar.add_item(cmd_switchback_stairs)
       toolbar = toolbar.add_item(cmd_u_stairs)
       toolbar = toolbar.add_item(cmd_modify)
@@ -892,7 +882,7 @@ module Viewrail
       menu = UI.menu("Extensions")
       stairs_menu = menu.add_submenu("Stair Generator")
       stairs_menu.add_item(cmd_stairs)
-      stairs_menu.add_item(cmd_landing_stairs)
+      stairs_menu.add_item(cmd_landing_90)
       stairs_menu.add_item(cmd_switchback_stairs)
       stairs_menu.add_item(cmd_u_stairs)
       stairs_menu.add_item(cmd_modify)
@@ -903,7 +893,7 @@ module Viewrail
         context_menu.add_separator
         stairs_context = context_menu.add_submenu("Stair Generator")
         stairs_context.add_item(cmd_stairs)
-        stairs_context.add_item(cmd_landing_stairs)
+        stairs_context.add_item(cmd_landing_90)
         stairs_context.add_item(cmd_switchback_stairs)
         stairs_context.add_item(cmd_u_stairs)
         stairs_context.add_item(cmd_modify)
