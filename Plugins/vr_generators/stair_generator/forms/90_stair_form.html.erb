@@ -450,7 +450,6 @@
         const isLocked = !!lockedFields[targetId];
         const nextLocked = !isLocked;
         lockedFields[targetId] = nextLocked;
-        console.log(input)
         btn.setAttribute('aria-pressed', String(nextLocked));
         if (nextLocked) {
           input.classList.add('locked');
@@ -463,8 +462,6 @@
           icon.src = icon.getAttribute('data-unlocked-src');
           btn.title = 'Lock field';
         }
-
-        console.log(targetId + " is " + nextLocked);
       });
     });
 
