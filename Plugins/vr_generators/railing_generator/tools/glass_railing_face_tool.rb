@@ -475,11 +475,6 @@ module Viewrail
               else
                 face.pushpull(-@glass_thickness)
               end
-              
-              # glass_group.entities.grep(Sketchup::Face).each do |f|
-              #   f.material = glass_material
-              #   f.back_material = glass_material
-              # end
             end
             Viewrail::SharedUtilities.apply_material_to_group(glass_group, :glass)
           end
