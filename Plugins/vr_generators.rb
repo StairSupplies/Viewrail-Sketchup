@@ -6,7 +6,7 @@ module Viewrail
   unless file_loaded?(__FILE__)
     ex = SketchupExtension.new('Viewrail Tools', 'vr_generators\load_plugins')
     ex.description = 'Creation tool for Viewrail Stairs and Railings'
-    ex.version     = '0.1.0'
+    ex.version     = '0.1.1'
     ex.creator     = 'B. Good-Elliott, D. Mosher'
     ex.copyright   = '2025, Viewrail'
 
