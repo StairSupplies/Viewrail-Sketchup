@@ -165,7 +165,7 @@
     </div>
 
     <div class="button-container">
-      <button class="btn-primary" onclick="createGlassRailing()">Create Railing</button>
+      <button class="btn-primary" id="createButton" onclick="createGlassRailing()">Create Railing</button>
       <button class="btn-secondary" onclick="cancel()">Cancel</button>
     </div>
   </div>
@@ -177,6 +177,9 @@
     const caprailOptions = document.getElementById('caprail_options');
     const caprailMaterialSelect = document.getElementById('caprail_material');
     const heightError = document.getElementById('height-error');
+    const createButton = document.getElementById('createButton');
+
+    let toolActive = false;
 
     caprailCheckbox.addEventListener('change', function() {
       if (this.checked) {
@@ -201,19 +204,36 @@
 
     heightInput.addEventListener('input', validateHeight);
 
+    function resetButton() {
+      toolActive = false;
+      createButton.textContent = 'Create Railing';
+      createButton.style.backgroundColor = '#0078D7';
+    }
+
     function createGlassRailing() {
-      if (!validateHeight()) {
-        return;
+      if (!toolActive) {
+        if (!validateHeight()) {
+          return;
+        }
+
+        const values = {
+          railing_type: typeSelect.value,
+          railing_height: parseFloat(heightInput.value),
+          include_caprail: caprailCheckbox.checked,
+          caprail_material: caprailCheckbox.checked ? caprailMaterialSelect.value : null
+        };
+
+        window.location = 'skp:create_glass_railing@' + JSON.stringify(values);
+
+        toolActive = true;
+        createButton.textContent = 'Finish Railing';
+        createButton.style.backgroundColor = '#28a745';
+      } else {
+        window.location = 'skp:finish_selection';
+        toolActive = false;
+        createButton.textContent = 'Create Railing';
+        createButton.style.backgroundColor = '#0078D7';
       }
-
-      const values = {
-        railing_type: typeSelect.value,
-        railing_height: parseFloat(heightInput.value),
-        include_caprail: caprailCheckbox.checked,
-        caprail_material: caprailCheckbox.checked ? caprailMaterialSelect.value : null
-      };
-
-      window.location = 'skp:create_glass_railing@' + JSON.stringify(values);
     }
 
     function cancel() {

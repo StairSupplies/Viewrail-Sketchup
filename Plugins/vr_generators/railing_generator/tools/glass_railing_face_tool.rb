@@ -39,10 +39,20 @@ module Viewrail
               values = JSON.parse(params, symbolize_names: true)
               tool = Viewrail::RailingGenerator::Tools::GlassRailingTool.new
               tool.configure_from_dialog(values)
+              tool.set_dialog(dialog)
               Sketchup.active_model.select_tool(tool)
             rescue => e
               puts "Error: #{e.message}"
               UI.messagebox("Error: #{e.message}")
+            end
+          end
+
+          dialog.add_action_callback("finish_selection") do |action_context|
+            # Simulate pressing Enter key to finish selection
+            tool = Sketchup.active_model.tools.active_tool
+            if tool.is_a?(Viewrail::RailingGenerator::Tools::GlassRailingTool)
+              view = Sketchup.active_model.active_view
+              tool.onReturn(view)
             end
           end
 
@@ -58,6 +68,7 @@ module Viewrail
           @face_edges = []
           @hover_face = nil
           @hover_edge = nil
+          @dialog = nil
 
           @total_height = 42.0
           @glass_thickness = Viewrail::ProductData.glass_thickness
@@ -87,6 +98,10 @@ module Viewrail
             @total_height - @handrail_thickness + @glass_recess :
             @total_height
         end # initialize
+
+        def set_dialog(dialog)
+          @dialog = dialog
+        end
 
         def onLButtonDown(flags, x, y, view)
           ph = view.pick_helper
@@ -179,6 +194,10 @@ module Viewrail
               @face_edges.clear
               update_status_text
               view.invalidate
+            end
+
+            if @dialog
+              @dialog.execute_script("resetButton();")
             end
           end
         end # onReturn
