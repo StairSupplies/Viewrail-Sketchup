@@ -1,5 +1,6 @@
 require 'erb'
 require_relative '../viewrail_shared/utilities'
+require_relative '../viewrail_shared/toolbar_manager'
 require_relative 'tools/create_u'
 require_relative 'tools/create_sb'
 require_relative 'tools/create_90'
@@ -784,28 +785,13 @@ module Viewrail
         end
       end # set_stair_attributes
 
-      def show_about
-        UI.messagebox(
-          "Stair Generator Extension\n\n" +
-          "Creates parametric stairs for architectural visualization.\n\n" +
-          "Features:\n" +
-          "• 3D stair geometry with glass railings\n" +
-          "• Automatically calculated to fit any dimensions\n" +
-          "• All stair shapes: Straights, 90°s, U's, & Switchbacks\n" +
-          "• Modular & modifiable stair segments and landings\n\n" +
-          "© 2025 Viewrail",
-          MB_OK,
-          "About Stair Generator"
-        )
-      end # show_about
-
     end # class << self
 
     unless file_loaded?(__FILE__)
 
       Viewrail::StairGenerator.init_selection_cache
 
-      toolbar = UI::Toolbar.new("Stair Generator")
+      toolbar = Viewrail::SharedUtilities::ToolbarManager.get_toolbar
 
       cmd_stairs = UI::Command.new("Create Straight Stairs") {
         self.add_stair_menu
@@ -860,24 +846,15 @@ module Viewrail
         end
       }
 
-      cmd_about = UI::Command.new("About") {
-        self.show_about
-      }
-      cmd_about.small_icon = File.join(File.dirname(__FILE__), "icons", "logo-black.svg")
-      cmd_about.large_icon = File.join(File.dirname(__FILE__), "icons", "logo-black.svg")
-      cmd_about.tooltip = "About Stair Generator"
-      cmd_about.status_bar_text = "About Stair Generator Extension"
-      cmd_about.menu_text = "About"
+      toolbar.add_item(cmd_stairs)
+      toolbar.add_item(cmd_landing_90)
+      toolbar.add_item(cmd_switchback_stairs)
+      toolbar.add_item(cmd_u_stairs)
+      toolbar.add_item(cmd_modify)
+      toolbar.add_separator
 
-      toolbar = toolbar.add_item(cmd_stairs)
-      toolbar = toolbar.add_item(cmd_landing_90)
-      toolbar = toolbar.add_item(cmd_switchback_stairs)
-      toolbar = toolbar.add_item(cmd_u_stairs)
-      toolbar = toolbar.add_item(cmd_modify)
-      toolbar = toolbar.add_separator
-      toolbar = toolbar.add_item(cmd_about)
-
-      toolbar.show
+      Viewrail::SharedUtilities::ToolbarManager.add_general_buttons
+      Viewrail::SharedUtilities::ToolbarManager.show_toolbar
 
       menu = UI.menu("Extensions")
       stairs_menu = menu.add_submenu("Stair Generator")
@@ -887,7 +864,6 @@ module Viewrail
       stairs_menu.add_item(cmd_u_stairs)
       stairs_menu.add_item(cmd_modify)
       stairs_menu.add_separator
-      stairs_menu.add_item(cmd_about)
 
       UI.add_context_menu_handler do |context_menu|
         context_menu.add_separator
