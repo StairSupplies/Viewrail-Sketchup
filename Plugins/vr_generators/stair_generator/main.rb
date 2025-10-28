@@ -863,8 +863,8 @@ module Viewrail
       cmd_about = UI::Command.new("About") {
         self.show_about
       }
-      cmd_about.small_icon = File.join(File.dirname(__FILE__), "icons", "logo-black.svg")
-      cmd_about.large_icon = File.join(File.dirname(__FILE__), "icons", "logo-black.svg")
+      cmd_about.small_icon = File.join(File.dirname(__FILE__), "icons", "info.svg")
+      cmd_about.large_icon = File.join(File.dirname(__FILE__), "icons", "info.svg")
       cmd_about.tooltip = "About Stair Generator"
       cmd_about.status_bar_text = "About Stair Generator Extension"
       cmd_about.menu_text = "About"
