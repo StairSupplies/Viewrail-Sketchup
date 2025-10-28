@@ -1,32 +1,17 @@
 require 'erb'
 require 'sketchup.rb'
 require_relative '../viewrail_shared/utilities'
+require_relative '../viewrail_shared/toolbar_manager'
 require_relative 'tools/glass_railing_face_tool'
 
 module Viewrail
   module RailingGenerator
     class << self
-      def show_about
-        UI.messagebox(
-          "Railing Generator Extension\n\n" +
-          "Creates various types of railings for architectural visualization.\n\n" +
-          "Features:\n" +
-          "• Glass railing systems\n" +
-          "• Customizable dimensions and spacing\n" +
-          "• Live preview while drawing\n\n" +
-          "© 2025 Viewrail",
-          MB_OK,
-          "About Railing Generator"
-        )
-      end
 
-      def show_help
-        UI.openURL("https://docs.google.com/document/d/1TMCemWotBB-V-BzRuivw-8Cw0oT-DOK59HMGDZd08bc")
-      end
     end
 
     unless file_loaded?(__FILE__)
-      toolbar = UI::Toolbar.new("Railing Generator")
+      toolbar = Viewrail::SharedUtilities::ToolbarManager.get_toolbar
 
       cmd_glass_railing = UI::Command.new("Glass Railing") {
         Viewrail::RailingGenerator::Tools::GlassRailingTool.show
@@ -38,36 +23,12 @@ module Viewrail
       cmd_glass_railing.status_bar_text = "Select vertical faces to create glass railings"
       cmd_glass_railing.menu_text = "Glass Railing"
 
-      cmd_help = UI::Command.new("Help") {
-        show_help
-      }
-      cmd_help.small_icon = File.join(File.dirname(__FILE__), "icons", "help.svg")
-      cmd_help.large_icon = File.join(File.dirname(__FILE__), "icons", "help.svg")
-      cmd_help.tooltip = "Help Documentation"
-      cmd_help.status_bar_text = "Open Sketchup Tools documentation"
-      cmd_help.menu_text = "Help"
-
-      cmd_about = UI::Command.new("About") {
-        show_about
-      }
-      cmd_about.small_icon = File.join(File.dirname(__FILE__), "..", "stair_generator", "icons", "info.svg")
-      cmd_about.large_icon = File.join(File.dirname(__FILE__), "..", "stair_generator", "icons", "info.svg")
-      cmd_about.tooltip = "About Railing Generator"
-      cmd_about.status_bar_text = "About Railing Generator Extension"
-      cmd_about.menu_text = "About"
-
-      toolbar = toolbar.add_item(cmd_glass_railing)
-      toolbar = toolbar.add_separator
-      toolbar = toolbar.add_item(cmd_help)
-      toolbar = toolbar.add_item(cmd_about)
-      toolbar.show
+      toolbar.add_item(cmd_glass_railing)
+      toolbar.add_separator
 
       menu = UI.menu("Extensions")
       railing_menu = menu.add_submenu("Railing Generator")
       railing_menu.add_item(cmd_glass_railing)
-      railing_menu.add_separator
-      railing_menu.add_item(cmd_help)
-      railing_menu.add_item(cmd_about)
 
       file_loaded(__FILE__)
     end
