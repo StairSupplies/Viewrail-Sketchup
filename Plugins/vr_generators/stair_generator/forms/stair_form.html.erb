@@ -103,7 +103,26 @@
 <body>
   <div class="container">
     <div class="column">
-      <h3>Tread Parameters</h3>
+      <h3>Overall System</h3>
+      <div class="form-group">
+        <label for="total_rise">Total Rise (inches):</label>
+        <input type="number" id="total_rise" value="<%= @last_values[:total_rise].round(3) %>" min="0" step="0.0625">
+        <div class="error" id="total-rise-error"></div>
+      </div>
+      <div class="form-group">
+        <label for="stair_rise">Stair Rise (inches):</label>
+        <input type="number" id="stair_rise" value="<%= @last_values[:stair_rise].round(2) %>" min="6" max="9" step="0.01" readonly>
+        <div class="error" id="rise-error"></div>
+      </div>
+      <div class="info">
+        Stair Rise = Total Rise ÷ (Number of Treads + 1)<br>
+        Stair Rise is calculated automatically<br>
+        Building code: Rise must be 6" to 9"
+      </div>
+    </div>
+
+    <div class="column">
+      <h3>Stairs</h3>
       <div class="form-group">
         <label for="num_treads">Number of Treads:</label>
         <input type="number" id="num_treads" value="<%= @last_values[:num_treads] %>" min="1" max="22" step="1">
@@ -126,25 +145,6 @@
       </div>
       <div class="info">
         Total Tread Run = Number of Treads × Tread Run
-      </div>
-    </div>
-
-    <div class="column">
-      <h3>Rise Parameters</h3>
-      <div class="form-group">
-        <label for="total_rise">Total Rise (inches):</label>
-        <input type="number" id="total_rise" value="<%= @last_values[:total_rise].round(3) %>" min="0" step="0.0625">
-        <div class="error" id="total-rise-error"></div>
-      </div>
-      <div class="form-group">
-        <label for="stair_rise">Stair Rise (inches):</label>
-        <input type="number" id="stair_rise" value="<%= @last_values[:stair_rise].round(2) %>" min="6" max="9" step="0.01" readonly>
-        <div class="error" id="rise-error"></div>
-      </div>
-      <div class="info">
-        Stair Rise = Total Rise ÷ (Number of Treads + 1)<br>
-        Stair Rise is calculated automatically<br>
-        Building code: Rise must be 6" to 9"
       </div>
     </div>
   </div>
