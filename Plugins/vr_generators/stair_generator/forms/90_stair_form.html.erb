@@ -237,10 +237,9 @@
 
     function calculateUpperTreads() {
       const headerToWall = parseFloat(headerToWallInput.value) || 0;
-      const landingWidth = parseFloat(landingWidthInput.value) || 36;
       const treadRun = parseFloat(treadRunInput.value) || 11;
 
-      if (headerToWall > 0 && landingWidth > 0 && treadRun > 0) {
+      if (headerToWall > 0 && treadRun > 0) {
         const minLandingWidth = parseFloat(treadWidthLowerInput.value) || 27;
         const availableRun = headerToWall - minLandingWidth;
         const upperTreads = Math.floor(availableRun / treadRun);
