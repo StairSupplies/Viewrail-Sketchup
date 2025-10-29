@@ -39,6 +39,11 @@ module Viewrail
           color: [25, 25, 25],
           alpha: 1.0
         },
+        rubber_black: {
+          name: "Black_Rubber",
+          color: [25, 25, 25],
+          alpha: 1.0
+        },
         wood: {
           name: "Wood_Veneer_15_1K",
           builtin: true
@@ -62,9 +67,10 @@ module Viewrail
 
 
       def get_or_add_material(type, model = nil)
-        model ||= Sketchup.active_model
-        material_def = MATERIAL_DEFINITIONS[type]
+        model = Sketchup.active_model if model.nil?
+        return nil if model.nil? || !model.valid?
 
+        material_def = MATERIAL_DEFINITIONS[type]
         if material_def.nil?
           puts "Warning: Material type '#{type}' not found in definitions"
           return nil
@@ -76,7 +82,7 @@ module Viewrail
           material = load_builtin_material(material_def[:name], model)
         else
           material = materials[material_def[:name]]
-          if !material
+          if !material || !material.valid?
             material = add_material_to_model(materials, material_def)
           end
         end
@@ -178,7 +184,7 @@ module Viewrail
           face.material = material
           face.back_material = material
         end
-      end # apply_material_with_softening
+      end # apply_material_to_group
 
       def soften_edges_in_group(group)
         group.entities.grep(Sketchup::Edge).each do |edge|

@@ -10,9 +10,6 @@ module Viewrail
 
   module StairGenerator
     @glass_thickness = Viewrail::ProductData.glass_thickness
-    @wood_material = Viewrail::SharedUtilities.get_or_add_material(:wood)
-    @glass_material = Viewrail::SharedUtilities.get_or_add_material(:glass)
-    @rubber_material = Viewrail::SharedUtilities.get_or_add_material(:cable)
 
     MAX_PANEL_WIDTH = 48.0
     PANEL_GAP = 1.0
@@ -222,17 +219,18 @@ module Viewrail
           color_riser_faces(stairs_group.entities, riser_thickness, num_faces)
         end
         return stairs_group
-      end
+      end # create_riser
 
       def color_riser_faces(stairs_entities, riser_thickness, num_faces)
+        material = Viewrail::SharedUtilities.get_or_add_material(:rubber_black)
         tolerance = 0.01
         stairs_entities.grep(Sketchup::Face).last(num_faces).each do |face|
           if face.normal.z.abs < 0.1
             z_coords = face.vertices.map { |v| v.position.z }
             face_height = z_coords.max - z_coords.min
             if (face_height - riser_thickness).abs < tolerance
-              face.material = @rubber_material
-              face.back_material = @rubber_material
+              face.material = material
+              face.back_material = material
             end
           end
         end
