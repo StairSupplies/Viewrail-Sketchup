@@ -253,6 +253,7 @@
       if (wallToWall > 0 && treadRun > 0) {
         const minLowerLandingWidth = parseFloat(treadWidthLowerInput.value) || 36;
         const minUpperLandingDepth = parseFloat(treadWidthUpperInput.value) || 36;
+        const treadWidthMiddle = parseFloat(treadWidthMiddleInput.value) || 36;
 
         const availableRun = wallToWall - minLowerLandingWidth - minUpperLandingDepth;
         const middleTreads = Math.floor(availableRun / treadRun);
@@ -265,6 +266,7 @@
         const landingAdjustment = remainingRun - minLowerLandingWidth - minUpperLandingDepth;
         lowerLandingWidth = minLowerLandingWidth + landingAdjustment;
         console.log("Lower Landing Width: " + lowerLandingWidth);
+        lowerLandingDepth = treadWidthMiddle;
       }
     }
 
@@ -323,13 +325,12 @@
       if (isUpdating) return;
       isUpdating = true;
 
-      const numTreadsMiddle = parseInt(numTreadsMiddleInput.value) || 0;
       const numTreadsUpper = parseInt(numTreadsUpperInput.value) || 0;
-      const treadWidthUpper = parseFloat(treadWidthUpperInput.value) || 36;
+      const minLandingWidth = parseFloat(treadWidthMiddleInput.value) || 36;
       const treadRun = parseFloat(treadRunInput.value) || 11;
 
-      if (numTreadsMiddle > 0 && numTreadsUpper > 0) {
-        const headerToWall = lowerLandingWidth + treadWidthUpper + (numTreadsMiddle * treadRun) + (numTreadsUpper * treadRun);
+      if (numTreadsUpper > 0) {
+        const headerToWall = minLandingWidth + (numTreadsUpper * treadRun);
         headerToWallInput.value = headerToWall.toFixed(2);
       }
 
