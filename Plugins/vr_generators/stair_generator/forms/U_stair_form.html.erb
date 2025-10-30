@@ -159,7 +159,7 @@
     </div>
 
     <div class="column">
-      <h3 style="margin-top: 30px;">Upper Stairs</h3>
+      <h3>Upper Stairs</h3>
       <div class="form-group">
         <label for="num_treads_upper">Number of Treads:</label>
         <input type="number" id="num_treads_upper" value="<%= @last_values[:num_treads_upper] %>" min="1" max="22" step="1">
@@ -183,7 +183,7 @@
         <div class="error" id="width-middle-error"></div>
       </div>
 
-      <h3>Lower Stairs</h3>
+      <h3 style="margin-top: 30px;">Lower Stairs</h3>
       <div class="form-group">
         <label for="num_treads_lower">Number of Treads:</label>
         <input type="number" id="num_treads_lower" value="<%= @last_values[:num_treads_lower] %>" min="1" max="22" step="1">
@@ -232,8 +232,8 @@
       const headerToWall = parseFloat(headerToWallInput.value);
       const treadRun = parseFloat(treadRunInput.value) || 11;
 
-      if (headerToWall > 0 && upperLandingWidth > 0 && treadRun > 0) {
-        const minUpperLandingWidth = parseFloat(treadWidthMiddleInput.value) || 27;
+      if (headerToWall > 36 && treadRun > 10.9) {
+        const minUpperLandingWidth = parseFloat(treadWidthMiddleInput.value) || 36;
         const availableRun = headerToWall - minUpperLandingWidth;
         const upperTreads = Math.floor(availableRun / treadRun);
 
@@ -331,7 +331,7 @@
 
       if (numTreadsUpper > 0) {
         const headerToWall = minLandingWidth + (numTreadsUpper * treadRun);
-        headerToWallInput.value = headerToWall.toFixed(2);
+        headerToWallInput.value = parseFloat(headerToWall);
       }
 
       isUpdating = false;
