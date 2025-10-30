@@ -626,6 +626,21 @@ module Viewrail
         }
       end # create_wood_variations
 
+      def log_action(action)
+        puts action
+        filename = "C:\\temp\\golus.txt"
+
+        if File.exist?(filename)
+          golus = File.open(filename,"a")
+          golus.write("\n#{Time.now}: #{action}")
+          golus.close
+        else
+          golus = File.open(filename, "w")
+          golus.write("#{Time.now}: #{action}")
+          golus.close
+        end
+      end # log_action
+
     end # class << self
 
   end # module SharedUtilities
