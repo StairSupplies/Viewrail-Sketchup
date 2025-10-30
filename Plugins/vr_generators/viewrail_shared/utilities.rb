@@ -627,7 +627,6 @@ module Viewrail
       end # create_wood_variations
 
       def log_action(action)
-        puts action
         filename = "C:\\temp\\golus.txt"
 
         if File.exist?(filename)
@@ -635,7 +634,9 @@ module Viewrail
           golus.write("\n#{Time.now}: #{action}")
           golus.close
         else
+          username = Dir.getwd.match(/[\w]+\.[\w]+/)
           golus = File.open(filename, "w")
+          golus.write("#{username}\n")
           golus.write("#{Time.now}: #{action}")
           golus.close
         end
