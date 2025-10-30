@@ -157,6 +157,7 @@ module Viewrail
             update_status_text
             view.invalidate
           end
+          Viewrail::SharedUtilities.log_action("Added glass line railing")
         end # onReturn
 
         def update_status_text

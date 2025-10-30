@@ -200,6 +200,8 @@ module Viewrail
 
             model.commit_operation
 
+            Viewrail::SharedUtilities.log_action("Added Switchback system: #{JSON[params]}")
+
             Sketchup.active_model.active_view.zoom_extents
             return stair_group
 

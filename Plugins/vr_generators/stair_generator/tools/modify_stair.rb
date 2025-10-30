@@ -91,6 +91,8 @@ module Viewrail
                 model.selection.clear
                 model.selection.add(new_stair)
 
+                Viewrail::SharedUtilities.log_action("Modified Straight system: #{JSON[values]}")
+
                 model.commit_operation
               rescue => e
                 model.abort_operation
@@ -171,6 +173,8 @@ module Viewrail
 
                 model.commit_operation
 
+                Viewrail::SharedUtilities.log_action("Modified 90 system: #{JSON[values]}")
+
               rescue => e
                 model.abort_operation
                 UI.messagebox("Error modifying 90° stairs: #{e.message}")
@@ -250,6 +254,8 @@ module Viewrail
 
                 model.commit_operation
 
+                Viewrail::SharedUtilities.log_action("Modified U system: #{JSON[values]}")
+
               rescue => e
                 model.abort_operation
                 UI.messagebox("Error modifying U stairs: #{e.message}")
@@ -326,6 +332,8 @@ module Viewrail
                   model.selection.clear
                   model.selection.add(new_stair)
                 end
+
+                Viewrail::SharedUtilities.log_action("Modified Switchback system: #{JSON[values]}")
 
                 model.commit_operation
               rescue => e

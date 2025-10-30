@@ -196,6 +196,8 @@ module Viewrail
 
             model.commit_operation
 
+            Viewrail::SharedUtilities.log_action("Added 90 system: #{JSON[params]}")
+
             Sketchup.active_model.active_view.zoom_extents
             return stair_group
 

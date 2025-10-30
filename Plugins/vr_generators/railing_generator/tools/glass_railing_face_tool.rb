@@ -198,6 +198,7 @@ module Viewrail
 
             if @dialog
               @dialog.execute_script("resetButton();")
+              Viewrail::SharedUtilities.log_action("Added glass face railing")
             end
           end
         end # onReturn
