@@ -52,6 +52,8 @@ module Viewrail
 
             new_stair = Viewrail::StairGenerator.create_stair_segment(values, [0,0,0], true)
 
+            Viewrail::SharedUtilities.log_action("Added Straight system", values)
+
             Viewrail::StairGenerator.store_stair_parameters(new_stair, values, :straight)
           end
 

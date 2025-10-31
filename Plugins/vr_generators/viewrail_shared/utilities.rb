@@ -626,6 +626,43 @@ module Viewrail
         }
       end # create_wood_variations
 
+      def log_action(action, data=nil)
+        filename = "C:\\temp\\golus.json"
+        username = Dir.getwd.match(/[\w]+\.[\w]+/).to_s
+
+        data_bundle = nil
+        filepath = Sketchup.active_model.path
+        if data == nil
+          filepath = filepath.empty? ? "Untitled File" : filepath
+          data_bundle = [filepath, action]
+        else
+          filepath = filepath.empty? ? "Untitled File" : filepath
+          data_bundle = [filepath, {action => data}]
+        end
+
+        if File.exist?(filename)
+          log_data = {}
+          begin
+            existing_data = File.read(filename)
+            log_data = JSON.parse(existing_data)
+          rescue JSON::ParserError => e
+            puts "JSON Parse Error: #{e}"
+          end
+
+          log_data[username] ||= {}
+          log_data[username][Time.now.to_s] = data_bundle
+
+          File.open(filename, "w") do |golus|
+            golus.write(JSON.pretty_generate(log_data))
+          end
+        else
+          log_data = {username => {Time.now.to_s => data_bundle}}
+          File.open(filename, "w") do |golus|
+            golus.write(JSON.pretty_generate(log_data))
+          end
+        end
+      end # log_action
+
     end # class << self
 
   end # module SharedUtilities

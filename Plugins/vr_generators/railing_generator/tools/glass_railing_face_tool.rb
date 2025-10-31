@@ -57,6 +57,14 @@ module Viewrail
           end
 
           dialog.add_action_callback("cancel") do |action_context|
+            if @selected_faces.nil?
+              Sketchup.active_model.select_tool(nil)
+            else
+              @selected_faces.clear
+              @face_edges.clear
+              update_status_text
+              view.invalidate
+            end
             dialog.close
           end
 
@@ -198,6 +206,7 @@ module Viewrail
 
             if @dialog
               @dialog.execute_script("resetButton();")
+              Viewrail::SharedUtilities.log_action("Added glass face railing")
             end
           end
         end # onReturn
