@@ -90,13 +90,11 @@ module Viewrail
 
                 model.selection.clear
                 model.selection.add(new_stair)
-
-                Viewrail::SharedUtilities.log_action("Modified Straight system: #{JSON[values]}")
-
+                Viewrail::SharedUtilities.log_action("Modified Straight system", values)
                 model.commit_operation
               rescue => e
                 model.abort_operation
-                UI.messagebox("Error modifying stairs: #{e.message}")
+                UI.messagebox("Error modifying stairs: #{e.message} \n #{e.backtrace}")
               end
             end
 
