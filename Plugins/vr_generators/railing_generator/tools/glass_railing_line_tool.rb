@@ -45,6 +45,13 @@ module Viewrail
           end
 
           dialog.add_action_callback("cancel") do |action_context|
+            if @points.empty?
+              Sketchup.active_model.select_tool(nil)
+            else
+              @points.clear
+              update_status_text
+              view.invalidate
+            end
             dialog.close
           end
 
@@ -157,6 +164,7 @@ module Viewrail
             update_status_text
             view.invalidate
           end
+          Viewrail::SharedUtilities.log_action("Added glass line railing")
         end # onReturn
 
         def update_status_text
