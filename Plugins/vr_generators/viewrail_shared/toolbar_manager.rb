@@ -43,7 +43,8 @@ module Viewrail
         end
         
         def show_help
-          UI.openURL("https://docs.google.com/document/d/1TMCemWotBB-V-BzRuivw-8Cw0oT-DOK59HMGDZd08bc")
+          # This goes to the Generators section of the portal where they can find documentation / guides
+          UI.openURL("https://viewrail.atlassian.net/servicedesk/customer/portal/8/topic/28b89907-f28f-4867-9859-ea0b9da1237c")
         end
         
         def show_about
