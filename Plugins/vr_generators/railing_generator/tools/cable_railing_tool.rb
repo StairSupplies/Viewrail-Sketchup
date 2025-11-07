@@ -81,8 +81,10 @@ module Viewrail
           @total_height = 42.0
           @offset_distance = 4.0
           @cable_diameter = 0.25
-          @cable_spacing = 3.0
+          @cable_spacing = 3.125 # make variable and calculate later.
           @cable_start_height = 3.0
+            # Change start height to be system height minus handrail thickness and code required clearance. 
+            # From that height, add infill until remaining height to the floor is less than 4" sphere code requirement.
           @cable_sides = 6
           
           # Post parameters
