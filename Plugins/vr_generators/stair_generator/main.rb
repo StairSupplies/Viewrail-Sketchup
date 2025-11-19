@@ -125,6 +125,10 @@ module Viewrail
       end
 
       def create_stair_segment(params, start_point = [0, 0, 0], lastStair = false)
+        # put in a "stairType" input?
+        # put in a "riser true/false?"
+        # could also pass in a hash with "tread thickness", "tread depth" and "riser t/f" and whatever else would be needed for a specific stair type (being stack or cant)
+        # or... just put stuff in params :(
         model = Sketchup.active_model
         entities = model.active_entities
 
@@ -136,7 +140,8 @@ module Viewrail
         segment_name = params["segment_name"] || "Stairs"
 
         reveal = 1.0
-        tread_thickness = stair_rise - reveal
+        # tread_thickness = stair_rise - reveal
+        tread_thickness = 4.0
         glass_height = 36.0
 
         stairs_group = entities.add_group
@@ -159,7 +164,7 @@ module Viewrail
 
           nosing_value = 0.75
           riser_thickness = 1.0
-          stairs_group = create_riser(stairs_group, x_position, z_position, tread_run, tread_width, riser_thickness, nosing_value, stack_overhang, tread_thickness)
+          # stairs_group = create_riser(stairs_group, x_position, z_position, tread_run, tread_width, riser_thickness, nosing_value, stack_overhang, tread_thickness)
         end
 
         stair_hash = {

@@ -98,9 +98,26 @@
       padding-top: 20px;
       border-top: 1px solid #ddd;
     }
+   .full-width-section-bottom-underscore {
+      clear: both;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
   </style>
 </head>
 <body>
+  <div class="full-width-section-bottom-underscore">
+    <h3>System Type</h3>
+    <div class="form-group">
+      <label for="system_type">System Type:</label>
+      <select id="systemType">
+        <% ["Stack", "Cantilever"].each do |option| %>
+          <option value="<%= option %>" <%= @last_values[:system_type] == option ? "selected" : "" %>><%= option %></option>
+        <% end %>
+      </select>
+    </div>
+  </div>
   <div class="container">
     <div class="column">
       <h3>Overall System</h3>
@@ -173,6 +190,7 @@
   <script>
     let isUpdating = false;
 
+    const system_type = document.getElementById('system_type');
     const numTreadsInput = document.getElementById('num_treads');
     const treadRunInput = document.getElementById('tread_run');
     const treadWidthInput = document.getElementById('tread_width');
@@ -221,6 +239,13 @@
     treadWidthInput.addEventListener('input', validateInputs);
     totalRiseInput.addEventListener('input', calculateStairRise);
 
+    // need a version of this that does the cantilever
+    // case system_type
+    //   cantilever
+    //     cantilever validate
+    //   stack
+    //     stack validate
+    //   etc
     function validateInputs() {
       let isValid = true;
 
@@ -272,6 +297,7 @@
       }
 
       const values = {
+        stair_type: system_type,
         num_treads: parseInt(document.getElementById('num_treads').value),
         tread_run: parseFloat(document.getElementById('tread_run').value),
         tread_width: parseFloat(document.getElementById('tread_width').value),

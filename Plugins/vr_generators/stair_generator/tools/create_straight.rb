@@ -14,16 +14,16 @@ module Viewrail
             {
               :dialog_title => "Stair Form - Straight",
               :preferences_key => "com.viewrail.stair_generator",
-              :scrollable => false,
-              :resizable => false,
+              :scrollable => true,
+              :resizable => true,
               :width => 500,
               :height => 750,
               :left => 100,
               :top => 100,
               :min_width => 500,
-              :min_height => 750,
+              :min_height => 800,
               :max_width => 500,
-              :max_height => 820,
+              :max_height => 1080,
               :style => UI::HtmlDialog::STYLE_DIALOG
             }
           )
