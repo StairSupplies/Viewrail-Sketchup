@@ -47,6 +47,7 @@ module Viewrail
             last_values[:stair_rise] = values["stair_rise"]
             last_values[:total_rise] = values["total_rise"]
             last_values[:glass_railing] = values["glass_railing"]
+            last_values[:system_type] = values["system_type"]&.to_sym
 
             dialog.close
 

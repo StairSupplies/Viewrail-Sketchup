@@ -43,6 +43,27 @@ module Viewrail
         steel: "Steel"
       }
 
+      STAIR_TYPE_STANDARDS = {
+        stack: {
+          tread_thickness: nil,  # Calculated as (stair_rise - riser_thickness)
+          tread_overhang: 5.0,
+          has_risers: true,
+          riser_thickness: 1.0,
+          nosing_value: 0.75,
+          reveal: 1.0,
+          landing_thickness: nil  # Also calculated as (stair_rise - riser_thickness)
+        },
+        cantilever: {
+          tread_thickness: 4.25,
+          tread_overhang: 1.25,
+          has_risers: false,
+          riser_thickness: 0.0,
+          nosing_value: 1.25,
+          reveal: 0.0,
+          landing_thickness: 4.25
+        }
+      }
+
       def glass_thickness
         GLASS_STANDARDS[:thickness]
       end
@@ -135,6 +156,51 @@ module Viewrail
           FLOOR_COVER_STANDARDS[key] = value if FLOOR_COVER_STANDARDS.key?(key)
         end
       end # update_standard
+
+      def get_stair_type_standards(type)
+        type_sym = type.to_s.downcase.to_sym
+        STAIR_TYPE_STANDARDS[type_sym] || STAIR_TYPE_STANDARDS[:stack]
+      end
+
+      def get_tread_thickness(type, stair_rise = nil)
+        standards = get_stair_type_standards(type)
+        if standards[:tread_thickness].nil?
+          # Stack type - calculate from rise
+          stair_rise - standards[:riser_thickness]
+        else
+          standards[:tread_thickness]
+        end
+      end
+
+      def get_landing_thickness(type, stair_rise = nil)
+        standards = get_stair_type_standards(type)
+        if standards[:landing_thickness].nil?
+          # Stack type - calculate from rise
+          stair_rise - standards[:riser_thickness]
+        else
+          standards[:landing_thickness]
+        end
+      end
+
+      def get_tread_overhang(type)
+        get_stair_type_standards(type)[:tread_overhang]
+      end
+
+      def has_risers?(type)
+        get_stair_type_standards(type)[:has_risers]
+      end
+
+      def get_nosing_value(type)
+        get_stair_type_standards(type)[:nosing_value]
+      end
+
+      def get_riser_thickness(type)
+        get_stair_type_standards(type)[:riser_thickness]
+      end
+
+      def get_reveal(type)
+        get_stair_type_standards(type)[:reveal]
+      end
 
       def calculate_glass_height(total_height, include_handrail, railing_type)
         

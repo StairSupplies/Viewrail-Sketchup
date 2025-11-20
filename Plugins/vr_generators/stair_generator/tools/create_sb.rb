@@ -57,6 +57,7 @@ module Viewrail
             last_values[:total_rise] = values["total_rise"]
             last_values[:turn_direction] = values["turn_direction"]
             last_values[:glass_railing] = values["glass_railing"]
+            last_values[:system_type] = values["system_type"]&.to_sym || :stack
 
             dialog.close
 
@@ -78,6 +79,13 @@ module Viewrail
           model.start_operation('Create Switchback', true)
 
           begin
+            # Get system_type from params, default to :stack
+            system_type = params["system_type"]&.to_sym
+            if system_type.nil?
+              UI.messagebox("Error: Invalid system type specified.")
+              return
+            end
+            
             landing_height = (params["num_treads_lower"] + 1) * params["stair_rise"]
 
             lower_params = {
@@ -86,8 +94,9 @@ module Viewrail
               "tread_width" => params["tread_width_lower"],
               "stair_rise" => params["stair_rise"],
               "glass_railing" => params["glass_railing"],
-              "segment_name" => "Lower Stairs"
-              }
+              "segment_name" => "Lower Stairs",
+              "system_type" => system_type
+            }
 
             if params["glass_railing"] != "None"
               if params["turn_direction"] == "Left"
@@ -120,29 +129,31 @@ module Viewrail
               landing_y = -params["tread_width_lower"] - width_delta
             end
             landing_z = landing_height
+            landing_thickness = Viewrail::ProductData.get_landing_thickness(system_type, params["stair_rise"])
 
             landing = Viewrail::StairGenerator.create_wide_landing(
               {
                 "width" => params["landing_width"],
                 "depth" => params["landing_depth"],
-                "thickness" => params["stair_rise"] - 1,
+                "thickness" => landing_thickness,
                 "glass_railing" => params["glass_railing"],
-                "turn_direction" => params["turn_direction"]
+                "turn_direction" => params["turn_direction"],
+                "system_type" => system_type
               },
               [landing_x, landing_y, landing_z]
-              )
+            )
 
-            stack_overhang = 5
+            tread_overhang = Viewrail::ProductData.get_tread_overhang(system_type)
             if params["turn_direction"] == "Left"
               upper_start = [
-                landing_x + stack_overhang,
+                landing_x + tread_overhang,
                 landing_y + params["landing_width"],
                 landing_z
               ]
               upper_rotation = 180.degrees
             else
               upper_start = [
-                landing_x + stack_overhang,
+                landing_x + tread_overhang,
                 landing_y + params["tread_width_upper"],
                 landing_z
               ]
@@ -155,7 +166,8 @@ module Viewrail
               "tread_width" => params["tread_width_upper"],
               "stair_rise" => params["stair_rise"],
               "glass_railing" => params["glass_railing"],
-              "segment_name" => "Upper Stairs"
+              "segment_name" => "Upper Stairs",
+              "system_type" => system_type
             }
 
             if params["glass_railing"] != "None"

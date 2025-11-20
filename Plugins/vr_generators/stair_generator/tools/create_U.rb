@@ -62,6 +62,7 @@ module Viewrail
             last_values[:total_rise] = values["total_rise"]
             last_values[:turn_direction] = values["turn_direction"]
             last_values[:glass_railing] = values["glass_railing"]
+            last_values[:system_type] = values["system_type"]&.to_sym || :stack
 
             dialog.close
 
@@ -83,9 +84,16 @@ module Viewrail
           model.start_operation('Create U-Shaped Stairs', true)
 
           begin
+            system_type = params["system_type"]&.to_sym
+            if system_type.nil?
+              UI.messagebox("Error: Invalid system type specified.")
+              return
+            end
+
             lower_landing_height = (params["num_treads_lower"] + 1) * params["stair_rise"]
             upper_landing_height = (params["num_treads_lower"] + params["num_treads_middle"] + 2) * params["stair_rise"]
             railing_side = get_railing_side(params["turn_direction"], params["glass_railing"])
+            landing_thickness = Viewrail::ProductData.get_landing_thickness(system_type, params["stair_rise"])
 
             lower_params = {
               "num_treads" => params["num_treads_lower"],
@@ -93,7 +101,8 @@ module Viewrail
               "tread_width" => params["tread_width_lower"],
               "stair_rise" => params["stair_rise"],
               "glass_railing" => params["glass_railing"],
-              "segment_name" => "Lower Stairs"
+              "segment_name" => "Lower Stairs",
+              "system_type" => system_type
             }
 
             if params["glass_railing"] != "None"
@@ -113,9 +122,10 @@ module Viewrail
               {
                 "width" => params["lower_landing_width"],
                 "depth" => params["lower_landing_depth"],
-                "thickness" => params["stair_rise"] - 1,
+                "thickness" => landing_thickness,
                 "glass_railing" => params["glass_railing"],
-                "turn_direction" => params["turn_direction"]
+                "turn_direction" => params["turn_direction"],
+                "system_type" => system_type
               },
               [lower_landing_x, lower_landing_y, lower_landing_z]
             )
@@ -142,7 +152,8 @@ module Viewrail
               "tread_width" => params["tread_width_middle"],
               "stair_rise" => params["stair_rise"],
               "glass_railing" => params["glass_railing"],
-              "segment_name" => "Middle Stairs"
+              "segment_name" => "Middle Stairs",
+              "system_type" => system_type
             }
 
             if params["glass_railing"] != "None"
@@ -175,9 +186,10 @@ module Viewrail
               {
                 "width" => upper_landing_width,
                 "depth" => upper_landing_depth,
-                "thickness" => params["stair_rise"] - 1,
+                "thickness" => landing_thickness,
                 "glass_railing" => params["glass_railing"],
-                "turn_direction" => params["turn_direction"]
+                "turn_direction" => params["turn_direction"],
+                "system_type" => system_type
               },
               [upper_landing_x, upper_landing_y, upper_landing_z]
             )
@@ -212,7 +224,8 @@ module Viewrail
               "tread_width" => params["tread_width_upper"],
               "stair_rise" => params["stair_rise"],
               "glass_railing" => params["glass_railing"],
-              "segment_name" => "Upper Stairs"
+              "segment_name" => "Upper Stairs",
+              "system_type" => system_type
             }
 
             if params["glass_railing"] != "None"

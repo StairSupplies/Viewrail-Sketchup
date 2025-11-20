@@ -37,7 +37,8 @@ module Viewrail
               :total_tread_run => 143.0,
               :stair_rise => 7.5,
               :total_rise => 105.0,
-              :glass_railing => "None"
+              :glass_railing => "None",
+              :system_type => :stack
             }
           when :landing_90
             {
@@ -52,7 +53,8 @@ module Viewrail
               :stair_rise => 7.5,
               :total_rise => 107.5,
               :turn_direction => "Left",
-              :glass_railing => "None"
+              :glass_railing => "None",
+              :system_type => :stack
             }
           when :landing_u
             {
@@ -72,7 +74,8 @@ module Viewrail
               :stair_rise => 7.67,
               :total_rise => 122.75,
               :turn_direction => "Left",
-              :glass_railing => "None"
+              :glass_railing => "None",
+              :system_type => :stack
             }
           when :switchback
             {
@@ -89,7 +92,8 @@ module Viewrail
               :stair_rise => 7.0,
               :total_rise => 105.0,
               :turn_direction => "Left",
-              :glass_railing => "None"
+              :glass_railing => "None",
+              :system_type => :stack
             }
           else
             {}
@@ -125,10 +129,6 @@ module Viewrail
       end
 
       def create_stair_segment(params, start_point = [0, 0, 0], lastStair = false)
-        # put in a "stairType" input?
-        # put in a "riser true/false?"
-        # could also pass in a hash with "tread thickness", "tread depth" and "riser t/f" and whatever else would be needed for a specific stair type (being stack or cant)
-        # or... just put stuff in params :(
         model = Sketchup.active_model
         entities = model.active_entities
 
@@ -138,10 +138,14 @@ module Viewrail
         stair_rise = params["stair_rise"]
         glass_railing = params["glass_railing"] || "None"
         segment_name = params["segment_name"] || "Stairs"
+        system_type = params["system_type"] || :stack
 
-        reveal = 1.0
-        # tread_thickness = stair_rise - reveal
-        tread_thickness = 4.0
+        tread_thickness = Viewrail::ProductData.get_tread_thickness(system_type, stair_rise)  
+        tread_overhang = Viewrail::ProductData.get_tread_overhang(system_type)
+        has_risers = Viewrail::ProductData.has_risers?(system_type)
+        nosing_value = Viewrail::ProductData.get_nosing_value(system_type)
+        riser_thickness = Viewrail::ProductData.get_riser_thickness(system_type)
+
         glass_height = 36.0
 
         stairs_group = entities.add_group
@@ -153,18 +157,11 @@ module Viewrail
         (1..num_treads).each do |i|
           x_position = (i - 1) * tread_run
           z_position = i * stair_rise
-
-          stack_overhang = 5
-
-          if lastStair and i == num_treads
-            stack_overhang = 0
+          current_overhang = (lastStair && i == num_treads) ? 0 : tread_overhang
+          stairs_group = create_tread(stairs_group, x_position, z_position, tread_run, tread_width, tread_thickness, current_overhang)
+          if has_risers
+            stairs_group = create_riser(stairs_group, x_position, z_position, tread_run, tread_width, riser_thickness, nosing_value, current_overhang, tread_thickness)
           end
-
-          stairs_group = create_tread(stairs_group, x_position, z_position, tread_run, tread_width, tread_thickness, stack_overhang)
-
-          nosing_value = 0.75
-          riser_thickness = 1.0
-          # stairs_group = create_riser(stairs_group, x_position, z_position, tread_run, tread_width, riser_thickness, nosing_value, stack_overhang, tread_thickness)
         end
 
         stair_hash = {
@@ -174,7 +171,9 @@ module Viewrail
           "stair_rise" => stair_rise,
           "glass_railing" => glass_railing,
           "glass_height" => glass_height,
-          "last_stair" => lastStair
+          "last_stair" => lastStair,
+          "system_type" => system_type,
+          "tread_overhang" => tread_overhang
         }
 
         if glass_railing != "None"
@@ -189,6 +188,7 @@ module Viewrail
         stairs_group.set_attribute("stair_generator", "stair_rise", stair_rise)
         stairs_group.set_attribute("stair_generator", "glass_railing", glass_railing)
         stairs_group.set_attribute("stair_generator", "segment_type", "stairs")
+        stairs_group.set_attribute("stair_generator", "system_type", system_type.to_s)
 
         return stairs_group
       end # create_stair_segment
