@@ -119,3 +119,15 @@ totalRiseInput.addEventListener('change', calculateStairRise);
 
 calculateTotalTreadRun();
 calculateStairRise();
+
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    const bodyHeight = document.body.scrollHeight;
+    const bodyWidth = document.body.scrollWidth;
+
+    window.location = 'skp:resize_dialog@' + JSON.stringify({
+      width: Math.max(600, bodyWidth),
+      height: Math.max(600, bodyHeight)
+    });
+  }, 100);
+});
