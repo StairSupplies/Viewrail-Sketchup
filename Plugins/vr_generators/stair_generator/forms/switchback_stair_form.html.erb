@@ -122,6 +122,17 @@
   </style>
 </head>
 <body>
+  <div style="margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 4px;">
+    <h3 style="margin-top: 0;">System Type</h3>
+    <div class="form-group">
+      <label for="system_type">System Type:</label>
+      <select id="system_type">
+        <% ["Stack", "Cantilever"].each do |option| %>
+          <option value="<%= option %>" <%= @last_values[:system_type].to_s.capitalize == option ? "selected" : "" %>><%= option %></option>
+        <% end %>
+      </select>
+    </div>
+  </div>
   <div class="container">
     <div class="column">
       <h3>Overall System</h3>
@@ -497,6 +508,7 @@
       }
 
       const values = {
+        system_type: document.getElementById('system_type').value,
         num_treads_lower: parseInt(numTreadsLowerInput.value),
         num_treads_upper: parseInt(numTreadsUpperInput.value),
         header_to_wall: parseFloat(headerToWallInput.value),

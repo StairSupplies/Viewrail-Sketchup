@@ -113,7 +113,7 @@
       <label for="system_type">System Type:</label>
       <select id="systemType">
         <% ["Stack", "Cantilever"].each do |option| %>
-          <option value="<%= option %>" <%= @last_values[:system_type] == option ? "selected" : "" %>><%= option %></option>
+          <option value="<%= option %>" <%= @last_values[:system_type].to_s.capitalize == option ? "selected" : "" %>><%= option %></option>
         <% end %>
       </select>
     </div>
@@ -297,7 +297,7 @@
       }
 
       const values = {
-        stair_type: system_type,
+        system_type: document.getElementById('systemType').value,
         num_treads: parseInt(document.getElementById('num_treads').value),
         tread_run: parseFloat(document.getElementById('tread_run').value),
         tread_width: parseFloat(document.getElementById('tread_width').value),

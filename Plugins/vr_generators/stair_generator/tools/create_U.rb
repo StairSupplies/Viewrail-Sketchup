@@ -201,7 +201,7 @@ module Viewrail
               upper_landing.transform!(rotation)
             end
 
-            outside_offset = params["lower_landing_width"] + upper_landing_depth + (params["num_treads_middle"] * params["tread_run"])
+            # outside_offset = params["lower_landing_width"] + upper_landing_depth + (params["num_treads_middle"] * params["tread_run"])
 
             if params["turn_direction"] == "Left"
               upper_start = [
