@@ -275,8 +275,8 @@ module Viewrail
               thickness: thickness,
               glass_railing: glass_railing,
               turn_direction: turn_direction,
-              system_type: system_type,  # Added for future glass railing updates
-              tread_overhang: tread_overhang  # Added for future glass railing updates
+              system_type: system_type,
+              tread_overhang: tread_overhang
             }
           )
         end
@@ -307,11 +307,8 @@ module Viewrail
       def create_wide_landing(params, position = [0, 0, 0])
 
         model = Sketchup.active_model
-
-        # Get system_type from params, default to :stack
         system_type = params["system_type"]&.to_sym || :stack
-        
-        # Get system-specific values from ProductData
+
         thickness = params["thickness"] || Viewrail::ProductData.get_landing_thickness(system_type, params["stair_rise"])
         has_risers = Viewrail::ProductData.has_risers?(system_type)
         nosing_value = Viewrail::ProductData.get_nosing_value(system_type)
@@ -339,8 +336,8 @@ module Viewrail
               thickness: thickness,
               glass_railing: glass_railing,
               turn_direction: turn_direction,
-              system_type: system_type,  # Added for future glass railing updates
-              tread_overhang: tread_overhang  # Added for future glass railing updates
+              system_type: system_type,
+              tread_overhang: tread_overhang
             },
             true
           )
@@ -406,12 +403,12 @@ module Viewrail
         stair_rise = stair_hash["stair_rise"].to_f
         stair_angle = stair_rise / tread_run
         
-        # Get tread_overhang from the stair_hash (passed from create_stair_segment)
         tread_overhang = stair_hash["tread_overhang"].to_f
         bottom_z = 1.0
+        
         if stair_hash["system_type"].to_sym == :Cantilever
-          # should be stair rise minus tread thickness minus another inch
-          bottom_z = stair_rise - stair_hash["tread_thickness"].to_f - 1.0
+          glass_reveal = 1.0
+          bottom_z = stair_rise - stair_hash["tread_thickness"].to_f - glass_reveal
         end
 
         panel_params = {
@@ -420,7 +417,7 @@ module Viewrail
           stair_angle: stair_angle,
           bottom_z: bottom_z,
           glass_height: stair_hash["glass_height"].to_f,
-          bottom_x_back: tread_run + tread_overhang,  # Changed from hardcoded + 5
+          bottom_x_back: tread_run + tread_overhang,
           panel_extension: 1.0,
           last_stair: stair_hash["last_stair"],
           tread_overhang: tread_overhang,
@@ -479,7 +476,6 @@ module Viewrail
         start_x = 0
         end_x = treads_in_panel * params[:tread_run] + params[:tread_overhang]
 
-        # if system type is cantilever, add another half tread run
         if params[:system_type] == :Cantilever
           end_x += params[:tread_run] / 2
         end
@@ -504,7 +500,6 @@ module Viewrail
         start_x = tread_start * params[:tread_run] + params[:tread_overhang] + PANEL_GAP
         end_x = tread_end * params[:tread_run] + params[:tread_overhang]
 
-        # if system type is cantilever, shift start and end x by half tread run
         if params[:system_type] == :Cantilever
           start_x += params[:tread_run] / 2
           end_x += params[:tread_run] / 2
@@ -526,9 +521,9 @@ module Viewrail
       end # middle_stair_panel_points
 
       def last_stair_panel_points(tread_start, tread_end, params)
-        start_x = (tread_start * params[:tread_run]) + params[:tread_overhang] + PANEL_GAP  # Changed from + 5
+        start_x = (tread_start * params[:tread_run]) + params[:tread_overhang] + PANEL_GAP
         end_x = (tread_end * params[:tread_run]) + params[:panel_extension]
-        end_x += params[:tread_overhang] unless params[:last_stair]  # Changed from + 5
+        end_x += params[:tread_overhang] unless params[:last_stair]
 
         if params[:system_type] == :Cantilever
           start_x += params[:tread_run] / 2
